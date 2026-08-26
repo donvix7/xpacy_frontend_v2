@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import NotificationItem from "./NotificationItem";
 import { getUserNotifications } from "../_lib/data-services";
+import EmptyState from "./EmptyState";
 
 export default async function AdminNotificationList({ notifications: initialNotifications }){
         let notifications = initialNotifications;
@@ -11,7 +12,16 @@ export default async function AdminNotificationList({ notifications: initialNoti
         }
     return(
         <ul className="flex flex-col gap-6 ">
-            {notifications?.map((notification) => <NotificationItem notification={notification} key={notification?.id}/>)}
+            {
+                notifications?.length > 0 ? (
+                    notifications?.map((notification) => <NotificationItem notification={notification} key={notification?.id}/>)
+                ) : (
+                    <div>
+                        <EmptyState message="No Notifications Yet"/>
+                    </div>
+                )
+            }
+            
         </ul>
     )
 }

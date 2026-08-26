@@ -2,16 +2,31 @@
 import React from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
-export const data = [
-  { name: "For Rent", value: 18, color: "#477899" }, // 40% of 45
-  { name: "For Sale", value: 10, color: "#C7D9E5" }, // 60% of 45
-  { name: "For Shortlet", value: 17, color: "#C7D9E7" }
-];
+const COLORS = ["#477899", "#73A0BE", "#C7D9E5", "#FBC0BC"];
 
-const PropertiesPieChart = () => {
+const PropertiesPieChart = ({ properties = [] }) => {
+  const purposeCounts = properties.reduce((acc, property) => {
+    const purpose = (property.purpose || property.type || "Other").toLowerCase();
+    const label = purpose === "rent" ? "For Rent"
+      : purpose === "sale" ? "For Sale"
+      : purpose === "shortlet" ? "For Shortlet"
+      : purpose.charAt(0).toUpperCase() + purpose.slice(1);
+    acc[label] = (acc[label] || 0) + 1;
+    return acc;
+  }, {});
+
+  const data = Object.entries(purposeCounts).map(([name, value], index) => ({
+    name,
+    value,
+    color: COLORS[index % COLORS.length],
+  }));
+
+  if (data.length === 0) {
+    data.push({ name: "No Properties", value: 1, color: "#E5E7EB" });
+  }
+
   return (
     <div style={styles.container}>
-      {/* Responsive Pie Chart */}
       <div style={styles.chartWrapper}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -19,7 +34,7 @@ const PropertiesPieChart = () => {
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius="45%" // Responsive donut effect
+              innerRadius="45%"
               outerRadius="60%"
               dataKey="value"
               cornerRadius={2}
@@ -33,12 +48,11 @@ const PropertiesPieChart = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Custom Labels Below Chart */}
       <div style={styles.labels}>
         {data.map((item, index) => (
           <div key={index} style={styles.labelItem}>
             <div style={{ ...styles.colorBox, backgroundColor: item.color }} />
-            <span style={styles.span}>{item.name}</span>
+            <span style={styles.span}>{item.name} ({item.value})</span>
           </div>
         ))}
       </div>

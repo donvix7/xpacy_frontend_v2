@@ -64,12 +64,15 @@ const AdminOverview = async () => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             {overview.map((item, index) => (
-                <div key={index} className="bg-white rounded-xl border border-primary-200  p-6 duration-300 flex flex-col items-center justify-center text-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4 ${item.color}`}>
+                <div key={index} className="bg-white rounded-xl border border-primary-200  p-6 duration-300 flex justify-between ">
+                   
+                    <div>
+                        <p className="text-gray-600 text-sm capitalize">{item.title}</p>
+                        <p className="text-2xl font-bold mt-1">{item.count.toLocaleString()}</p>
+                    </div>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center align-center text-2xl mb-4 ${item.color}`}>
                         {item.icon}
                     </div>
-                    <p className="text-gray-600 text-sm capitalize">{item.title}</p>
-                    <p className="text-2xl font-bold mt-1">{item.count.toLocaleString()}</p>
                 </div>
             ))}
         </div>

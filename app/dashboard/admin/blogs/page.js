@@ -5,6 +5,10 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getBlogs, getBlogCategories } from "@/app/_lib/data-services";
+import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import SummaryCards from "@/app/_components/SummaryCards";
+import { FaBlog, FaStar } from "react-icons/fa6";
+import { FaCheckCircle } from "react-icons/fa";
 
 export default async function Page({ searchParams: searchParamsPromise }) {
     const searchParams = await searchParamsPromise;
@@ -22,6 +26,26 @@ export default async function Page({ searchParams: searchParamsPromise }) {
         featuredBlogs: blogs.filter(b => b.is_featured === true).length,
     };
 
+const summaryCards = [
+    { 
+        label: "Total Blogs", 
+        value: stats.totalBlogs, 
+        color: "bg-primary-100", 
+        icon: <FaBlog className="w-5 h-5 text-primary" /> 
+    },
+    { 
+        label: "Published Blogs", 
+        value: stats.publishedBlogs, 
+        color: "bg-emerald-100", 
+        icon: <FaCheckCircle className="w-5 h-5 text-emerald-600" /> 
+    },
+    { 
+        label: "Featured Blogs", 
+        value: stats.featuredBlogs, 
+        color: "bg-amber-100", 
+        icon: <FaStar className="w-5 h-5 text-amber-600" /> 
+    },
+];
     const search = searchParams?.search || "";
     const category = searchParams?.category || "all";
 
@@ -37,8 +61,9 @@ export default async function Page({ searchParams: searchParamsPromise }) {
                     <span className="hidden sm:inline">Create New Blog</span>
                 </Link>
             </div>
-            
-            <BlogsSummary {...stats} />
+            <DashboardGridItem title="Blogs Summary">
+            <SummaryCards cards={summaryCards} />
+            </DashboardGridItem>
 
             <div className="mt-8 bg-gray-50/50 rounded-2xl border border-gray-100">
                 <BlogFilter categories={categories} />

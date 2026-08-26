@@ -6,6 +6,7 @@ import { getAdminProperties } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import SearchInput from "@/app/_components/SearchInput";
 import DashboardFilter from "@/app/_components/DashboardFilter";
+import DashboardGridItem from "@/app/_components/DashboardGridItems";
 
 
 export default async function Page({searchParams}) {
@@ -49,8 +50,10 @@ export default async function Page({searchParams}) {
 
     return (
         <div className="space-y-6 p-4">
-            
+            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Properties</h1>
+            <DashboardGridItem title="Properties Summary">
             <PropertiesSummary properties={allProperties || []} totalProperties={allProperties?.length || 0} />
+            </DashboardGridItem>
             
             <div className={`border-[1.5px] border-primary-200 p-6 flex flex-col gap-4 rounded-lg `}>
                 <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between border-b border-primary-100 pb-4">

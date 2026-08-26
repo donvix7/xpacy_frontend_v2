@@ -4,34 +4,25 @@ import DateFilter from "./DateFilter";
 import ExportButton from "./ExportButton";
 import PaymentsSummary from "./PaymentsSummary";
 import { checkDateInRange } from "@/app/_lib/utils";
+import DashboardGridItem from "./DashboardGridItems";
 
-export default function PaymentsOverviewWrapper({ invoices = [], showFilters = true }) {
+export default function PaymentsOverviewWrapper({ bookings = [], invoices = [], showFilters = true }) {
     const [filterRange, setFilterRange] = useState("all_time");
 
-    const filteredInvoices = useMemo(() => {
-        if (!filterRange || filterRange === "all_time") return invoices;
-        return invoices.filter(b => {
+    const filteredBookings = useMemo(() => {
+        if (!filterRange || filterRange === "all_time") return bookings;
+        return bookings.filter(b => {
              const dateStr = b.createdAt || b.created_at || b.payment_date || b.issuedDate || b.date; 
             return checkDateInRange(dateStr, filterRange); 
         });
-    }, [invoices, filterRange]);
+    }, [bookings, filterRange]);
 
     return (
         <div className="flex flex-col gap-4">
-            {showFilters && (
-                <div className="flex justify-end gap-2 text-nowrap">
-                    <DateFilter onFilterChange={setFilterRange} value={filterRange} />
-                    <ExportButton 
-                        data={filteredInvoices} 
-                        filename="payments_summary" 
-                        options={[
-                            { id: "all", label: "All" },
-                            { id: "invoice_list", label: "Invoice list" }
-                        ]}
-                    />
-                </div>
-            )}
-            <PaymentsSummary invoices={filteredInvoices} showHeading={showFilters} />
+            
+            <DashboardGridItem >
+            <PaymentsSummary invoices={filteredBookings} showHeading={showFilters} />
+            </DashboardGridItem>
         </div>
     )
 }

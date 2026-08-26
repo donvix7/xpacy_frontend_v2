@@ -12,24 +12,27 @@ export default function AdminNotificationsSummary({ notifications }) {
         {
             title: "Unread",
             count: counts.unread,
-            icon: <FaEnvelope className="text-orange-500" />
+            icon: <FaEnvelope className="text-orange-500" />,
+            color: 'bg-orange-100',
+            bgColor: 'bg-orange-100',
+            
         },
         {
             title: "Read",
             count: counts.read,
-             icon: <FaEnvelopeOpen className="text-green-500" />
+             icon: <FaEnvelopeOpen className="text-emerald-500" />,
+             bgColor: 'bg-emerald-100',
+             color: 'text-emerald-500',
         }
     ];
 
     return (
-        <div className="p-6 flex flex-col gap-4 border border-primary-200 rounded-lg bg-white mb-6">
-            <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800">Notifications Summary</h3>
-            </div>
+        <div className="flex flex-col gap-4 rounded-lg bg-white ">
+          
 
-            <div className="flex flex-col md:flex-row gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 {/* Main Hero Card */}
-                <div className="flex flex-col border border-primary-200 rounded-lg px-6 py-7 relative overflow-hidden bg-white min-w-[250px] flex-1 justify-center">
+                <div className="col-span-1 md:col-span-3 flex flex-col border border-primary-200 rounded-lg px-6 py-7 relative overflow-hidden bg-white min-w-[250px] flex-1 justify-center">
                     <div className="relative z-20 flex flex-col lg:items-start items-center lg:w-max">
                         <div className="flex gap-3 items-center">
                             <span className="w-12 h-12 text-primary bg-primary-100/80 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl shadow-sm">
@@ -46,14 +49,17 @@ export default function AdminNotificationsSummary({ notifications }) {
                 </div>
 
                  {/* Grid Items */}
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-2">
+                 <div className=" col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 flex-2">
                     {summaryItems.map((item, index) => (
-                        <div key={index} className="flex flex-col items-center justify-center p-6 rounded-lg shadow-sm bg-gray-50 border border-primary-100 w-full hover:shadow-md transition-shadow">
-                            <div className="mb-2 text-xl">{item.icon}</div>
-                            <p className="font-mono text-gray-600 text-base text-center">{item.title}</p>
-                            <p className="text-center font-bold text-lg font-mono text-primary">{item.count}</p>
-                            
-                        </div>
+                        <div key={index} className="bg-white rounded-xl border border-primary-200  p-6 duration-300 flex justify-between ">
+                    <div className="flex flex-col gap-2">
+                        <p className="text-gray-600 text-sm capitalize">{item.title}</p>
+                        <p className="text-2xl font-bold mt-1">{item.count.toLocaleString()}</p>
+                    </div>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4 ${item.color}`}>
+                        {item.icon}
+                    </div>
+                </div>
                     ))}
                 </div>
             </div>

@@ -1,11 +1,10 @@
 {
-  "editor.formatOnSaveMode": "modificationsIfAvailable",
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.formatOnSave": false,
-  "files.autoSave": "off",
-  "[javascript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
-  },
-  "files.autoSaveDelay": 1000,
-  "files.refactoring.autoSave": false
+  "claudeCode.environmentVariables": [
+    { "name": "ANTHROPIC_AUTH_TOKEN", "value": "sk-LUXjuyDlXiye6LnOYHgW4HuoPF7X5PJj9NU9C1zKvJCSGMqJ" },
+    { "name": "ANTHROPIC_BASE_URL", "value": "https://agentrouter.org" },
+    { "name": "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", "value": "1" },
+    { "name": "ANTHROPIC_MODEL", "value": "claude-opus-4-8" }
+  ],
+  "claudeCode.disableLoginPrompt": true,
+  "claudeCode.initialPermissionMode": "acceptEdits"
 }

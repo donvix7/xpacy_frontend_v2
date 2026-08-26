@@ -17,35 +17,35 @@ export default function PropertiesSummary({ properties, totalProperties, showHea
             title: "Shortlet",
             count: counts.shortlet,
             icon: <FaHome className="text-blue-500" size={20} />,
-            color: "bg-blue-50 border-blue-100"
+            color: "bg-blue-50 border-blue-100",
+            bgColor:"bg-blue-50"
         },
         {
             title: "Rented",
             count: counts.rented,
             icon: <FaHandshake className="text-green-500" size={20} />,
-            color: "bg-green-50 border-green-100"
+            color: "bg-green-50 border-green-100",
+            bgColor:"bg-green-50"
         },
         {
             title: "Featured",
             count: counts.featured,
             icon: <FaTag className="text-orange-500" size={20} />,
-            color: "bg-orange-50 border-orange-100"
+            color: "bg-orange-50 border-orange-100",
+            bgColor:"bg-orange-50"
         },
         {
             title: "Available",
             count: counts.available,
             icon: <FaCheckCircle className="text-purple-500" size={20} />,
-            color: "bg-purple-50 border-purple-100"
+            color: "bg-purple-50 border-purple-100",
+            bgColor:"bg-purple-50"
         }
     ];
 
     return (
-        <div className="p-6 flex flex-col gap-4 border border-primary-200 rounded-lg bg-white">
-            {showHeading && (
-                <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-800">Summary</h3>
-                </div>
-            )}
+        <div className="flex flex-col gap-4  bg-white">
+         
 
             <div className="flex flex-col gap-4">
                 {/* Main Hero Card */}
@@ -66,14 +66,19 @@ export default function PropertiesSummary({ properties, totalProperties, showHea
                 </div>
 
                 {/* Grid Items */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {summaryItems.map((item, index) => (
-                        <div key={index} className="flex flex-col items-center justify-center p-6 rounded-lg border border-primary-200 w-full">
-                            <p className="font-mono text-primary-700 text-base text-center">{item.title}</p>
-                            <p className="text-center font-bold text-lg font-mono">{item.count}</p>
-                        </div>
-                    ))}
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {summaryItems.map((item, index) => (
+                <div key={index} className="bg-white rounded-xl border border-primary-200  p-6 duration-300 flex justify-between ">
+                    <div className="flex flex-col gap-2">
+                        <p className="text-gray-600 text-sm capitalize">{item.title}</p>
+                        <p className="text-2xl font-bold mt-1">{item.count.toLocaleString()}</p>
+                    </div>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4 ${item.color}`}>
+                        {item.icon}
+                    </div>
                 </div>
+            ))}
+        </div>
             </div>
         </div>
     );

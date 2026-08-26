@@ -1,24 +1,17 @@
 import { FaBell } from "react-icons/fa";
 import Link from "next/link";
 import { format } from "date-fns";
+import EmptyState from "./EmptyState";
 
 export default function NotificationsSummary({ notifications }) {
     const recentNotifications = notifications.slice(0, 5);
 
     return (
-        <div className="flex flex-col gap-4 p-6 border-[1.5px] border-primary-200 rounded-lg bg-white">
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-primary-700 flex items-center gap-2">
-                    <FaBell className="text-primary" />
-                    Recent Notifications
-                </h2>
-                <Link href="/dashboard/property-owner/notifications" className="text-sm text-primary hover:underline font-medium">
-                    View All
-                </Link>
-            </div>
+        <div className="flex flex-col gap-4 rounded-lg bg-white">
+         
             
             {recentNotifications.length === 0 ? (
-                <p className="text-gray-500 text-sm py-4">No new notifications.</p>
+                <div className="text-gray-500 text-center text-sm py-4">  <EmptyState message="No new notifications." /></div>
             ) : (
                 <div className="flex flex-col gap-3">
                     {recentNotifications.map((note, index) => (

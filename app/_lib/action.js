@@ -163,7 +163,6 @@ export async function handleCompleteOwnerRegistration(userData, token) {
     try {
        data = await response.json();
     } catch (error) {
-       console.error("JSON Parse Error:", error);
        return { success: false, message: "Invalid server response" };
     }
 
@@ -173,7 +172,6 @@ export async function handleCompleteOwnerRegistration(userData, token) {
 
     return { success: true, message: data.message }
   } catch (error) {
-    console.error("Registration error:", error);
     return { success: false, message: error.message || "An unexpected error occurred" }
   }
 }
@@ -194,13 +192,11 @@ export async function resendPropertyOwnerRegistrationEmail(email) {
 }
 
 export async function handleSaveProperty(id) {
-  console.log("handleSaveProperty called with id:", id, "type:", typeof id);
   const cookiesStore = await cookies();
   const token = cookiesStore.get("token")
   if (!token?.value) throw new Error("Please log in to continue")
   
   const body = JSON.stringify({ propertyId: id });
-  console.log("Save Property Request Body:", body);
 
   const response = await fetch(`${URL}/user-property/saved-properties`, {
     method: "POST",
@@ -211,7 +207,6 @@ export async function handleSaveProperty(id) {
     body: body
   });
   const data = await response.json();
-  console.log("Save Property API Response:", response.status, data);
   if (!response.ok) {
     throw new Error(data.message || data.error || "Failed to save property");
   }
@@ -240,7 +235,6 @@ export async function handleBookProperty(id) {
     if (!res.ok) throw new Error(data.message || "Failed to book property");
     return data;
   } catch (error) {
-    console.error("Error booking property:", error);
     throw error;
   }
 }
@@ -368,7 +362,6 @@ export async function createBooking(formData) {
 
     return { success: true, ...data };
   } catch (error) {
-    console.error("Booking error:", error);
     return { success: false, message: error.message || "Server error while creating booking" };
   }
 };
@@ -443,7 +436,6 @@ export async function submitInvoiceAction(invoice, token) {
       unitPrice: Number(item.unitPrice),
     })),
   }
-  console.log(payload)
   const res = await fetch(`${URL}/invoice/create-invoice`, {
       method: "POST",
       headers: {
@@ -462,7 +454,6 @@ export async function submitInvoiceAction(invoice, token) {
       errorMsg = errorData.message || errorData.error || errorMsg;
     } catch {
       const errorText = await res.text();
-      console.log("Invoice Server Error Raw:", errorText);
       try {
          // Attempt to extract title from HTML if it's an HTML error page
          const titleMatch = errorText.match(/<title>(.*?)<\/title>/);
@@ -495,8 +486,6 @@ export async function resetPassword(token, newPassword) {
 }
 
 export async function uploadKyc(formData) {
-  // Log the file for debugging
-  console.log('Uploading KYC file:', formData);
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
@@ -504,12 +493,10 @@ export async function uploadKyc(formData) {
   const response = await fetch(`${URL}/user/upload-kyc`, {
     method: "PUT",
     headers: { "Authorization": `Bearer ${token?.value}` },
-    // Send the FormData directly; browser will set multipart/form-data
     body: formData,
   });
   const data = await response.json();
   revalidateTag("user-profile");
-  console.log('Upload response:', data);
   return data;
 }
 

@@ -4,6 +4,7 @@ import DateFilter from "./DateFilter";
 import ExportButton from "./ExportButton";
 import ServicesSummary from "./ServicesSummary";
 import { checkDateInRange } from "@/app/_lib/utils";
+import DashboardGridItem from "./DashboardGridItems";
 
 export default function ServicesOverviewWrapper({ services, showFilters = true }) {
     const [filterRange, setFilterRange] = useState("all_time");
@@ -19,20 +20,27 @@ export default function ServicesOverviewWrapper({ services, showFilters = true }
     return (
         <div className="flex flex-col gap-4">
             {showFilters && (
-                <div className="flex justify-end gap-2 text-nowrap">
-                    <DateFilter onFilterChange={setFilterRange} value={filterRange} />
-                    <ExportButton 
-                        data={filteredServices} 
-                        filename="services_summary" 
-                        options={[
-                            { id: "all", label: "All data" },
-                            { id: "summary", label: "Summary" },
-                            { id: "service_list", label: "Service request list" }
-                        ]}
-                    />
-                </div>
+                  <div className="flex justify-between items-center gap-2">
+                                <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Services</h1>
+                                <div className="flex gap-2">
+                
+                                <DateFilter />
+                                <ExportButton 
+                                    data={services} 
+                                    filename="property_summary" 
+                                    options={[
+                                        { id: "all", label: "All data" },
+                                        { id: "summary", label: "Summary" },
+                                        { id: "overview", label: "properties overview" }
+                                    ]}
+                                />
+                                </div>
+                
+                            </div>
             )}
+            <DashboardGridItem title="Services Summary">
             <ServicesSummary services={filteredServices} showHeading={showFilters} />
+            </DashboardGridItem>
         </div>
     )
 }

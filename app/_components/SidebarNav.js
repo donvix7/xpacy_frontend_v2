@@ -3,15 +3,20 @@ import Link from "next/link";
 import {usePathname} from "next/navigation";
 import { RxDashboard } from "react-icons/rx";
 import { FiBell } from "react-icons/fi";
-import { BiBuildingHouse } from "react-icons/bi";
+import { BiBuildingHouse, BiShield } from "react-icons/bi";
 import { FaIdCard, FaRegHeart } from "react-icons/fa";
-import { IoCardOutline } from "react-icons/io5";
+import { IoCardOutline, IoPeopleOutline } from "react-icons/io5";
 import { RiUserSettingsLine } from "react-icons/ri";
-import { LuMessageCircleQuestion } from "react-icons/lu";
+import { LuBell, LuLayoutDashboard, LuMessageCircleQuestion, LuMessageSquare, LuWrench } from "react-icons/lu";
 import { IoCalendarOutline } from "react-icons/io5";
 import { RiHome2Line, RiSearchLine, RiSettings3Line, RiPulseLine } from "react-icons/ri";
 import { MessageSquare, Settings, User } from "lucide-react";
-import { FaCheck } from "react-icons/fa6";
+import { FaCheck, FaClipboardList, FaHandshake, FaWrench } from "react-icons/fa6";
+import { TbBuilding, TbBuildingCommunity, TbFileText, TbHelp, TbReportAnalytics, TbSettings, TbUsers } from "react-icons/tb";
+import { HiOutlineClipboardList } from "react-icons/hi";
+import { BsTools } from "react-icons/bs";
+import { GiPayMoney, GiTakeMyMoney } from "react-icons/gi";
+import { MdOutlineReport } from "react-icons/md";
 
 
 const userNavList = [
@@ -127,42 +132,138 @@ const adminNavList = [
         icon: <LuMessageCircleQuestion />
     }
 ]
-
 const propertyOwnerNavList = [
+  {
+    text: "Dashboard",
+    link: "/dashboard/property-owner",
+    icon: <RxDashboard className="w-5 h-5" />,
+  },
+  {
+    text: "Notifications",
+    link: "/dashboard/property-owner/notifications",
+    icon: <FiBell className="w-5 h-5" />,
+  },
+  {
+    text: "My Properties",
+    link: "/dashboard/property-owner/properties",
+    icon: <BiBuildingHouse className="w-5 h-5" />,
+  },
+  {
+    text: "Tenants",
+    link: "/dashboard/property-owner/tenants",
+    icon: <IoPeopleOutline className="w-5 h-5" />,
+  },
+  {
+    text: "Maintenance",
+    link: "/dashboard/property-owner/maintenance",
+    icon: <FaWrench className="w-5 h-5" />,
+  },
+  {
+    text: "Vendor",
+    link: "/dashboard/property-owner/vendor",
+    icon: <FaHandshake className="w-5 h-5" />,
+  },
+  {
+    text: "Utilities",
+    link: "/dashboard/property-owner/utility-management",
+    icon: <TbBuildingCommunity className="w-5 h-5" />,
+  },
+  {
+    text: "Inspections",
+    link: "/dashboard/property-owner/inspections",
+    icon: <HiOutlineClipboardList className="w-5 h-5" />,
+  },
+  {
+    text: "Services Requests",
+    link: "/dashboard/property-owner/services",
+    icon: <BsTools className="w-5 h-5" />,
+  },
+  {
+    text: "Bookings",
+    link: "/dashboard/property-owner/bookings",
+    icon: <IoCalendarOutline className="w-5 h-5" />,
+  },
+  {
+    text: "Rents",
+    link: "/dashboard/property-owner/rents",
+    icon: <GiTakeMyMoney className="w-5 h-5" />,
+  },
+  {
+    text: "Security",
+    link: "/dashboard/property-owner/security",
+    icon: <BiShield className="w-5 h-5" />,
+  },
+  {
+    text: "Payments",
+    link: "/dashboard/property-owner/payments",
+    icon: <GiPayMoney className="w-5 h-5" />,
+  },
+  {
+    text: "Reports & Analytics",
+    link: "/dashboard/property-owner/reports",
+    icon: <MdOutlineReport className="w-5 h-5" />,
+  },
+  {
+    text: "Profile Settings",
+    link: "/dashboard/property-owner/settings",
+    icon: <RiSettings3Line className="w-5 h-5" />,
+  },
+  {
+    text: "Help/Support",
+    link: "/contact",
+    icon: <LuMessageCircleQuestion className="w-5 h-5" />,
+  },
+];
+const facilityManagerNavList = [
     
     {
         text: "Dashboard",
-        link: "/dashboard/property-owner",
+        link: "/dashboard/facility-manager",
         icon: <RxDashboard />
     },
     {
         text: "Notifications",
-        link: "/dashboard/property-owner/notifications",
+        link: "/dashboard/facility-manager/notifications",
         icon: <FiBell />
     },
     {
         text: "My Properties",
-        link: "/dashboard/property-owner/properties",
+        link: "/dashboard/facility-manager/properties",
         icon: <BiBuildingHouse />
     },
     {
         text: "Services Requests",
-        link: "/dashboard/property-owner/services",
+        link: "/dashboard/facility-manager/services",
         icon: <IoCalendarOutline />
+    },
+     {
+        text: "Utilities",
+        link: "/dashboard/facility-manager/utility-management",
+        icon: <BiBuildingHouse />
     },
     {
         text: "Bookings",
-        link: "/dashboard/property-owner/bookings",
+        link: "/dashboard/facility-manager/bookings",
         icon: <FaCheck />
+    },
+      {
+        text: "Services Requests",
+        link: "/dashboard/facility-manager/services",
+        icon: <IoCalendarOutline />
     },
     {
         text: "Payments",
-        link: "/dashboard/property-owner/payments",
+        link: "/dashboard/facility-manager/payments",
         icon: <IoCardOutline />
     },
      {
+        text: "Reports & Analytics",
+        link: "/dashboard/facility-manager/reports",
+        icon: <RiUserSettingsLine />
+    },
+     {
         text: "Profile Settings",
-        link: "/dashboard/property-owner/settings",
+        link: "/dashboard/facility-manager/settings",
         icon: <RiSettings3Line className='w-5 h-5' />
     },
     {
@@ -171,11 +272,75 @@ const propertyOwnerNavList = [
         icon: <LuMessageCircleQuestion />
     }
 ]
+const propertyManagerNavList = [
+    {
+        text: "Dashboard",
+        link: "/dashboard/property-manager",
+        icon: <LuLayoutDashboard className="w-5 h-5" /> // Dashboard/layout icon
+    },
+    {
+        text: "Notifications",
+        link: "/dashboard/property-manager/notifications",
+        icon: <LuBell className="w-5 h-5" /> // Bell for notifications
+    },
+    {
+        text: "My Properties",
+        link: "/dashboard/property-manager/properties",
+        icon: <TbBuilding className="w-5 h-5" /> // Building represents properties
+    },
+    {
+        text: "Tenants",
+        link: "/dashboard/property-manager/tenants",
+        icon: <TbUsers className="w-5 h-5" /> // Users/people represents tenants
+    },
+    {
+        text: "Leases",
+        link: "/dashboard/property-manager/leases",
+        icon: <TbFileText className="w-5 h-5" /> // File text represents lease documents
+    },
+    {
+        text: "Utilities",
+        link: "/dashboard/property-manager/utility-management",
+        icon: <TbBuildingCommunity className="w-5 h-5" /> // Building community represents utilities
+    },
+    {
+        text: "Inspections",
+        link: "/dashboard/property-manager/inspections",
+        icon: <FaClipboardList className="w-5 h-5" /> // Clipboard list represents inspections
+    },
+    {
+        text: "Services Requests",
+        link: "/dashboard/property-manager/services",
+        icon: <LuWrench className="w-5 h-5" /> // Wrench represents service requests
+    },
+    {
+        text: "Community Forum",
+        link: "/dashboard/property-manager/community-forum",
+        icon: <LuMessageSquare className="w-5 h-5" /> // Message square represents community/forum
+    },
+    {
+        text: "Reports & Analytics",
+        link: "/dashboard/property-manager/reports",
+        icon: <TbReportAnalytics className="w-5 h-5" /> // Report/analytics icon
+    },
+    {
+        text: "Profile Settings",
+        link: "/dashboard/property-manager/settings",
+        icon: <TbSettings className="w-5 h-5" /> // Settings gear
+    },
+    {
+        text: "Help/Support",
+        link: "/contact",
+        icon: <TbHelp className="w-5 h-5" /> // Help/question mark
+    }
+];
 
 export default function SidebarNav({ role = "user" }) {
     let navList = [];
     if (role?.toLowerCase() === "admin") navList = adminNavList;
     else if (role?.toLowerCase() === "property-owner" || role?.toLowerCase() === "propertyowner") navList = propertyOwnerNavList;
+    else if (role?.toLowerCase() === "facility-manager") navList = facilityManagerNavList;
+    else if (role?.toLowerCase() === "property-manager") navList = propertyManagerNavList;
     else navList = userNavList;
 
     const pathname = usePathname();

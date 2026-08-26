@@ -14,9 +14,7 @@ export default async function Page() {
     return (
         <div className="p-6">
             
-            <div className="mb-8">
                <ServicesOverviewWrapper services={services} />
-            </div>
 
             <DashboardGridItem title={"Service Management"}>
                 <AdminServicesTabs services={services} serviceProviders={serviceProviders} />

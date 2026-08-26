@@ -1,11 +1,14 @@
 import AdminPropertyOwnersList from "@/app/_components/AdminPropertyOwnersList";
 import AdminUsersList from "@/app/_components/AdminUsersList";
+import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import SummaryCards from "@/app/_components/SummaryCards";
 import UsersSummary from "@/app/_components/UsersSummary";
 import { getPropertyOwner, getAllAdmin, getAllUsers } from "@/app/_lib/data-services";
 import { UserPlus } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { FaPlus } from "react-icons/fa6";
+import { FaUserTimes } from "react-icons/fa";
+import { FaFileSignature, FaPlus, FaUser, FaUserCheck, FaUsers, FaUserShield, FaUserSlash, FaUserTie } from "react-icons/fa6";
 
 export default async function Page(){
         const cookieStore = await cookies();
@@ -48,14 +51,79 @@ export default async function Page(){
             unverifiedUsers: allUsers.filter(u => !u.email_verified_at).length 
         };
 
+       
+const summaryCards = [
+    { 
+        label: "Total Users", 
+        value: stats.totalUsers, 
+        color: "bg-primary-100", 
+        icon: <FaUsers className="w-5 h-5 text-primary" /> 
+    },
+    { 
+        label: "Property Owners", 
+        value: stats.propertyOwners, 
+        color: "bg-blue-100", 
+        icon: <FaUserTie className="w-5 h-5 text-blue-600" /> 
+    },
+    { 
+        label: "Admins", 
+        value: stats.admins, 
+        color: "bg-purple-100", 
+        icon: <FaUserShield className="w-5 h-5 text-purple-600" /> 
+    },
+    { 
+        label: "Regular Users", 
+        value: stats.regularUsers, 
+        color: "bg-amber-100", 
+        icon: <FaUser className="w-5 h-5 text-amber-600" /> 
+    },
+    { 
+        label: "KYC Processing", 
+        value: stats.processedKyc, 
+        color: "bg-orange-100", 
+        icon: <FaFileSignature className="w-5 h-5 text-orange-600" /> 
+    },
+    { 
+        label: "Active Users", 
+        value: stats.activeUsers, 
+        color: "bg-emerald-100", 
+        icon: <FaUserCheck className="w-5 h-5 text-emerald-600" /> 
+    },
+    { 
+        label: "Inactive Users", 
+        value: stats.inactiveUsers, 
+        color: "bg-red-100", 
+        icon: <FaUserTimes className="w-5 h-5 text-red-600" /> 
+    },
+    { 
+        label: "Unverified Users", 
+        value: stats.unverifiedUsers, 
+        color: "bg-gray-100", 
+        icon: <FaUserSlash className="w-5 h-5 text-gray-600" /> 
+    },
+];
     return (
         <div className="p-6 space-y-6">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-2"></h1>
-            <UsersSummary {...stats} />
-            <AdminUsersList users={usersList} title="All Users List" variant="tenant" />
-            <AdminUsersList users={allUsers} title="All Registered Users List" variant="registered" />
-            <AdminUsersList users={adminsList} title="Admins List" />
-            <AdminPropertyOwnersList owners={ownersList}/>            
+            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-2">User Management</h1>
+            <DashboardGridItem title="User Summary">
+            <SummaryCards cards={summaryCards} />
+            </DashboardGridItem>
+            <DashboardGridItem title="All Users List">
+
+                <AdminUsersList users={usersList} title="All Users List" variant="tenant" />
+            </DashboardGridItem>
+            <DashboardGridItem title="All Registered Users List">
+
+                <AdminUsersList users={allUsers} title="All Registered Users List" variant="registered" />
+            </DashboardGridItem>
+            <DashboardGridItem title="Admins List">
+
+                <AdminUsersList users={adminsList} title="Admins List" />
+            </DashboardGridItem>
+            <DashboardGridItem title="Property Owners List">
+
+                <AdminPropertyOwnersList owners={ownersList}/>    
+            </DashboardGridItem>        
         </div>
     )
 }

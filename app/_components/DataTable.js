@@ -32,12 +32,7 @@ export default function DataTable({
 
     return (
         <div className={`flex flex-col gap-6 rounded-lg ${className}`}>
-            {(title || headerActions) && (
-                <header className="flex items-center justify-between">
-                    {title && <h2 className="text-xl font-bold text-primary-700 flex items-center gap-2">{title}</h2>}
-                    {headerActions && <div className="flex justify-end gap-4">{headerActions}</div>}
-                </header>
-            )}
+           
 
             {/* Desktop View - Table */}
             <div className="bg-white border border-primary-100 rounded-xl overflow-x-scroll shadow-sm hidden lg:block">
