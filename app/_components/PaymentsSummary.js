@@ -58,7 +58,7 @@ export default function PaymentsSummary({ invoices = [], showHeading = true }) {
                                   </span>
                                   <span className="font-mono text-primary-900 font-bold uppercase tracking-wide text-sm">Payments</span>
                               </div>
-                              <p className="text-center lg:text-left font-bold text-4xl font-mono mt-4 lg:ml-[60px] text-gray-800">{counts.totalRevenue}</p>
+                              <p className="text-center lg:text-left font-bold text-4xl font-mono mt-4 lg:ml-[60px] text-gray-800">₦ {' '}{counts.totalRevenue.toLocaleString()}</p>
                           </div>
       
                           {/* Decorative Background Circles */}
@@ -68,18 +68,18 @@ export default function PaymentsSummary({ invoices = [], showHeading = true }) {
       
                       {/* Grid Items */}
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 md:gap-4">
-    {summaryItems.map((item, index) => (
-        <div key={index} className="bg-white rounded-xl border border-primary-200 p-4 md:p-6 duration-300 flex items-center justify-between transition-shadow min-w-[160px]">
-            <div className="flex flex-col gap-1 md:gap-2 min-w-0 flex-1">
-                <p className="text-gray-600 text-xs sm:text-sm capitalize truncate">{item.title}</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold mt-0.5">{item.count.toLocaleString()}</p>
-            </div>
-            <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl flex-shrink-0 ml-2 sm:ml-3 ${item.color} ${item.bgColor}`}>
-                {item.icon}
-            </div>
-        </div>
-    ))}
-</div>
+                        {summaryItems.map((item, index) => (
+                            <div key={index} className="bg-white rounded-xl border border-primary-200 p-4 md:p-6 duration-300 flex items-center justify-between transition-shadow min-w-[160px]">
+                                <div className="flex flex-col gap-1 md:gap-2 min-w-0 flex-1">
+                                    <p className="text-gray-600 text-xs sm:text-sm capitalize truncate">{item.title}</p>
+                                    <p className="text-xl sm:text-2xl md:text-3xl font-bold mt-0.5">{item.count.toLocaleString()}</p>
+                                </div>
+                                <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl flex-shrink-0 ml-2 sm:ml-3 ${item.color} ${item.bgColor}`}>
+                                    {item.icon}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                   </div>
               </div>
     );

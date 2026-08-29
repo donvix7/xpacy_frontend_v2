@@ -64,11 +64,9 @@ const summaryCards = [
             <DashboardGridItem title="Blogs Summary">
             <SummaryCards cards={summaryCards} />
             </DashboardGridItem>
-
-            <div className="mt-8 bg-gray-50/50 rounded-2xl border border-gray-100">
-                <BlogFilter categories={categories} />
+            <DashboardGridItem title="Blogs List">
                 <AdminBlogsList blogs={blogs} filter={category} search={search} />
+            </DashboardGridItem>
             </div>
-        </div>
     );
 }

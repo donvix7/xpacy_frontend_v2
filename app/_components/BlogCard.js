@@ -19,7 +19,7 @@ export default function BlogCard({ blog, isAdmin = false }) {
     : "Unknown Date";
 
   return (
-    <div className="relative bg-white flex flex-col w-full group rounded-2xl md:rounded-[24px] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-500 border border-gray-100/80 overflow-hidden shadow-sm md:shadow-none">
+    <div className="relative bg-white flex flex-col w-full group rounded-2xl md:rounded-[24px] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-500 border border-primary-200 overflow-hidden">
       {isAdmin && (
         <div className="absolute top-3 right-3 md:top-4 md:right-4 z-30">
           <div className="bg-white/95 backdrop-blur-md rounded-full shadow-lg p-0.5 hover:bg-white transition-all transform hover:scale-105 border border-gray-100/50">

@@ -6,7 +6,7 @@ import PaymentsSummary from "./PaymentsSummary";
 import { checkDateInRange } from "@/app/_lib/utils";
 import DashboardGridItem from "./DashboardGridItems";
 
-export default function PaymentsOverviewWrapper({ bookings = [], invoices = [], showFilters = true }) {
+export default function  PaymentsOverviewWrapper({ bookings = [], invoices = [], showFilters = true }) {
     const [filterRange, setFilterRange] = useState("all_time");
 
     const filteredBookings = useMemo(() => {

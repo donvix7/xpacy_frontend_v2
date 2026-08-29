@@ -5,7 +5,7 @@ const statusBg = {
     "rented": "bg-[#C3E5C4] text-[#357B38] ",
     "active": "bg-[#C3E5C4] text-[#357B38] ",
     "draft": "bg-gray-200 text-gray-700",
-    "pending": "bg-[#FEE2E2] text-[#EF4444]", // Red/Pink
+    "pending": "bg-amber-100 text-amber-700",
     "verified": "bg-[#C3E5C4] text-[#357B38]",
     "n/a": "bg-gray-100 text-gray-500",
     
@@ -23,6 +23,6 @@ const statusBg = {
 
 export default function StatusChips({status}) {
     return (  
-            <span className={`${statusBg[status.toLowerCase()] || ""} px-1.5 py-1 flex items-center justify-center rounded-full  text-sm font-bold font-mono`}>{status}</span>
+            <span className={`${statusBg[status.toLowerCase()] || ""} px-4 py-1 flex items-center justify-center rounded-full  text-sm font-bold font-mono`}>{status}</span>
     )
 }

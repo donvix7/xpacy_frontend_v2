@@ -38,7 +38,7 @@ export default function BlogFilter({ categories = [] }) {
                     defaultValue={currentSearch}
                     placeholder="Search by title..."
                     onChange={(e) => updateSearchParams("search", e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl leading-5 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm transition-all shadow-sm"
+                    className="block w-1/2 pl-10 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl leading-5 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm transition-all"
                 />
                 {isPending && (
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -48,14 +48,12 @@ export default function BlogFilter({ categories = [] }) {
             </div>
 
             {/* Category Filter */}
-            <div className="relative w-full md:w-64">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FilterIcon className="h-5 w-5 text-gray-400" />
-                </div>
+            <div className="relative w-full md:w-64 flex gap-4 items-center">
+                    <FilterIcon className="h-5 w-5  text-gray-400" />
                 <select
                     value={currentCategory}
                     onChange={(e) => updateSearchParams("category", e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl leading-5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm transition-all shadow-sm appearance-none"
+                    className="block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl leading-5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm transition-all appearance-none"
                 >
                     <option value="all">All Categories</option>
                     {categories.map((cat) => (
@@ -64,9 +62,6 @@ export default function BlogFilter({ categories = [] }) {
                         </option>
                     ))}
                 </select>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <div className="h-4 w-4 border-l border-b border-gray-400 -rotate-45 mb-1"></div>
-                </div>
             </div>
 
             {/* Clear Filters */}
