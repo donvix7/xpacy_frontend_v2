@@ -63,9 +63,7 @@ const summaryCards = [
                 <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Tenants</h1>
 
             </div>
-            <DashboardGridItem title={"Tenants Overview"}>
-                <SummaryCards cards={summaryCards} />
-            </DashboardGridItem>
+            <SummaryCards cards={summaryCards} title="Tenants Overview" />
 
             <DashboardGridItem title="Tenant Directory">
                 {rentedProperties.length === 0 ? (

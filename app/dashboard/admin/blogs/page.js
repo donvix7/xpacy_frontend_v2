@@ -61,9 +61,7 @@ const summaryCards = [
                     <span className="hidden sm:inline">Create New Blog</span>
                 </Link>
             </div>
-            <DashboardGridItem title="Blogs Summary">
-            <SummaryCards cards={summaryCards} />
-            </DashboardGridItem>
+            <SummaryCards cards={summaryCards} title="Blogs Summary" />
             <DashboardGridItem title="Blogs List">
                 <AdminBlogsList blogs={blogs} filter={category} search={search} />
             </DashboardGridItem>

@@ -67,7 +67,7 @@ export default function PaymentsSummary({ invoices = [], showHeading = true }) {
                       </div>
       
                       {/* Grid Items */}
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 md:gap-4">
+                     <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 md:gap-4">
                         {summaryItems.map((item, index) => (
                             <div key={index} className="bg-white rounded-xl border border-primary-200 p-4 md:p-6 duration-300 flex items-center justify-between transition-shadow min-w-[160px]">
                                 <div className="flex flex-col gap-1 md:gap-2 min-w-0 flex-1">

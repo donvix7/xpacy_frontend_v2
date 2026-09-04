@@ -83,10 +83,7 @@ const summaryCards = [
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">
                 Welcome {profile?.first_name || profile?.firstname || profile?.name || profile?.full_name || "Manager"},
             </h1>
-            <DashboardGridItem title="Overview">
-
-            <SummaryCards cards={summaryCards} />
-            </DashboardGridItem>
+            <SummaryCards cards={summaryCards} title="Overview" />
 
             <div className="flex flex-col gap-8">
                 <DashboardGridItem title="Recent Properties" viewAllLink="/dashboard/facility-manager/properties">

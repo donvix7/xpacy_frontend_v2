@@ -9,12 +9,19 @@ import {
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import PropertiesPieChart from "@/app/_components/PropertiesPieChart";
+import PropertyStatusChart from "@/app/_components/PropertyStatusChart";
 import ServiceGrowthChart from "@/app/_components/ServiceGrowthChart";
 import RevenueOverviewChart from "@/app/_components/RevenueOverviewChart";
 import ServicesByTypeChart from "@/app/_components/ServicesByTypeChart";
+import ServiceStatusChart from "@/app/_components/ServiceStatusChart";
+import BookingsStatusChart from "@/app/_components/BookingsStatusChart";
+import BookingsTrendChart from "@/app/_components/BookingsTrendChart";
+import InvoiceStatusChart from "@/app/_components/InvoiceStatusChart";
 import ExportButton from "@/app/_components/ExportButton";
 import { MdWarning } from "react-icons/md";
 import { FaBuilding, FaChartPie, FaFileContract, FaMoneyBillWave } from "react-icons/fa6";
+
+const chartBox = "bg-white p-6 rounded-lg border border-primary-100 shadow-sm min-h-[350px]";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -88,7 +95,6 @@ const summaryCards = [
             <div className="flex items-center justify-between mb-8">
                 <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Reports & Analytics</h1>
                 <div className="flex gap-2">
-                   
                     <ExportButton
                         data={myServices}
                         filename="services_report"
@@ -100,41 +106,73 @@ const summaryCards = [
                 </div>
             </div>
 
-            <DashboardGridItem title={"Report Overview"}>
-                <SummaryCards cards={summaryCards} />
-            </DashboardGridItem>
+            <SummaryCards cards={summaryCards} title="Report Overview" />
 
-            <div className="flex flex-col gap-10">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <DashboardGridItem title="Properties Distribution">
-                        <div className="bg-white p-6 rounded-lg border border-primary-100 shadow-sm flex items-center justify-center min-h-[350px]">
-                            <PropertiesPieChart properties={properties} />
-                        </div>
-                    </DashboardGridItem>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <DashboardGridItem title="Properties Distribution">
+                    <div className={`${chartBox} flex items-center justify-center`}>
+                        <PropertiesPieChart properties={properties} />
+                    </div>
+                </DashboardGridItem>
 
-                    <DashboardGridItem title="Service Requests by Category">
-                        <div className="bg-white p-6 rounded-lg border border-primary-100 shadow-sm flex items-center justify-center min-h-[350px]">
-                            <ServicesByTypeChart services={myServices} />
-                        </div>
-                    </DashboardGridItem>
-                </div>
+                <DashboardGridItem title="Property Status Distribution">
+                    <div className={chartBox}>
+                        <PropertyStatusChart properties={properties} />
+                    </div>
+                </DashboardGridItem>
+            </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <DashboardGridItem title="Service Request Growth (by Month)">
-                        <div className="bg-white p-6 rounded-lg border border-primary-100 shadow-sm min-h-[350px]">
-                            <ServiceGrowthChart services={myServices} />
-                        </div>
-                    </DashboardGridItem>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <DashboardGridItem title="Service Requests by Category">
+                    <div className={chartBox}>
+                        <ServicesByTypeChart services={myServices} />
+                    </div>
+                </DashboardGridItem>
 
-                    <DashboardGridItem title="Monthly Revenue Overview">
-                        <div className="bg-white p-6 rounded-lg border border-primary-100 shadow-sm min-h-[350px]">
-                            <RevenueOverviewChart payments={myInvoices} />
-                        </div>
-                    </DashboardGridItem>
-                </div>
+                <DashboardGridItem title="Service Status Breakdown">
+                    <div className={chartBox}>
+                        <ServiceStatusChart services={myServices} />
+                    </div>
+                </DashboardGridItem>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <DashboardGridItem title="Service Request Growth (by Month)">
+                    <div className={chartBox}>
+                        <ServiceGrowthChart services={myServices} />
+                    </div>
+                </DashboardGridItem>
+
+                <DashboardGridItem title="Bookings Trend (by Month)">
+                    <div className={chartBox}>
+                        <BookingsTrendChart bookings={myBookings} />
+                    </div>
+                </DashboardGridItem>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <DashboardGridItem title="Bookings Status">
+                    <div className={chartBox}>
+                        <BookingsStatusChart bookings={myBookings} />
+                    </div>
+                </DashboardGridItem>
+
+                <DashboardGridItem title="Revenue by Status">
+                    <div className={chartBox}>
+                        <InvoiceStatusChart invoices={myInvoices} currency />
+                    </div>
+                </DashboardGridItem>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <DashboardGridItem title="Monthly Revenue Overview">
+                    <div className={chartBox}>
+                        <RevenueOverviewChart payments={myInvoices} />
+                    </div>
+                </DashboardGridItem>
 
                 <DashboardGridItem title="Monthly Report Summary">
-                    <div className="bg-white p-6 rounded-lg border border-primary-100 shadow-sm">
+                    <div className="bg-white p-6 rounded-lg border border-primary-100 shadow-sm h-full">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="text-center p-4 border border-primary-100 rounded-lg">
                                 <p className="text-sm text-gray-500 mb-1">Properties Managed</p>

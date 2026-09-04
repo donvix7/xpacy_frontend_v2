@@ -605,7 +605,11 @@ export async function getPropertyOwnerServices(token) {
       },
     });
     if (!response.ok) {
-        console.error("Failed to fetch property owner services:", response.status, response.statusText);
+        if (response.status === 404) {
+            console.warn("Property owner services endpoint not found (404). Returning empty list.");
+        } else {
+            console.error("Failed to fetch property owner services:", response.status, response.statusText);
+        }
         return [];
     }
     const { data } = await response.json();
@@ -630,7 +634,11 @@ export async function getPropertyOwnerInvoices(token) {
       },
     });
     if (!response.ok) {
-        console.error("Failed to fetch property owner invoices:", response.status, response.statusText);
+        if (response.status === 404) {
+            console.warn("Property owner invoices endpoint not found (404). Returning empty list.");
+        } else {
+            console.error("Failed to fetch property owner invoices:", response.status, response.statusText);
+        }
         return [];
     }
     const { data } = await response.json();
@@ -655,7 +663,11 @@ export async function getPropertyOwnerNotifications(token) {
       },
     });
     if (!response.ok) {
-        console.error("Failed to fetch property owner notifications:", response.status, response.statusText);
+        if (response.status === 404) {
+            console.warn("Property owner notifications endpoint not found (404). Returning empty list.");
+        } else {
+            console.error("Failed to fetch property owner notifications:", response.status, response.statusText);
+        }
         return [];
     }
     const { data } = await response.json();

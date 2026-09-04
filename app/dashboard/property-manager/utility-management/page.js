@@ -54,9 +54,7 @@ const summaryCards = [
     return (
         <div className="space-y-6 p-6">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Utility Management</h1>
-            <DashboardGridItem title={"Utility Overview"}>
-                <SummaryCards cards={summaryCards} />
-            </DashboardGridItem>
+            <SummaryCards cards={summaryCards} title="Utility Overview" />
 
             <DashboardGridItem title="Utility Overview">
                 <EmptyState message="Utility management is coming soon. You will be able to track meter readings, utility usage, and billing for managed properties." />

@@ -7,6 +7,7 @@ import NotificationsSummary from "@/app/_components/NotificationsSummary";
 import PropertiesTableList from "@/app/_components/PropertiesTableList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
+import { AlertCircle, Building2, CalendarDays, DollarSign, TrendingUp } from "lucide-react";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -35,36 +36,52 @@ export default async function Page() {
     const myInvoices = Array.isArray(invoices) ? invoices : [];
 
     const occupiedCount = properties.filter(p => (p.availability_status || "").toLowerCase() === "occupied").length;
-    const vacantCount = properties.filter(p => ["vacant", "available", "active"].includes((p.availability_status || "").toLowerCase())).length;
     const occupancyRate = properties.length > 0 ? Math.round((occupiedCount / properties.length) * 100) : 0;
 
-    const totalRevenue = myInvoices.reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
     const paidInvoices = myInvoices.filter(inv => (inv.status || "").toLowerCase() === "paid");
     const pendingInvoices = myInvoices.filter(inv => (inv.status || "").toLowerCase() === "pending");
     const collected = paidInvoices.reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
     const outstanding = pendingInvoices.reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
 
-    const maintenanceServices = myServices.filter(s =>
-        ["maintenance", "repair", "plumbing", "electrical", "cleaning", "hvac", "painting", "general"].includes(
-            (s.service_type || s.category || "").toLowerCase()
-        )
-    );
-    const maintenanceCost = maintenanceServices.reduce((sum, s) => sum + (parseFloat(s.cost || s.amount) || 0), 0);
-
     const today = new Date().toISOString().split("T")[0];
     const todayRevenue = myInvoices.filter(inv => (inv.created_at || "").startsWith(today)).reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
 
     const summaryCards = [
-        { label: "Total Properties", value: properties.length, color: "bg-primary-700", icon: <span className="text-white text-lg font-bold">{properties.length}</span> },
-        { label: "Occupancy Rate", value: `${occupancyRate}%`, color: "bg-[#73A0BE]", icon: <span className="text-white text-lg font-bold">{occupancyRate}</span> },
-        { label: "Today's Revenue", value: `$${todayRevenue.toLocaleString()}`, color: "bg-[#C7D9E5]", icon: <span className="text-white text-lg font-bold">$</span> },
-        { label: "Monthly Revenue", value: `$${collected.toLocaleString()}`, color: "bg-[#FBC0BC]", icon: <span className="text-white text-lg font-bold">$</span> },
-        { label: "Outstanding", value: `$${outstanding.toLocaleString()}`, color: "bg-red-100", icon: <span className="text-red-600 text-lg font-bold">$</span> },
+        {
+            label: "Total Properties",
+            value: properties.length,
+            icon: <Building2 className="text-primary-700" size={20} />,
+            color: "bg-primary-100"
+        },
+        {
+            label: "Occupancy Rate",
+            value: `${occupancyRate}%`,
+            icon: <TrendingUp className="text-slate-700" size={20} />,
+            color: "bg-slate-100"
+        },
+        {
+            label: "Today's Revenue",
+            value: `$${todayRevenue.toLocaleString()}`,
+            icon: <DollarSign className="text-green-700" size={20} />,
+            color: "bg-green-100"
+        },
+        {
+            label: "Monthly Revenue",
+            value: `$${collected.toLocaleString()}`,
+            icon: <CalendarDays className="text-amber-700" size={20} />,
+            color: "bg-amber-100"
+        },
+        {
+            label: "Outstanding",
+            value: `$${outstanding.toLocaleString()}`,
+            icon: <AlertCircle className="text-red-600" size={20} />,
+            color: "bg-red-100"
+        }
     ];
 
     return (
-        <div className="space-y-8 p-4">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">
+        <div className="space-y-8 p-6">
+            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">
                 Welcome {profile?.first_name || profile?.firstname || profile?.name || profile?.full_name || "Owner"},
             </h1>
 

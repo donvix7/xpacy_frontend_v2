@@ -1,4 +1,6 @@
 
+import { parse } from "date-fns";
+
 export const URL = process.env.BACKEND_URL;
 export const formatCurrency = (value) =>
   new Intl.NumberFormat("en-NG", {
@@ -7,6 +9,26 @@ export const formatCurrency = (value) =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+
+export const getBookingReason = (booking = {}) =>
+  booking?.bookingReason || booking?.booking_reason || booking?.reason || booking?.purpose || "";
+
+export const isInspectionBooking = (booking = {}) => {
+  const reason = getBookingReason(booking)?.toLowerCase() || "";
+  if (reason.includes("inspection")) return true;
+  return Boolean(
+    booking?.start_date &&
+      booking?.end_date &&
+      booking.start_date === booking.end_date &&
+      !reason
+  );
+};
+
+export const parseBookingDate = (value) => {
+  if (!value) return null;
+  const parsed = parse(value, "dd-MM-yyyy", new Date());
+  return isNaN(parsed) ? (isNaN(new Date(value)) ? null : new Date(value)) : parsed;
+};
 
 
 export const progress = (

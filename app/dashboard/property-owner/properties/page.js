@@ -1,14 +1,11 @@
 import { cookies } from "next/headers";
-import Link from "next/link";
 import PropertiesTableList from "@/app/_components/PropertiesTableList";
-import PropertiesOverviewWrapper from "@/app/_components/PropertiesOverviewWrapper";
-import { getPropertyOwnerBookings, getProperties, getUserProfile, getPropertyOwnerServices, getPropertyOwnerProperties } from "@/app/_lib/data-services";
+import { getPropertyOwnerProperties } from "@/app/_lib/data-services";
 import PropertiesSummary from "@/app/_components/PropertiesSummary";
-import { MdAdd } from "react-icons/md";
-import SearchInput from "@/app/_components/SearchInput";
 import ExportButton from "@/app/_components/ExportButton";
 import DateFilter from "@/app/_components/DateFilter";
 import { checkDateInRange } from "@/app/_lib/utils";
+import DashboardGridItem from "@/app/_components/DashboardGridItems";
 
 export default async function Page({searchParams}) {
     const cookieStore = await cookies();
@@ -17,11 +14,8 @@ export default async function Page({searchParams}) {
     const filterRange = params?.range;
 
     // Fetch data - explicitly query full unpaginated list
-    const [[allPropertiesForSummary], bookings, services] = await Promise.all([
-        getPropertyOwnerProperties(token, { limit: 10000 }),
-        getPropertyOwnerBookings(token),
-        getPropertyOwnerServices(token)
-    ]);
+    const propertiesData = await getPropertyOwnerProperties(token, { limit: 10000 });
+    const allPropertiesForSummary = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
 
     let propertiesList = allPropertiesForSummary || [];
 
@@ -71,23 +65,28 @@ export default async function Page({searchParams}) {
     };
 
     return (
-        <div className="space-y-6 p-4">
-            <div className="flex justify-end gap-2">
-                <DateFilter />
-                <ExportButton 
-                    data={propertiesList} 
-                    filename="property_summary" 
-                    options={[
-                        { id: "all", label: "All data" },
-                        { id: "summary", label: "Summary" },
-                        { id: "overview", label: "properties overview" }
-                    ]}
-                />
+        <div className="space-y-8 p-6">
+            <div className="flex justify-between items-center gap-2">
+                <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Properties</h1>
+                <div className="flex items-center gap-2">
+                    <DateFilter />
+                    <ExportButton 
+                        data={propertiesList} 
+                        filename="property_summary" 
+                        options={[
+                            { id: "all", label: "All data" },
+                            { id: "summary", label: "Summary" },
+                            { id: "overview", label: "properties overview" }
+                        ]}
+                    />
+                </div>
             </div>
-            <PropertiesSummary properties={allPropertiesForSummary || []} />
-           
-            <PropertiesTableList properties={paginatedProperties} />
-            
+            <DashboardGridItem title="Property Summary">
+                <PropertiesSummary properties={allPropertiesForSummary || []} />
+            </DashboardGridItem>
+            <DashboardGridItem title="Property List">
+                <PropertiesTableList properties={paginatedProperties} pagination={pagination} />
+            </DashboardGridItem>
         </div>
     );
 };

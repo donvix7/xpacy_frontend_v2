@@ -7,6 +7,8 @@ import {
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
+import { FaCheckCircle, FaTools } from "react-icons/fa";
+import { FaBuilding, FaUsers } from "react-icons/fa6";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -36,16 +38,40 @@ export default async function Page() {
         return acc;
     }, []);
 
-    const summaryCards = [
-        { label: "Total Services", value: myServices.length, color: "bg-primary-700", icon: <span className="text-white text-lg font-bold">{myServices.length}</span> },
-        { label: "Active Vendors", value: uniqueVendors.length, color: "bg-[#73A0BE]", icon: <span className="text-white text-lg font-bold">{uniqueVendors.length}</span> },
-        { label: "Properties", value: properties.length, color: "bg-[#C7D9E5]", icon: <span className="text-white text-lg font-bold">{properties.length}</span> },
-        { label: "Completed Jobs", value: myServices.filter(s => (s.status || "").toLowerCase() === "completed").length, color: "bg-[#FBC0BC]", icon: <span className="text-white text-lg font-bold">{myServices.filter(s => (s.status || "").toLowerCase() === "completed").length}</span> },
-    ];
+const summaryCards = [
+    {
+        title: "Total Services",
+        count: myServices.length,
+        icon: <FaTools className="text-blue-700" size={20} />,
+        color: "bg-blue-100 border-blue-700",
+        bgColor: "bg-blue-100"
+    },
+    {
+        title: "Active Vendors",
+        count: uniqueVendors.length,
+        icon: <FaUsers className="text-amber-700" size={20} />,
+        color: "bg-amber-100 border-amber-700",
+        bgColor: "bg-amber-100"
+    },
+    {
+        title: "Properties",
+        count: properties.length,
+        icon: <FaBuilding className="text-purple-700" size={20} />,
+        color: "bg-purple-100 border-purple-700",
+        bgColor: "bg-purple-100"
+    },
+    {
+        title: "Completed Jobs",
+        count: myServices.filter(s => (s.status || "").toLowerCase() === "completed").length,
+        icon: <FaCheckCircle className="text-green-700" size={20} />,
+        color: "bg-green-100 border-green-700",
+        bgColor: "bg-green-100"
+    }
+];
 
     return (
-        <div className="space-y-6 p-6">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Vendors</h1>
+        <div className="space-y-8 p-6">
+            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Vendors</h1>
 
             <SummaryCards cards={summaryCards} />
 

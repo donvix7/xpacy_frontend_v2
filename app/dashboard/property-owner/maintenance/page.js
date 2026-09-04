@@ -7,6 +7,9 @@ import {
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
+import { FaCheckCircle } from "react-icons/fa";
+import { FaClipboardList, FaClock, FaSpinner } from "react-icons/fa6";
+import { PiSpinner } from "react-icons/pi";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -35,16 +38,42 @@ export default async function Page() {
     const inProgressMaintenance = maintenanceServices.filter(s => (s.status || "").toLowerCase() === "in-progress");
     const completedMaintenance = maintenanceServices.filter(s => (s.status || "").toLowerCase() === "completed");
 
-    const summaryCards = [
-        { label: "Total Requests", value: maintenanceServices.length, color: "bg-primary-700", icon: <span className="text-white text-lg font-bold">{maintenanceServices.length}</span> },
-        { label: "Pending", value: pendingMaintenance.length, color: "bg-[#C7D9E5]", icon: <span className="text-white text-lg font-bold">{pendingMaintenance.length}</span> },
-        { label: "In Progress", value: inProgressMaintenance.length, color: "bg-[#73A0BE]", icon: <span className="text-white text-lg font-bold">{inProgressMaintenance.length}</span> },
-        { label: "Completed", value: completedMaintenance.length, color: "bg-[#FBC0BC]", icon: <span className="text-white text-lg font-bold">{completedMaintenance.length}</span> },
-    ];
+  
+const summaryCards = [
+    {
+        title: "Total Requests",
+        count: maintenanceServices.length,
+        icon: <FaClipboardList className="text-blue-700" size={20} />,
+        color: "bg-blue-100 border-blue-700",
+        bgColor: "bg-blue-100"
+    },
+    {
+        title: "Pending",
+        count: pendingMaintenance.length,
+        icon: <FaClock className="text-amber-700" size={20} />,
+        color: "bg-amber-100 border-amber-700",
+        bgColor: "bg-amber-100"
+    },
+    {
+        title: "In Progress",
+        count: inProgressMaintenance.length,
+        icon: <PiSpinner className="text-blue-700" size={20} animate-spin />,
+        color: "bg-blue-100 border-blue-700",
+        bgColor: "bg-blue-100"
+    },
+    {
+        title: "Completed",
+        count: completedMaintenance.length,
+        icon: <FaCheckCircle className="text-green-700" size={20} />,
+        color: "bg-green-100 border-green-700",
+        bgColor: "bg-green-100"
+    }
+];
+
 
     return (
-        <div className="space-y-6 p-6">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Maintenance</h1>
+        <div className="space-y-8 p-6">
+            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Maintenance</h1>
 
             <SummaryCards cards={summaryCards} />
 

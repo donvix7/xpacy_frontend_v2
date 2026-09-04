@@ -7,6 +7,7 @@ import {
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
+import { FaBuilding, FaClock, FaDollarSign, FaFileInvoice } from "react-icons/fa6";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -33,16 +34,41 @@ export default async function Page() {
     const totalCollected = paidRent.reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
     const totalPending = pendingRent.reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
 
+  
     const summaryCards = [
-        { label: "Rent Properties", value: rentProperties.length, color: "bg-primary-700", icon: <span className="text-white text-lg font-bold">{rentProperties.length}</span> },
-        { label: "Collected", value: `$${totalCollected.toLocaleString()}`, color: "bg-[#73A0BE]", icon: <span className="text-white text-lg font-bold">$</span> },
-        { label: "Pending", value: `$${totalPending.toLocaleString()}`, color: "bg-[#C7D9E5]", icon: <span className="text-white text-lg font-bold">$</span> },
-        { label: "Total Invoices", value: rentInvoices.length, color: "bg-[#FBC0BC]", icon: <span className="text-white text-lg font-bold">{rentInvoices.length}</span> },
-    ];
+        {
+            title: "Rent Properties",
+            count: rentProperties.length,
+            icon: <FaBuilding className="text-blue-700" size={20} />,
+            color: "bg-blue-100 border-blue-800",
+            bgColor: "bg-blue-100"
+        },
+        {
+            title: "Collected",
+        count: `$${totalCollected.toLocaleString()}`,
+        icon: <FaDollarSign className="text-green-700" size={20} />,
+        color: "bg-green-100 border-green-800",
+        bgColor: "bg-green-100"
+    },
+    {
+        title: "Pending",
+        count: `$${totalPending.toLocaleString()}`,
+        icon: <FaClock className="text-amber-700" size={20} />,
+        color: "bg-amber-100 border-amber-800",
+        bgColor: "bg-amber-100"
+    },
+    {
+        title: "Total Invoices",
+        count: rentInvoices.length,
+        icon: <FaFileInvoice className="text-pink-700" size={20} />,
+        color: "bg-pink-100 border-pink-800",
+        bgColor: "bg-pink-100"
+    }
+];
 
     return (
-        <div className="space-y-6 p-6">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Rents</h1>
+        <div className="space-y-8 p-6">
+            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Rents</h1>
 
             <SummaryCards cards={summaryCards} />
 

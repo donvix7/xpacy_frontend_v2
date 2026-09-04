@@ -63,9 +63,7 @@ const summaryCards = [
     return (
         <div className="space-y-6 p-6">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Leases</h1>
-            <DashboardGridItem title={"Lease Overview"}> 
-                <SummaryCards cards={summaryCards} />
-            </DashboardGridItem>
+            <SummaryCards cards={summaryCards} title="Lease Overview" />
 
             <DashboardGridItem title="Lease Agreements">
                 {myBookings.length === 0 ? (

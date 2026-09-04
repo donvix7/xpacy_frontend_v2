@@ -1,29 +1,29 @@
-export default function SummaryCards({ cards = [] }) {
+export default function SummaryCards({ cards = [], title = "Summary" }) {
     if (cards.length === 0) return null;
 
-    const gridCols = cards.length <= 4
-        ? "lg:grid-cols-4"
-        : cards.length === 5
-            ? "lg:grid-cols-5"
-            : cards.length === 8
-                ? "lg:grid-cols-4"
-                : "lg:grid-cols-3";
+    const gridCols =
+        cards.length <= 4 ? "lg:grid-cols-4" : cards.length === 6 ? "lg:grid-cols-3" : "lg:grid-cols-5";
 
     return (
-        <div className={`grid grid-cols-1 md:grid-cols-2 ${gridCols} gap-4`}>
-            {cards.map((card, i) => (
-                <div key={i} className="bg-white rounded-xl border border-primary-200 p-6 flex justify-between ">
-                    <div className="flex flex-col justify-between">
-                        <p className="text-gray-600 text-sm capitalize">{card.label}</p>
-                        <p className="text-2xl font-bold mt-1">{card.value}</p>
-                    </div>
-                    {card.icon && (
-                        <div className={`min-w-12 h-12 rounded-full flex items-center justify-center ${card.textColor} ${card.color || "bg-primary-700"}`}>
-                            {card.icon}
+        <div className="border-[1.5px] border-primary-200 p-6 rounded-lg flex flex-col gap-4">
+            {title && (
+                <h3 className="lg:text-md text-black text-base font-sans">{title}</h3>
+            )}
+            <div className={`grid grid-cols-1 md:grid-cols-2 ${gridCols} gap-4`}>
+                {cards.map((item, index) => (
+                    <div key={index} className="bg-white rounded-xl border border-primary-200 p-6 duration-300 flex justify-between">
+                        <div className="flex flex-col gap-2">
+                            <p className="text-gray-600 text-sm capitalize">{item.title || item.label}</p>
+                            <p className="text-2xl font-bold mt-1">{item.count ?? item.value}</p>
                         </div>
-                    )}
-                </div>
-            ))}
+                        {item.icon && (
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4 ${item.color}`}>
+                                {item.icon}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

@@ -6,6 +6,8 @@ import {
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
+import { FaBuilding, FaUserShield } from "react-icons/fa6";
+import { FaExclamationTriangle, FaShieldAlt } from "react-icons/fa";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -22,16 +24,41 @@ export default async function Page() {
     const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
     const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
 
-    const summaryCards = [
-        { label: "Total Properties", value: properties.length, color: "bg-primary-700", icon: <span className="text-white text-lg font-bold">{properties.length}</span> },
-        { label: "Secured", value: properties.length, color: "bg-[#73A0BE]", icon: <span className="text-white text-lg font-bold">{properties.length}</span> },
-        { label: "Incidents", value: 0, color: "bg-[#C7D9E5]", icon: <span className="text-white text-lg font-bold">0</span> },
-        { label: "Active Guards", value: 0, color: "bg-[#FBC0BC]", icon: <span className="text-white text-lg font-bold">0</span> },
-    ];
+   
+const summaryCards = [
+    {
+        title: "Total Properties",
+        count: properties.length,
+        icon: <FaBuilding className="text-blue-700" size={20} />,
+        color: "bg-blue-100 border-blue-800",
+        bgColor: "bg-blue-100"
+    },
+    {
+        title: "Secured",
+        count: properties.length,
+        icon: <FaShieldAlt className="text-green-700" size={20} />,
+        color: "bg-green-100 border-green-800",
+        bgColor: "bg-green-100"
+    },
+    {
+        title: "Incidents",
+        count: 0,
+        icon: <FaExclamationTriangle className="text-red-700" size={20} />,
+        color: "bg-red-100 border-red-800",
+        bgColor: "bg-red-100"
+    },
+    {
+        title: "Active Guards",
+        count: 0,
+        icon: <FaUserShield className="text-purple-700" size={20} />,
+        color: "bg-purple-100 border-purple-800",
+        bgColor: "bg-purple-100"
+    }
+];
 
     return (
-        <div className="space-y-6 p-6">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Security</h1>
+        <div className="space-y-8 p-6">
+            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Security</h1>
 
             <SummaryCards cards={summaryCards} />
 

@@ -93,9 +93,7 @@ const summaryCards = [
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">
                 Welcome {profile?.username?.split(" ")[0] || "Admin"},
             </h1>
-            <DashboardGridItem title="Summary" >
             <SummaryCards cards={summaryCards} />
-            </DashboardGridItem>
 
             <div className="flex flex-col gap-12">
                 <DashboardGridItem title="Notifications">

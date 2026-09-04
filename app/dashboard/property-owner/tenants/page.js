@@ -6,6 +6,7 @@ import {
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
+import { Building2, DoorOpen, Home, Users } from "lucide-react";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -25,16 +26,41 @@ export default async function Page() {
     const rentedProperties = properties.filter(p => (p.property_status || p.purpose || "").toLowerCase() === "rent");
     const vacantProperties = properties.filter(p => ["vacant", "available", "active"].includes((p.availability_status || "").toLowerCase()));
 
-    const summaryCards = [
-        { label: "Total Tenants", value: rentedProperties.length, color: "bg-primary-700", icon: <span className="text-white text-lg font-bold">{rentedProperties.length}</span> },
-        { label: "Occupied Units", value: rentedProperties.length, color: "bg-[#73A0BE]", icon: <span className="text-white text-lg font-bold">{rentedProperties.length}</span> },
-        { label: "Vacant Units", value: vacantProperties.length, color: "bg-[#C7D9E5]", icon: <span className="text-white text-lg font-bold">{vacantProperties.length}</span> },
-        { label: "Total Properties", value: properties.length, color: "bg-[#FBC0BC]", icon: <span className="text-white text-lg font-bold">{properties.length}</span> },
-    ];
+  
+const summaryCards = [
+    {
+        title: "Total Tenants",
+        count: rentedProperties.length,
+        icon: <Users className="text-blue-700" size={20} />,
+        color: "bg-blue-100 border-blue-700",
+        bgColor: "bg-blue-100"
+    },
+    {
+        title: "Occupied Units",
+        count: rentedProperties.length,
+        icon: <Home className="text-green-700" size={20} />,
+        color: "bg-green-100 border-green-700",
+        bgColor: "bg-green-100"
+    },
+    {
+        title: "Vacant Units",
+        count: vacantProperties.length,
+        icon: <DoorOpen className="text-amber-700" size={20} />,
+        color: "bg-amber-100 border-amber-700",
+        bgColor: "bg-amber-100"
+    },
+    {
+        title: "Total Properties",
+        count: properties.length,
+        icon: <Building2 className="text-violet-700" size={20} />,
+        color: "bg-violet-100 border-violet-700",
+        bgColor: "bg-violet-100"
+    }
+];
 
     return (
-        <div className="space-y-6 p-6">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Tenants</h1>
+        <div className="space-y-8 p-6">
+            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Tenants</h1>
 
             <SummaryCards cards={summaryCards} />
 

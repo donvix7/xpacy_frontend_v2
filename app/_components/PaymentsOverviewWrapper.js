@@ -20,7 +20,7 @@ export default function  PaymentsOverviewWrapper({ bookings = [], invoices = [],
     return (
         <div className="flex flex-col gap-4">
             
-            <DashboardGridItem >
+             <DashboardGridItem title={"Bookings Overview"}>
             <PaymentsSummary invoices={filteredBookings} showHeading={showFilters} />
             </DashboardGridItem>
         </div>

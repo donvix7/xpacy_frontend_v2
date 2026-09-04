@@ -105,9 +105,7 @@ const summaryCards = [
     return (
         <div className="p-6 space-y-6">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-2">User Management</h1>
-            <DashboardGridItem title="User Summary">
-            <SummaryCards cards={summaryCards} />
-            </DashboardGridItem>
+            <SummaryCards cards={summaryCards} title="User Summary" />
             <DashboardGridItem title="All Users List">
 
                 <AdminUsersList users={usersList} title="All Users List" variant="tenant" />

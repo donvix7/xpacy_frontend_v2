@@ -56,9 +56,7 @@ const summaryCards = [
         <div className="space-y-6 p-6">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Community Forum</h1>
 
-            <DashboardGridItem title={"Overview"}>
-            <SummaryCards cards={summaryCards} />
-            </DashboardGridItem>
+            <SummaryCards cards={summaryCards} title="Overview" />
 
             <DashboardGridItem title="Community Discussions">
                 <EmptyState message="Community forum is coming soon. You will be able to create topics, make announcements, and engage with tenants in your managed properties." />
