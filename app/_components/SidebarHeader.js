@@ -34,6 +34,14 @@ export default function SidebarHeader({ role = "user" }) {
                 {role === "property-owner" && (
                     <>
                         <Link href="/book-service" className="p-4 rounded-lg bg-white border border-primary hidden lg:flex items-center justify-center text-primary font-mono font-bold">New Service Request</Link>
+                        <Link href="/property-owner/invite-manager" className="px-4 py-2 lg:p-4 rounded-lg bg-primary flex items-center justify-center text-white font-mono font-bold lg:text-base whitespace-nowrap">Invite Manager</Link>
+                        <div className="w-0.5 h-10 bg-gray-300 hidden lg:block"></div>
+                    </>
+                )}
+                   {role === "property-manager" && (
+                    <>
+                        <Link href="/book-service" className="p-4 rounded-lg bg-white border border-primary hidden lg:flex items-center justify-center text-primary font-mono font-bold">New Service Request</Link>
+                        <Link href="/property-manager/invite-staff" className="px-4 py-2 lg:p-4 rounded-lg bg-primary flex items-center justify-center text-white font-mono font-bold lg:text-base whitespace-nowrap">Invite staff</Link>
                         <div className="w-0.5 h-10 bg-gray-300 hidden lg:block"></div>
                     </>
                 )}

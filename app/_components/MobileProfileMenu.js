@@ -7,9 +7,14 @@ import { RiUserSettingsLine } from "react-icons/ri";
 import { TbLogout2 } from "react-icons/tb";
 import { handleLogOut } from "../_lib/action";
 import FilterMenu from "./FilterMenu";
+import { usePathname } from "next/navigation";
 
 
 export default function MobileProfileMenu({ profile, role="user" }) {
+    const pathname = usePathname();
+    const profileSettingsHref = pathname?.includes("/dashboard/property-owner")
+        ? "/dashboard/property-owner/profile-settings"
+        : "/dashboard/user/profile-settings";
 
     return (
         <FilterMenu>
@@ -36,7 +41,8 @@ export default function MobileProfileMenu({ profile, role="user" }) {
                     </Link>
                     <div className="border border-primary-200"></div>
                     {/* Profile settings */}
-                    <Link href={typeof window !== 'undefined' && window.location.pathname.includes("/dashboard/property-owner") ? "/dashboard/property-owner/profile-settings" : "/dashboard/user/profile-settings"} className="p-1  flex items-center gap-4 text-gray-500 font-mono hover:text-gray-800 ">
+                    <Link href={profileSettingsHref} className="p-1  flex items-center gap-4 text-gray-500 font-mono hover:text-gray-800 ">
+
                         <span className="text-lg"><RiUserSettingsLine /></span>
                         <span>Profile settings</span>
                     </Link>

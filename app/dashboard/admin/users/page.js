@@ -107,7 +107,7 @@ const summaryCards = [
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-2">User Management</h1>
             <SummaryCards cards={summaryCards} title="User Summary" />
             <DashboardGridItem title="All Users List">
-
+               
                 <AdminUsersList users={usersList} title="All Users List" variant="tenant" />
             </DashboardGridItem>
             <DashboardGridItem title="All Registered Users List">
@@ -119,7 +119,9 @@ const summaryCards = [
                 <AdminUsersList users={adminsList} title="Admins List" />
             </DashboardGridItem>
             <DashboardGridItem title="Property Owners List">
-
+                <Link href="/admin/add-new-owner" className="flex items-center self-end gap-2 text-sm text-primary hover:underline">
+                    <FaPlus /> Add New Owner
+                </Link>
                 <AdminPropertyOwnersList owners={ownersList}/>    
             </DashboardGridItem>        
         </div>

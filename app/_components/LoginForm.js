@@ -19,50 +19,52 @@ import FormInput from "./FormInput";
 import Logo from "./Logo";
 import SpinnerMini from "./SpinnerMini";
 
-// Role configuration
-const ROLES = {
-  user: {
-    label: "User",
-    icon: <FaUser className="w-4 h-4" />,
-    loginHandler: handleUserLogin,
-    signUpPath: "/auth/sign-up",
-    defaultRedirect: "/dashboard/user",
-  },
-  admin: {
-    label: "Admin",
-    icon: <FaUserShield className="w-4 h-4" />,
-    loginHandler: handleAdminLogin,
-    signUpPath: "/auth/sign-up",
-    defaultRedirect: "/dashboard/admin",
-  },
-  "property-owner": {
-    label: "Property Owner",
-    icon: <FaBuilding className="w-4 h-4" />,
-    loginHandler: handlePropertyOwnerLogin,
-    signUpPath: "/property-owner/sign-up",
-    defaultRedirect: "/dashboard/property-owner",
-  },
-  "property-manager": {
-    label: "Property Manager",
-    icon: <FaHome className="w-4 h-4" />,
-    loginHandler: handlePropertyOwnerLogin,
-    signUpPath: "/auth/sign-up",
-    defaultRedirect: "/dashboard/property-manager",
-  },
-  "facility-manager": {
-    label: "Facility Manager",
-    icon: <FaHardHat className="w-4 h-4" />,
-    loginHandler: handlePropertyOwnerLogin,
-    signUpPath: "/auth/sign-up",
-    defaultRedirect: "/dashboard/facility-manager",
-  },
-};
-
+// Role configuration is defined inside the component to prevent
+// hydration mismatches from module-scope JSX instantiation.
 export default function LoginForm({ role: initialRole = "user", customRedirectUrl }) {
+  const ROLES = {
+    user: {
+      label: "User",
+      icon: <FaUser className="w-4 h-4" />,
+      loginHandler: handleUserLogin,
+      signUpPath: "/auth/sign-up",
+      defaultRedirect: "/dashboard/user",
+    },
+    admin: {
+      label: "Admin",
+      icon: <FaUserShield className="w-4 h-4" />,
+      loginHandler: handleAdminLogin,
+      signUpPath: "/auth/sign-up",
+      defaultRedirect: "/dashboard/admin",
+    },
+    "property-owner": {
+      label: "Property Owner",
+      icon: <FaBuilding className="w-4 h-4" />,
+      loginHandler: handlePropertyOwnerLogin,
+      signUpPath: "/property-owner/sign-up",
+      defaultRedirect: "/dashboard/property-owner",
+    },
+    "property-manager": {
+      label: "Property Manager",
+      icon: <FaHome className="w-4 h-4" />,
+      loginHandler: handlePropertyOwnerLogin,
+      signUpPath: "/auth/sign-up",
+      defaultRedirect: "/dashboard/property-manager",
+    },
+    "facility-manager": {
+      label: "Facility Manager",
+      icon: <FaHardHat className="w-4 h-4" />,
+      loginHandler: handlePropertyOwnerLogin,
+      signUpPath: "/auth/sign-up",
+      defaultRedirect: "/dashboard/facility-manager",
+    },
+  };
+
   const searchParams = useSearchParams();
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+
   const [captchaValue, setCaptchaValue] = useState(null);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
   const router = useRouter();

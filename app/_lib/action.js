@@ -759,14 +759,20 @@ export async function deleteFaq(id) {
 export async function invitePropertyOwner(formData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  
+  const headersList = await headers();
+  const host = headersList.get("host") || "app.xpacy.com";
+  const protocol = headersList.get("x-forwarded-proto") || "https";
+  const origin = `${protocol}://${host}`;
+  const name = formData.get("name");
+  const email = formData.get("email");
+
   // Construct the payload
   const payload = {
-    name: formData.get("name"),
-    email: formData.get("email"),
+    name,
+    email,
     phone: "0000000000", // Required by endpoint but likely irrelevant for invite
     subject: "Invitation to Join Xpacy as Property Owner",
-    message: formData.get("message") || "You have been invited to join Xpacy as a property owner. Please sign up to manage your properties."
+    message: `${formData.get("message") || "You have been invited to join Xpacy as a property owner. Please sign up to manage your properties."}\n\nAccept your invitation here: ${origin}/auth/accept-invite?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
   };
 
   const response = await fetch(`${URL}/contact/send-mail`, {
@@ -778,6 +784,70 @@ export async function invitePropertyOwner(formData) {
     body: JSON.stringify(payload)
   });
   
+  const data = await response.json();
+  return data;
+}
+
+export async function invitePropertyManager(formData) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const headersList = await headers();
+  const host = headersList.get("host") || "app.xpacy.com";
+  const protocol = headersList.get("x-forwarded-proto") || "https";
+  const origin = `${protocol}://${host}`;
+  const name = formData.get("name");
+  const email = formData.get("email");
+
+  // Construct the payload
+  const payload = {
+    name,
+    email,
+    phone: "0000000000", // Required by endpoint but likely irrelevant for invite
+    subject: "Invitation to Join Xpacy as Property Manager",
+    message: `${formData.get("message") || "You have been invited to join Xpacy as a property manager. Please sign up to start managing properties."}\n\nAccept your invitation here: ${origin}/auth/accept-invite?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
+  };
+
+  const response = await fetch(`${URL}/contact/send-mail`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await response.json();
+  return data;
+}
+
+export async function inviteStaffMember(formData) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const headersList = await headers();
+  const host = headersList.get("host") || "app.xpacy.com";
+  const protocol = headersList.get("x-forwarded-proto") || "https";
+  const origin = `${protocol}://${host}`;
+  const name = formData.get("name");
+  const email = formData.get("email");
+
+  // Construct the payload
+  const payload = {
+    name,
+    email,
+    phone: "0000000000", // Required by endpoint but likely irrelevant for invite
+    subject: "Invitation to Join Xpacy as Staff",
+    message: `${formData.get("message") || "You have been invited to join Xpacy as staff. Please sign up to get started."}\n\nAccept your invitation here: ${origin}/auth/accept-invite?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
+  };
+
+  const response = await fetch(`${URL}/contact/send-mail`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload)
+  });
+
   const data = await response.json();
   return data;
 }

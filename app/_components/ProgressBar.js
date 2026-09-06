@@ -8,10 +8,11 @@ const progressBarSteps = [
     { step: 5, label: "Service Request" },
     { step: 6, label: "Transaction History" },
 ];
-const ProgressBar = ({activeStep, setActiveStep}) => {
+const ProgressBar = ({activeStep, setActiveStep, steps}) => {
+    const progressSteps = steps || progressBarSteps;
     return (
         <div className="flex justify-between text-center font-mono w-[800px] mx-auto overflow-x-auto pb-4 px-4 no-scrollbar">
-            {progressBarSteps.map((item, index) => (
+            {progressSteps.map((item, index) => (
                 <div onClick={() => setActiveStep(prev => prev === item.step ? prev : item.step)} key={index} className="flex cursor-pointer flex-col items-center justify-center min-w-[100px] gap-2">
                     <div className={`relative flex w-7 h-7 rounded-full items-center justify-center shrink-0 ${activeStep >= item.step ? 'bg-primary text-white' : 'bg-primary-100 text-primary'}`}>
                         <span>{activeStep > item.step ? <FaCheck /> : item.step}</span>
