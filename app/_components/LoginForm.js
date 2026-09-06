@@ -12,7 +12,7 @@ import {
   FaHome, 
   FaHardHat 
 } from "react-icons/fa";
-import { MdKeyboardArrowDown } from "react-icons/md";
+import { FaCheck } from "react-icons/fa6";
 
 import { handleUserLogin, handleAdminLogin, handlePropertyOwnerLogin } from "../_lib/action";
 import FormInput from "./FormInput";
@@ -25,6 +25,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
   const ROLES = {
     user: {
       label: "User",
+      shortLabel: "User",
       icon: <FaUser className="w-4 h-4" />,
       loginHandler: handleUserLogin,
       signUpPath: "/auth/sign-up",
@@ -32,6 +33,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
     },
     admin: {
       label: "Admin",
+      shortLabel: "Admin",
       icon: <FaUserShield className="w-4 h-4" />,
       loginHandler: handleAdminLogin,
       signUpPath: "/auth/sign-up",
@@ -39,6 +41,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
     },
     "property-owner": {
       label: "Property Owner",
+      shortLabel: "Owner",
       icon: <FaBuilding className="w-4 h-4" />,
       loginHandler: handlePropertyOwnerLogin,
       signUpPath: "/property-owner/sign-up",
@@ -46,6 +49,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
     },
     "property-manager": {
       label: "Property Manager",
+      shortLabel: "Manager",
       icon: <FaHome className="w-4 h-4" />,
       loginHandler: handlePropertyOwnerLogin,
       signUpPath: "/auth/sign-up",
@@ -53,6 +57,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
     },
     "facility-manager": {
       label: "Facility Manager",
+      shortLabel: "Facility",
       icon: <FaHardHat className="w-4 h-4" />,
       loginHandler: handlePropertyOwnerLogin,
       signUpPath: "/auth/sign-up",
@@ -62,7 +67,6 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
 
   const searchParams = useSearchParams();
   const [selectedRole, setSelectedRole] = useState(initialRole);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const [captchaValue, setCaptchaValue] = useState(null);
@@ -75,6 +79,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
   const roleOptions = Object.keys(ROLES).map((key) => ({
     value: key,
     label: ROLES[key].label,
+    shortLabel: ROLES[key].shortLabel,
     icon: ROLES[key].icon,
   }));
 
@@ -107,7 +112,6 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
 
   const handleRoleChange = (roleValue) => {
     router.push(`/${roleValue}/log-in`)
-    setIsDropdownOpen(false);
   };
 
   return (
@@ -119,64 +123,39 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
 
         <div className="space-y-8">
           {/* Role Selector Toggle */}
-          <div className="relative w-full">
-            <button
-              type="button"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full flex items-center justify-between px-6 py-3.5 bg-white border-2 border-primary-100 rounded-xl hover:border-primary-300 transition-all duration-200 "
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-primary text-xl">{roleConfig.icon}</span>
-                <span className="text-base font-semibold text-gray-700">
-                  Login as: <span className="text-primary">{roleConfig.label}</span>
-                </span>
-              </div>
-              <MdKeyboardArrowDown 
-                className={`text-2xl text-gray-400 transition-transform duration-300 ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {/* Dropdown */}
-            {isDropdownOpen && (
-              <>
-                <div 
-                  className="fixed inset-0 z-10"
-                  onClick={() => setIsDropdownOpen(false)}
-                />
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-primary-100 rounded-xl shadow-lg z-20 overflow-hidden animate-fadeIn">
-                  {roleOptions.map((role) => (
-                    <button
-                      key={role.value}
-                      type="button"
-                      onClick={() => handleRoleChange(role.value)}
-                      className={`w-full flex items-center gap-3 px-6 py-3.5 transition-all duration-150 hover:bg-primary-50 ${
-                        selectedRole === role.value 
-                          ? "bg-primary-50 border-l-4 border-primary" 
-                          : ""
-                      }`}
-                    >
-                      <span className={`text-xl ${
-                        selectedRole === role.value ? "text-primary" : "text-gray-400"
-                      }`}>
-                        {role.icon}
+          <div>
+            <div className="flex flex-wrap items-stretch justify-center gap-2 p-1.5 bg-[#FCFEFF] border-2 border-primary-100 rounded-2xl">
+              {roleOptions.map((role) => {
+                const isActive = selectedRole === role.value;
+                return (
+                  <button
+                    key={role.value}
+                    type="button"
+                    onClick={() => handleRoleChange(role.value)}
+                    title={role.label}
+                    aria-pressed={isActive}
+                    className={`relative flex flex-col items-center gap-1.5 min-w-[86px] flex-1 px-3 py-3 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary text-white shadow-lg shadow-primary/25"
+                        : "text-gray-500 hover:bg-primary-50 hover:text-primary"
+                    }`}
+                  >
+                    <span className={`text-xl ${isActive ? "text-white" : "text-gray-400"}`}>
+                      {role.icon}
+                    </span>
+                    <span className="text-xs font-semibold">{role.shortLabel}</span>
+                    {isActive && (
+                      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+                        <FaCheck className="w-2.5 h-2.5 text-primary" />
                       </span>
-                      <span className={`text-sm font-medium ${
-                        selectedRole === role.value ? "text-primary" : "text-gray-700"
-                      }`}>
-                        {role.label}
-                      </span>
-                      {selectedRole === role.value && (
-                        <span className="ml-auto text-primary text-xs font-semibold bg-primary-100 px-2 py-1 rounded-full">
-                          Active
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-center text-sm font-mono text-gray-500">
+              Login as: <span className="font-semibold text-primary">{roleConfig.label}</span>
+            </p>
           </div>
 
           <div className="space-y-3 text-center flex flex-col items-center">
@@ -274,23 +253,6 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
           </p>
         </div>
       </div>
-
-      {/* Animation styles */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
-        }
-      `}</style>
     </div>
   );
 }

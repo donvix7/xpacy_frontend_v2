@@ -6,8 +6,9 @@ import ServicesSummary from "./ServicesSummary";
 import { checkDateInRange } from "@/app/_lib/utils";
 import DashboardGridItem from "./DashboardGridItems";
 
-export default function ServicesOverviewWrapper({ services, showFilters = true }) {
+export default function ServicesOverviewWrapper({ services, serviceProviders, showFilters = true }) {
     const [filterRange, setFilterRange] = useState("all_time");
+    
 
     const filteredServices = useMemo(() => {
         if (!filterRange || filterRange === "all_time") return services;
@@ -39,7 +40,7 @@ export default function ServicesOverviewWrapper({ services, showFilters = true }
                             </div>
             )}
             <DashboardGridItem title="Services Summary">
-            <ServicesSummary services={filteredServices} showHeading={showFilters} />
+            <ServicesSummary services={filteredServices} serviceProviders={serviceProviders} showHeading={showFilters} />
             </DashboardGridItem>
         </div>
     )
