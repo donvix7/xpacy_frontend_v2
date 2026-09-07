@@ -115,7 +115,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
   };
 
   return (
-    <div className="flex-1 py-8 md:py-12 flex flex-col items-center justify-center px-4 md:px-6 w-full">
+    <div className="flex-1 py-8 md:py-12 flex flex-col items-center justify-center md:px-6 w-full">
       <div className="flex flex-col gap-8 w-full max-w-[500px]">
         <div className="self-center">
           <Logo />
@@ -136,7 +136,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
                     aria-pressed={isActive}
                     className={`relative flex flex-col items-center gap-1.5 min-w-[86px] flex-1 px-3 py-3 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? "bg-primary text-white shadow-lg shadow-primary/25"
+                        ? "bg-primary text-white "
                         : "text-gray-500 hover:bg-primary-50 hover:text-primary"
                     }`}
                   >
@@ -145,7 +145,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
                     </span>
                     <span className="text-xs font-semibold">{role.shortLabel}</span>
                     {isActive && (
-                      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+                      <span className="rounded-full bg-white flex items-center justify-center">
                         <FaCheck className="w-2.5 h-2.5 text-primary" />
                       </span>
                     )}
