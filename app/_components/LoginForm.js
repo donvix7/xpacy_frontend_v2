@@ -115,7 +115,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
   };
 
   return (
-    <div className="flex-1 py-8 md:py-12 flex flex-col items-center justify-center md:px-6 w-full">
+    <div className="flex-1 py-8 md:py-12 flex flex-col items-center justify-center p-2 px-4 md:px-6 w-full">
       <div className="flex flex-col gap-8 w-full max-w-[500px]">
         <div className="self-center">
           <Logo />

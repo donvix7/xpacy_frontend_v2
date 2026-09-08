@@ -10,7 +10,7 @@ export default async function Page() {
     const user = await getAdminProfile(token);
 
     return (
-        <div className="p-6">
+        <div className="p-2">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Settings</h1>
             <div className="flex flex-col gap-12">
                 <DashboardGridItem title={"Edit Profile"}>

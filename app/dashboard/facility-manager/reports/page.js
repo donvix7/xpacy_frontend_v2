@@ -103,7 +103,7 @@ const summaryCards = [
 ];
 
     return (
-        <div className="p-6 flex flex-col gap-8">
+        <div className="p-2 flex flex-col gap-8">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Reports & Analytics</h1>
 
             <SummaryCards cards={summaryCards} title="Overview" />

@@ -28,7 +28,7 @@ export default async function Page({ searchParams }) {
   };
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8 p-2">
         <ServicesOverviewWrapper services={myServices} />
         <DashboardGridItem title={"All Services"}>
             <PropertyOwnerServicesTable services={paginatedServices} pagination={pagination} />

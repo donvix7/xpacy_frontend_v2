@@ -50,7 +50,7 @@ export default async function Page() {
     };
 
     return (
-        <div className="p-6">
+        <div className="p-2">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Reports & Analytics</h1>
             <div className="flex flex-col gap-10">
               

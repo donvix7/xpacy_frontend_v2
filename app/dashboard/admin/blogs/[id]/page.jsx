@@ -13,7 +13,7 @@ export default async function Page({ params }) {
         return (
             <div className="min-h-screen flex flex-col bg-white">
                 <AppHeader />
-                <main className="grow flex flex-col items-center justify-center p-6 text-center">
+                <main className="grow flex flex-col items-center justify-center p-2 text-center">
                     <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-300">
                         <ChevronLeft size={40} />
                     </div>

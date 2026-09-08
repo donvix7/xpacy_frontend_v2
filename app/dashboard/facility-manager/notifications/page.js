@@ -10,7 +10,7 @@ export default async function Page() {
     const notifications = await getUserNotifications(token);
 
     return (
-        <div className="p-6 flex flex-col gap-6">
+        <div className="p-2 flex flex-col gap-6">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Notifications</h1>
             <DashboardGridItem >
                 <AdminNotificationsSummary notifications={notifications} />

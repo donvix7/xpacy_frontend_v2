@@ -6,7 +6,7 @@ import { getFaqs } from "@/app/_lib/data-services";
 export default async function Page() {
     const faqs = await getFaqs();
     return (
-        <div className="p-6">
+        <div className="p-2">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">FAQs</h1>
             
             <AdminFaqsSummary faqs={faqs} />

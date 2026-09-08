@@ -63,7 +63,7 @@ export default async function BookedServiceList({ services }) {
     );
 
     return (
-        <div className="flex flex-col gap-6 p-8">
+        <div className="flex flex-col gap-6 p-2">
             <MobileDashboardHeader/>
         <DataTable
             headers={tableHeadings}

@@ -56,7 +56,7 @@ const summaryCards = [
 ];
 
     return (
-        <div className="space-y-8 p-6">
+        <div className="space-y-8 p-2">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Community Forum</h1>
 
             <SummaryCards cards={summaryCards} />

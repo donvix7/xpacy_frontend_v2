@@ -12,7 +12,7 @@ export default async function Page() {
     const token = cookieStore.get("token")
     const profile = await getUserProfile(token);
     return (
-        <div className="p-6 ">
+        <div className="p-2 ">
             <MobileDashboardHeader/>
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold">Welcome {profile?.firstname},</h1>
             <div className="grid lg:grid-cols-[1fr_370px] grid-cols-1 grid-rows-[auto] gap-12 mt-8">

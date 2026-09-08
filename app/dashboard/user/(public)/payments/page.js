@@ -13,7 +13,7 @@ export default async function Page(){
    const invoices = await getInvoiceList(token);
 
     return (
-        <div className="p-6 flex flex-col lg:gap-12">
+        <div className="p-2 flex flex-col lg:gap-12">
             <MobileDashboardHeader/>
             <InvoiceSummary invoices={invoices}/>
             <Suspense fallback={<div className="spinner"></div>}>

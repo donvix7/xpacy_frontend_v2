@@ -16,7 +16,7 @@ export default async function Page() {
     console.log(notifications)
     if (notifications.length <= 0) return <div className="grid place-content-center"><EmptyState message={"Opps... No notification available"} /></div>
     return (
-        <div className="p-6 flex flex-col gap-4">
+        <div className="p-2 flex flex-col gap-4">
             <MobileDashboardHeader showMenu={false}/>
             {/* Large screen only */}
             <div className="px-[38px] lg:flex hidden items-center justify-between font-mono">

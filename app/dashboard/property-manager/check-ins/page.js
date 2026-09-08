@@ -60,7 +60,7 @@ export default async function Page() {
     const formatDate = (value) => value ? new Date(value).toLocaleDateString() : "—";
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-2">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Guest Check-in & Check-out</h1>
 
             <SummaryCards cards={summaryCards} title="Check-in Overview" />

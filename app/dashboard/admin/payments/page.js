@@ -13,7 +13,7 @@ export default async function Page() {
     const invoices = await getInvoices(token) || [];
 
     return (
-        <div className="space-y-8 p-6">
+        <div className="space-y-8 p-2">
             <div className="flex justify-between items-center gap-2">
                 <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Payments</h1>
                     <div className="flex gap-2">

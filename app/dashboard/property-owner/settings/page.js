@@ -11,7 +11,7 @@ export default async function Page() {
     const token = cookieStore.get("token")
     const [profile, cities] = await Promise.all([getPropertyOwnerProfile(token), getCities()])
     return (
-        <div className="p-6">
+        <div className="p-2">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Account Settings</h1>
             <div className="flex flex-col gap-12">
                 <DashboardGridItem title={"Profile Photo"}>

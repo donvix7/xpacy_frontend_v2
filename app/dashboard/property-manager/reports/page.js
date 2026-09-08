@@ -91,7 +91,7 @@ const summaryCards = [
 ];
 
     return (
-        <div className="space-y-8 p-6">
+        <div className="space-y-8 p-2">
             <div className="flex items-center justify-between mb-8">
                 <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Reports & Analytics</h1>
                 <div className="flex gap-2">

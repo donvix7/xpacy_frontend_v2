@@ -8,7 +8,7 @@ const PropertyApplication = async () => {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
     return (
-        <div className="p-8">
+        <div className="p-2">
             <KycForm token = {token}/>
         </div>
     )

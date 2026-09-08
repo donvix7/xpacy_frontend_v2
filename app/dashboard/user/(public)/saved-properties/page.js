@@ -12,7 +12,7 @@ export default async function Page() {
         if(data.length <= 0 ) return <EmptyState message={"Oops!... You have no saved properties yet."} cta={"Explore properties"}/>
     
     return (
-        <main className="p-6 flex flex-col lg:gap-4 gap-6">
+        <main className="p-2 flex flex-col lg:gap-4 gap-6">
             <MobileDashboardHeader/>
             {/* Pagination */}
             <header className="lg:col-span-3 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-2 lg:gap-0">

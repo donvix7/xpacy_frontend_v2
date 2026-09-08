@@ -12,7 +12,7 @@ export default async function Page() {
     const serviceProviders = await getAdminServiceProviders(token) || [];
 
     return (
-        <div className="p-6">
+        <div className="p-2">
 
             <ServicesOverviewWrapper services={services} serviceProviders={serviceProviders}/>
 

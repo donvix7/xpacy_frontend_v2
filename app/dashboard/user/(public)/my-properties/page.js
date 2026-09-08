@@ -7,7 +7,7 @@ export default async function Page(){
     const token = cookieStore.get("token");
     const bookings = await getBookingList(token);
     return (
-        <div className="p-6">
+        <div className="p-2">
             <BookingsTableList bookings={bookings}/>
         </div>
     )

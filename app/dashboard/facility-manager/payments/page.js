@@ -23,7 +23,7 @@ export default async function Page() {
     const myBookings = Array.isArray(bookingsData) ? bookingsData : [];
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-2">
             <PaymentsOverviewWrapper bookings={myBookings} />
             <DashboardGridItem title={"Payment Table List"}>
             <PaymentsTableList bookings={myBookings} />

@@ -89,7 +89,7 @@ const summaryCards = [
     const slicedBookings = allBookings.slice(0, 10);
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-2 space-y-6">
             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">
                 Welcome {profile?.username?.split(" ")[0] || "Admin"},
             </h1>

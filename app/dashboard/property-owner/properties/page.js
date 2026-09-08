@@ -65,7 +65,7 @@ export default async function Page({searchParams}) {
     };
 
     return (
-        <div className="space-y-8 p-6">
+        <div className="space-y-8 p-2">
             <div className="flex justify-between items-center gap-2">
                 <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Properties</h1>
                 <div className="flex items-center gap-2">
