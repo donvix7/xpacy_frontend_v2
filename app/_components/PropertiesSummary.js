@@ -66,7 +66,7 @@ export default function PropertiesSummary({ properties, totalProperties, showHea
                 </div>
 
                 {/* Grid Items */}
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+               <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {summaryItems.map((item, index) => (
                 <div key={index} className="bg-white rounded-xl border border-primary-200  p-6 duration-300 flex justify-between ">
                     <div className="flex flex-col gap-2">

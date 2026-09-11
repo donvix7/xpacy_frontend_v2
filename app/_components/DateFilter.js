@@ -30,7 +30,7 @@ export default function DateFilter({ onFilterChange, value }) {
             <select
                 value={selectedFilter}
                 onChange={handleChange}
-                className="bg-transparent text-sm text-gray-700 focus:outline-none cursor-pointer pr-2"
+                className="bg-transparent text-xs sm:text-sm text-gray-700 focus:outline-none cursor-pointer pr-2"
             >
                 <option value="all_time">All Time</option>
                 <option value="today">Today</option>

@@ -49,16 +49,16 @@ export default function AdminNotificationsSummary({ notifications }) {
                 </div>
 
                  {/* Grid Items */}
-                 <div className=" col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 flex-2">
+                 <div className=" col-span-1 md:col-span-2 grid grid-cols-2 gap-4 flex-2">
                     {summaryItems.map((item, index) => (
                         <div key={index} className="bg-white rounded-xl border border-primary-200  p-6 duration-300 flex justify-between ">
-                    <div className="flex flex-col gap-2">
-                        <p className="text-gray-600 text-sm capitalize">{item.title}</p>
-                        <p className="text-2xl font-bold mt-1">{item.count.toLocaleString()}</p>
-                    </div>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4 ${item.color}`}>
-                        {item.icon}
-                    </div>
+                            <div className="flex flex-col gap-2">
+                                <p className="text-gray-600 text-sm capitalize">{item.title}</p>
+                                <p className="text-2xl font-bold mt-1">{item.count.toLocaleString()}</p>
+                            </div>
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4 ${item.color}`}>
+                                {item.icon}
+                            </div>
                 </div>
                     ))}
                 </div>

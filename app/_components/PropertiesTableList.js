@@ -106,63 +106,95 @@ export default function PropertiesTableList({ properties, bookings = [], paginat
         const Featured = property?.featured ? "Yes" : "No";
 
         return (
-            <div key={property.id || property._id} className="flex flex-col gap-4 p-4 border-b border-primary-100 bg-white last:border-0 font-mono">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex gap-3 overflow-hidden">
-                        <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
-                            {property.images?.[0] ? (
-                                <Image 
-                                    src={`https://app.xpacy.com/src/upload/properties/${property.images[0]}`} 
-                                    alt={property.property_name} 
-                                    className="object-cover" 
-                                    fill 
-                                    unoptimized
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">No Img</div>
-                            )}
-                        </div>
-                        <div className="flex flex-col gap-1 min-w-0">
-                            <h3 className="font-bold text-sm text-neutrals-900 truncate">{property.property_name}</h3>
-                            <div className="flex items-center text-gray-500 text-xs truncate">
-                                <FaMapMarkerAlt size={10} className="mr-1 shrink-0" />
-                                <span className="truncate">{property.city}, {property.state}</span>
-                            </div>
-                            <p className="text-sm font-bold text-primary mt-1">
-                                {property.property_price ? formatCurrency(property.property_price) : "N/A"}
-                            </p>
-                        </div>
-                    </div>
-                    <PropertyOptionsMenu id={property.id || property._id} />
-                </div>
+            <div
+  key={property.id || property._id}
+  className="flex flex-col gap-4 p-4 border-b border-primary-100 bg-white last:border-0 font-mono"
+>
+  <div className="flex items-start gap-3 w-full">
+    {/* Image */}
+    <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+      {property.images?.[0] ? (
+        <Image
+          src={`https://app.xpacy.com/src/upload/properties/${property.images[0]}`}
+          alt={property.property_name}
+          className="object-cover"
+          fill
+          unoptimized
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">
+          No Img
+        </div>
+      )}
+    </div>
 
-                <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg text-[10px] uppercase font-bold">
-                    <div className="flex flex-col">
-                        <span className="text-gray-400 mb-1">Views</span>
-                        <span className="text-gray-900 truncate">{Views}</span>
-                    </div>
-                    <div className="flex flex-col items-end">
-                        <span className="text-gray-400 mb-1">Property Status</span>
-                        <span className={`px-2 py-0.5 rounded-full `}>
-                            {propertyStatus}
-                        </span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-gray-400 mb-1">Availability Status</span>
-                        <StatusChips status={property.availability_status || 'N/A'} />
-                    </div>
-                    <div className="flex flex-col items-end">
-                        <span className="text-gray-400 mb-1">Featured</span>
-                        <span className="text-gray-900">{Featured}</span>
-                    </div>
-                    <div className="flex flex-col col-span-2 border-t border-gray-100 pt-2">
-                        <div className="flex flex-col">
-                            <span className="text-gray-400 uppercase">Reserve Amount</span>
-                            <span className="text-primary">{property.reserve_amount || activeBooking?.amount ? formatCurrency(property.reserve_amount || activeBooking?.amount) : "None"}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    {/* Content */}
+    <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+      {/* Header: title + menu */}
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-bold text-sm text-neutrals-900 truncate">
+          {property.property_name}
+        </h3>
+        <PropertyOptionsMenu id={property.id || property._id} />
+      </div>
+
+      {/* Rows: label in front, value on the right */}
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+        <dt className="text-gray-400 font-bold uppercase text-[9px] self-center">
+          Location
+        </dt>
+        <dd className="flex items-center justify-end text-gray-500 truncate min-w-0">
+          <FaMapMarkerAlt size={10} className="mr-1 shrink-0" />
+          <span className="truncate">
+            {property.city}, {property.state}
+          </span>
+        </dd>
+
+        <dt className="text-gray-400 font-bold uppercase text-[9px] self-center">
+          Price
+        </dt>
+        <dd className="text-sm font-bold text-primary text-right">
+          {property.property_price ? formatCurrency(property.property_price) : "N/A"}
+        </dd>
+
+        <dt className="text-gray-400 font-bold uppercase text-[9px] self-center">
+          Views
+        </dt>
+        <dd className="text-gray-900 text-right truncate">{Views}</dd>
+
+        <dt className="text-gray-400 font-bold uppercase text-[9px] self-center">
+          Property Status
+        </dt>
+        <dd className="flex justify-end">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold">
+            {propertyStatus}
+          </span>
+        </dd>
+
+        <dt className="text-gray-400 font-bold uppercase text-[9px] self-center">
+          Availability
+        </dt>
+        <dd className="flex justify-end">
+          <StatusChips status={property.availability_status || "N/A"} />
+        </dd>
+
+        <dt className="text-gray-400 font-bold uppercase text-[9px] self-center">
+          Featured
+        </dt>
+        <dd className="text-gray-900 text-right">{Featured}</dd>
+
+        <dt className="text-gray-400 font-bold uppercase text-[9px] self-center pt-2 border-t border-gray-100">
+          Reserve
+        </dt>
+        <dd className="text-primary text-right pt-2 border-t border-gray-100">
+          {property.reserve_amount || activeBooking?.amount
+            ? formatCurrency(property.reserve_amount || activeBooking?.amount)
+            : "None"}
+        </dd>
+      </dl>
+    </div>
+  </div>
+</div>
         );
     };
 

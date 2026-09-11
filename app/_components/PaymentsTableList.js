@@ -76,34 +76,62 @@ export default function PaymentsTableList({ invoices }) {
         else if (['failed', 'cancelled', 'expired'].includes(statusLower)) statusColor = "bg-red-100 text-red-700";
 
         return (
-            <div key={invoice.id || invoice._id} className="flex flex-col gap-4 p-4 border-b border-gray-100 bg-white last:border-0 font-mono">
-                <div className="flex justify-between items-start gap-4">
-                    <div className="flex flex-col gap-1">
-                        <h3 className="font-bold text-sm text-gray-900">{invoice.property?.property_name || invoice.invoiceNumber || "N/A"}</h3>
-                        <p className="text-xs text-gray-500">{invoice.user?.firstname ? `${invoice.user.firstname} ${invoice.user.lastname || ''}` : "N/A"}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusColor}`}>
-                            {status}
-                        </span>
-                        <PaymentsOptionsMenu id={invoice.id || invoice._id} />
-                    </div>
-                </div>
-                
-                <div className="flex justify-between items-center text-xs bg-gray-50 p-3 rounded-lg">
-                    <span className="text-gray-500 font-bold uppercase text-[9px]">Date</span>
-                    <span className="text-gray-700 font-medium">
-                        {safeFormatDate(invoice.createdAt || invoice.issuedDate || invoice.payment_date)}
-                    </span>
-                </div>
+            <div
+  key={invoice.id || invoice._id}
+  className="flex flex-col gap-3 p-4 border-b border-gray-100 bg-white last:border-0 font-mono"
+>
+  {/* Header: title + status/menu */}
+  <div className="flex w-full">
+    <div className="flex flex-col gap-0.5 min-w-0 w-full">
+      <div className="flex self-end">
+      <PaymentsOptionsMenu id={invoice.id || invoice._id} />
+      </div>
+      <div className="flex justify-between">
+        <label>Invoice Number:</label>
+      <h3 className="font-bold text-sm text-gray-900 truncate">
+        {invoice.property?.property_name || invoice.invoiceNumber || "N/A"}
+      </h3>
+      </div>
+      <div className="flex justify-between">
+        <label>Payer:</label>
 
-                <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-400 font-bold uppercase text-[9px]">Amount </span>
-                    <span className="font-bold text-primary">
-                        {invoice.amount || invoice.total || invoice.property?.property_price ? formatCurrency(invoice.amount || invoice.total || invoice.property?.property_price) : "N/A"}
-                    </span>
-                </div>
-            </div>
+        <p className="">
+          {invoice.user?.firstname
+            ? `${invoice.user.firstname} ${invoice.user.lastname || ""}`
+            : "N/A"}
+        </p>
+      </div>
+       
+        <div className="flex justify-between">
+    <label className="">Date:</label>
+    <p className="text-gray-700 font-medium text-right">
+      {safeFormatDate(invoice.createdAt || invoice.issuedDate || invoice.payment_date)}
+    </p>
+        </div>
+
+    <div className="flex justify-between">
+    <label className="">Amount:</label>
+    <span className="font-bold text-primary text-right">
+      {invoice.amount || invoice.total || invoice.property?.property_price
+        ? formatCurrency(
+            invoice.amount || invoice.total || invoice.property?.property_price
+          )
+        : "N/A"}
+    </span>
+    </div>
+    <div className="flex justify-between">
+            <label>Status</label>
+             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusColor}`}>
+              {status}
+            </span>
+        </div>
+    </div>
+    
+  </div>
+
+  {/* Label / Value rows */}
+
+</div>
         );
     };
 

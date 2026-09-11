@@ -9,7 +9,7 @@ export default function SummaryCards({ cards = [], title = "Summary" }) {
             {title && (
                 <h3 className="lg:text-md text-black text-base font-sans">{title}</h3>
             )}
-            <div className={`grid grid-cols-1 md:grid-cols-2 ${gridCols} gap-4`}>
+            <div className={`grid grid-cols-2 md:grid-cols-3 ${gridCols} gap-4`}>
                 {cards.map((item, index) => (
                     <div key={index} className="bg-white rounded-xl border border-primary-200 p-6 duration-300 flex justify-between">
                         <div className="flex flex-col gap-2">

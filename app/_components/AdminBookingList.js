@@ -55,27 +55,38 @@ export default async function AdminBookingList({ bookings }) {
 
         return (
             <div key={booking.id || booking._id} className="py-6 flex flex-col gap-4 border-b border-gray-100 bg-white last:border-0 font-mono">
-                <div className="flex justify-between items-start">
-                    <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-start w-full">
+                  
+                    <div className="flex flex-col gap-1 w-full">
+                         <div className="flex self-end">
+                            <BookingOptionsMenu id={booking.id || booking._id} />
+                        </div>
+                        <div className="flex justify-between">
+                            <label className="text-sm text-gray-500">Property Name:</label>
                         <h3 className="text-sm font-bold text-gray-800">{booking.property?.property_name || "N/A"}</h3>
-                        <p className="text-xs text-gray-500">{booking.createdAt || booking.start_date ? format(new Date(booking.createdAt || booking.start_date), "MMM dd, yyyy") : "N/A"}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <StatusChips status={status} />
-                        <BookingOptionsMenu id={booking.id || booking._id} />
-                    </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg text-xs">
-                    <div className="flex flex-col gap-1">
-                        <p className="text-neutral-500 text-[10px] uppercase font-bold">Tenant/Buyer</p>
+                        </div>
+                        <div className="flex justify-between">
+                            <label className="text-sm text-gray-500">Booking Date:</label>
+                            <p className="text-xs text-gray-500">{booking.createdAt || booking.start_date ? format(new Date(booking.createdAt || booking.start_date), "MMM dd, yyyy") : "N/A"}</p>
+                        </div>
+                        <div className="flex justify-between gap-1">
+                        <p className="text-sm text-gray-500">Tenant/Buyer</p>
                         <p className="text-gray-700">{booking.user?.firstname ? `${booking.user.firstname} ${booking.user.lastname || ''}` : "N/A"}</p>
                     </div>
-                    <div className="flex flex-col gap-1 items-end">
-                        <p className="text-neutral-500 text-[10px] uppercase font-bold">Amount Paid</p>
+                    <div className="flex justify-between gap-1 ">
+                        <p className="text-sm text-gray-500">Amount Paid</p>
                         <p className="font-bold text-primary">{booking.amount || booking.property?.property_price ? formatCurrency(booking.amount || booking.property?.property_price) : "N/A"}</p>
                     </div>
+                        <div className="flex justify-between">
+                        <label className="text-sm text-gray-500">Status:</label>
+                        <StatusChips status={status} />
+                    </div>
+                    </div>
+                    
                 </div>
+
+               
             </div>
         );
     }

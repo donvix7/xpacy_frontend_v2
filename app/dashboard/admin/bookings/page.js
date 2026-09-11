@@ -52,9 +52,9 @@ export default async function Page() {
     ]
 
     return (
-        <div className=" space-y-6">
+        <div className=" space-y-6 p-2">
              <div className=" space-y-6">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-6">
                 <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Bookings</h1>
                 <Link 
                     href="/dashboard/admin/bookings/create" 

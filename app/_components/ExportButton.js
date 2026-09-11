@@ -49,7 +49,7 @@ export default function ExportButton({ data, filename = "export", options = [] }
             <FilterMenu>
                 <FilterMenu.Open name="export-menu">
                     <button 
-                        className="flex items-center gap-2 px-6 py-3 text-sm bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors shadow-md hover:shadow-xl transform hover:-translate-y-0.5 duration-200 font-medium font-mono border border-primary-200"
+                        className="flex items-center gap-2 px-6 py-3 text-xs sm:text-sm bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors shadow-md hover:shadow-xl transform hover:-translate-y-0.5 duration-200 font-medium font-mono border border-primary-200"
                     >
                         <Upload className="w-4 h-4" />
                         <span>Export Data</span>

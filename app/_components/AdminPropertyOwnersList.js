@@ -47,29 +47,38 @@ export default function AdminPropertyOwnersList({ owners }) {
 
     const renderMobileCard = (owner) => (
         <div key={owner._id || owner.id} className="flex flex-col gap-4 p-4 border-b border-primary-100 bg-white last:border-0 font-mono">
+
             <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full">
                     <div className="w-12 h-12 relative shrink-0">
                         <Image src={owner.display_picture ? `https://app.xpacy.com/src/upload/display_img/${owner.display_picture}` : "/avatar.png"} alt="owner-photo" className="object-cover rounded-full" unoptimized fill />
                     </div>
-                    <div className="flex flex-col">
-                        <h3 className="font-bold text-sm text-neutrals-900">{owner.first_name} {owner.last_name}</h3>
-                        <p className="text-xs text-gray-500">{owner.email}</p>
-                    </div>
-                </div>
-                <OwnerOptionsMenu id={owner._id || owner.id} />
-            </div>
-            
-            <div className="flex flex-col gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-gray-500 uppercase">Phone:</span>
+                    <div className="flex flex-col w-full">
+                        <div className="backdrop-blur-sm self-end">
+                            <OwnerOptionsMenu id={owner._id || owner.id} />
+
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                            <label className="text-sm text-gray-500 ">Name</label>
+                            <h3 className="font-bold text-sm text-neutrals-900">{owner.first_name} {owner.last_name}</h3>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                            <label className="text-sm text-gray-500 ">Email</label>
+                            <p className="text-xs text-gray-500">{owner.email}</p>
+                        </div>
+                         <div className="flex justify-between items-center text-xs">
+                    <span className="font-semibold text-gray-500">Phone:</span>
                     <span className="font-medium text-gray-900">{owner.phone || "N/A"}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-gray-500 uppercase">Status:</span>
+                    <span className="font-semibold text-gray-500">Status:</span>
                     <StatusChips status={"active"} />
                 </div>
+                    </div>
+                </div>
             </div>
+            
+            
         </div>
     );
 

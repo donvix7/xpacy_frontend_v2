@@ -50,8 +50,8 @@ const summaryCards = [
     const category = searchParams?.category || "all";
 
     return (
-        <div className=" space-y-6">
-            <div className="flex justify-between items-center mb-2">
+        <div className=" space-y-6 p-2">
+            <div className="flex justify-between mb-6 items-center mb-2">
                 <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Blogs Management</h1>
                 <Link 
                     href="/dashboard/admin/blogs/create" 

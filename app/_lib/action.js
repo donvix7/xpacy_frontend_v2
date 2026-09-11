@@ -42,7 +42,7 @@ export const handleSearch = async (formData) => {
 }
 
 export async function handleUserLogin(userData, redirectUrl) {
-  const response = await fetch(`${URL}/user/login`, {
+  const response = await fetch(`${URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

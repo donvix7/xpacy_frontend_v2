@@ -416,6 +416,7 @@ export default function SidebarNav({ role = "user" }) {
                         <span className="text-base text-white font-mono">{list.text}</span>
                     </Link>
                 </li>
+                
             )
             )}
         </ul>

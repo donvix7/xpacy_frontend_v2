@@ -5,7 +5,7 @@ import MobileNav from "@/app/_components/MobileNav";
 export default function Layout({children}){
     return (
         <section className="grid lg:grid-cols-[265px_1fr] grid-cols-1 grid-rows-[auto_1fr] h-dvh overflow-hidden ">
-            <div className="row-span-full h-full bg-primary-900 lg:flex flex-col p-6 items-center gap-8 overflow-y-auto hidden">
+            <div className="row-span-full h-full bg-primary-900 lg:flex flex-col p-6 pb-30 items-center gap-8 overflow-y-auto hidden">
                 <SidebarLogo/>
                 <SidebarNav role={"property-owner"} />
             </div>

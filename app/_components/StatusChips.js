@@ -1,8 +1,8 @@
 
 const statusBg = {
     "vacant": "bg-[#FBC0BC] text-[#C4170B] ",
-    "available": "bg-[#FFF8BE] text-[#9D7B40] ",
-    "rented": "bg-[#C3E5C4] text-[#357B38] ",
+    "available": "bg-green-100 text-green-700 ",
+    "rented": "bg-green-100 text-green-700 ",
     "active": "bg-[#C3E5C4] text-[#357B38] ",
     "draft": "bg-gray-200 text-gray-700",
     "pending": "bg-amber-100 text-amber-700",

@@ -18,6 +18,7 @@ import { handleUserLogin, handleAdminLogin, handlePropertyOwnerLogin } from "../
 import FormInput from "./FormInput";
 import Logo from "./Logo";
 import SpinnerMini from "./SpinnerMini";
+import Modal from "./Modal";
 
 // Role configuration is defined inside the component to prevent
 // hydration mismatches from module-scope JSX instantiation.
@@ -69,6 +70,8 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [pending, startTransition] = useTransition();
 
+  const [modal, setModal] = useState(false);
+
   const [captchaValue, setCaptchaValue] = useState(null);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
   const router = useRouter();
@@ -111,8 +114,56 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
   }
 
   const handleRoleChange = (roleValue) => {
-    router.push(`/${roleValue}/log-in`)
+    roleValue === "user" ?
+    router.push(`/auth/log-in`) :
+    roleValue === "admin" ?
+    router.push(`/admin/log-in`) :
+    roleValue === "property-owner" ?
+    router.push(`/property-owner/log-in`) :
+    roleValue === "facility-manager" ?
+    router.push(`/facility-manager/log-in`) :
+    roleValue === "property-manager" ?
+    router.push(`/property-manager/log-in`) :
+    null;
   };
+  const isModalOpen = () => {
+    return(
+      <div className="p-4 backdrop-blur-sm h-full w-full border absolute top-0 left-0 z-100 flex items-center justify-center">
+        <div className="flex flex-col items-stretch justify-center gap-2 p-1.5 bg-[#FCFEFF] border-2 border-primary-100 rounded-2xl w-full max-w-2xl mx-auto sm:min-w-2xl">
+  {roleOptions.map((role) => {
+    const isActive = selectedRole === role.value;
+    return (
+      <button
+        key={role.value}
+        type="button"
+        onClick={() => handleRoleChange(role.value)}
+        title={role.label}
+        aria-pressed={isActive}
+        className={`relative flex flex-col items-center gap-1 sm:gap-1.5 min-w-0 sm:min-w-[86px] flex-1 px-2 py-2 sm:px-3 sm:py-3 rounded-xl transition-all duration-200 ${
+          isActive
+            ? "bg-primary text-white"
+            : "text-gray-500 hover:bg-primary-50 hover:text-primary"
+        }`}
+      >
+        <span className={`text-base sm:text-xl ${isActive ? "text-white" : "text-gray-400"}`}>
+          {role.icon}
+        </span>
+        <span className="text-[10px] sm:text-xs font-semibold text-center leading-tight">
+          {role.shortLabel}
+        </span>
+      </button>
+    );
+  })}
+  <button
+    onClick={() => setModal(false)}
+    className="px-4 py-1 mt-4 text-primary  rounded cursor-pointer w-full sm:w-fit sm:self-end text-center align-middle"
+  >
+    close
+  </button>
+</div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 py-8 md:py-12 flex flex-col items-center justify-center p-2 px-4 md:px-6 w-full">
@@ -123,42 +174,9 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
 
         <div className="space-y-8">
           {/* Role Selector Toggle */}
-          <div>
-            <div className="flex flex-wrap items-stretch justify-center gap-2 p-1.5 bg-[#FCFEFF] border-2 border-primary-100 rounded-2xl">
-              {roleOptions.map((role) => {
-                const isActive = selectedRole === role.value;
-                return (
-                  <button
-                    key={role.value}
-                    type="button"
-                    onClick={() => handleRoleChange(role.value)}
-                    title={role.label}
-                    aria-pressed={isActive}
-                    className={`relative flex flex-col items-center gap-1.5 min-w-[86px] flex-1 px-3 py-3 rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? "bg-primary text-white "
-                        : "text-gray-500 hover:bg-primary-50 hover:text-primary"
-                    }`}
-                  >
-                    <span className={`text-xl ${isActive ? "text-white" : "text-gray-400"}`}>
-                      {role.icon}
-                    </span>
-                    <span className="text-xs font-semibold">{role.shortLabel}</span>
-                    {isActive && (
-                      <span className="rounded-full bg-white flex items-center justify-center">
-                        <FaCheck className="w-2.5 h-2.5 text-primary" />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-3 text-center text-sm font-mono text-gray-500">
-              Login as: <span className="font-semibold text-primary">{roleConfig.label}</span>
-            </p>
-          </div>
+         
 
-          <div className="space-y-3 text-center flex flex-col items-center">
+          <div className="space-y-2 text-center flex flex-col items-center">
             <h1 className="text-3xl md:text-4xl text-primary font-bold">
               Welcome back!
             </h1>
@@ -169,6 +187,17 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
             <p className="text-base text-black font-mono text-center">
               Enter your email address and password to log in.
             </p>
+            <span>or</span>
+             <div>
+            <button onClick={() => setModal(true)} className="px-4 py-1 items-center  text-white bg-primary rounded">
+              Select Role
+            </button>
+            {modal && 
+            <Modal onclose={() => setModal(false)}>
+              {isModalOpen()}
+            </Modal>
+            }
+          </div>
           </div>
 
           <form className="space-y-6 flex flex-col w-full" onSubmit={handleSubmit(onSubmit)}>

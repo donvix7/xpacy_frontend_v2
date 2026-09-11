@@ -14,8 +14,8 @@ export default async function Page() {
 
     return (
         <div className="space-y-8 p-2">
-            <div className="flex justify-between items-center gap-2">
-                <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Payments</h1>
+            <div className="flex justify-between items-center  gap-2 mb-8">
+                <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Payments</h1>
                     <div className="flex gap-2">
     
                     <DateFilter />
