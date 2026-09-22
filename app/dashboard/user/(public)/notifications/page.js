@@ -9,19 +9,26 @@ import MobileDashboardHeader  from '@/app/_components/MobileDashboardHeader';
 import { IoCheckmarkDoneSharp } from "react-icons/io5";
 import MobileSortbyMenu from "@/app/_components/MobileSortbyMenu";
 import MobileNotificationItem from "@/app/_components/MobileNotificationItem";
+import NotificationList from "@/app/_components/NotificationList";
+import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import AdminNotificationsSummary from "@/app/_components/AdminNotificationsSummary";
+import { markAllAsRead } from "@/app/_lib/action";
 export default async function Page() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")
     const notifications = await getUserNotifications(token);
-    console.log(notifications)
-    if (notifications.length <= 0) return <div className="grid place-content-center"><EmptyState message={"Opps... No notification available"} /></div>
+
     return (
         <div className="p-2 flex flex-col gap-4">
             <MobileDashboardHeader showMenu={false}/>
+             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Notifications</h1>
+            <DashboardGridItem title="Summary">
+            <AdminNotificationsSummary notifications={notifications} />
+            </DashboardGridItem>
             {/* Large screen only */}
-            <div className="px-[38px] lg:flex hidden items-center justify-between font-mono">
+            <div className="px-4 w-full  lg:flex gap-4 hidden items-center justify-end font-mono">
                 {/* Mark as read */}
-                <CustomCheckbox label={"Mark as read "} />
+                <CustomCheckbox onCheck={markAllAsRead} label={"Mark as read "} />
                 {/*Show only unread */}
                 <CustomCheckbox label={"Show only unread"} />
                 <div className=" relative flex items-center gap-2 ">
@@ -47,22 +54,9 @@ export default async function Page() {
                 </div>
             </div>
             {/* Notification Table for large screens only*/}
-            <table className="hidden lg:table table-auto font-mono">
-                {/* Title */}
-                <thead>
-                    <tr className="font-bold border border-gray-300">
-                        <td className="p-4">Mark as read</td>
-                        <td className="p-4">Type</td>
-                        <td className="p-4">Message</td>
-                        <td className="p-4">Date</td>
-                        <td className="p-4">Time</td>
-                        <td></td>
-                    </tr>
-                </thead>
-                <tbody>
-                    {notifications.map((notification, i) => <NotificationTableItem notification={notification} key={i}/>)}
-                </tbody>
-            </table>
+                <DashboardGridItem title={"Notifications"} >
+                    <NotificationList/>
+                </DashboardGridItem>
             {/* Notification List For small screens only */}
             {notifications?.map((notification, i) => <MobileNotificationItem notification={notification} key={i} />)}
             {/* Clear all button */}

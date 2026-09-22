@@ -1,28 +1,42 @@
 import { FaBell, FaEnvelopeOpen, FaEnvelope } from "react-icons/fa";
+import { getUnreadNotificationsCount } from "../_lib/data-services";
 
-export default function AdminNotificationsSummary({ notifications }) {
+export default async function AdminNotificationsSummary({ notifications }) {
+    const notifList = Array.isArray(notifications)
+        ? notifications
+        : Array.isArray(notifications?.data)
+        ? notifications.data
+        : Array.isArray(notifications?.notifications)
+        ? notifications.notifications
+        : [];
+
     const counts = {
-        total: notifications?.length || 0,
-        read: notifications?.filter(n => n.read_at || n.isRead).length || 0,
-        unread: notifications?.filter(n => !n.read_at && !n.isRead).length || 0,
-        // Assuming we might have types later, but for now just read/unread
+        total: notifList.length,
+        read: notifList.filter(n => n?.read_at || n?.isRead || n?.is_read).length,
+        unread: notifList.filter(n => !n?.read_at && !n?.isRead && !n?.is_read).length,
     };
+
+    const unreadRaw = await getUnreadNotificationsCount();
+    const unread = typeof unreadRaw === "number"
+        ? unreadRaw
+        : (typeof unreadRaw?.count === "number"
+            ? unreadRaw.count
+            : (typeof unreadRaw?.data === "number" ? unreadRaw.data : counts.unread));
 
     const summaryItems = [
         {
             title: "Unread",
-            count: counts.unread,
+            count: unread ?? counts.unread ?? 0,
             icon: <FaEnvelope className="text-orange-500" />,
             color: 'bg-orange-100',
             bgColor: 'bg-orange-100',
-            
         },
         {
             title: "Read",
-            count: counts.read,
-             icon: <FaEnvelopeOpen className="text-emerald-500" />,
-             bgColor: 'bg-emerald-100',
-             color: 'text-emerald-500',
+            count: counts.read ?? 0,
+            icon: <FaEnvelopeOpen className="text-emerald-500" />,
+            bgColor: 'bg-emerald-100',
+            color: 'text-emerald-500',
         }
     ];
 
@@ -54,7 +68,7 @@ export default function AdminNotificationsSummary({ notifications }) {
                         <div key={index} className="bg-white rounded-xl border border-primary-200  p-6 duration-300 flex justify-between ">
                             <div className="flex flex-col gap-2">
                                 <p className="text-gray-600 text-sm capitalize">{item.title}</p>
-                                <p className="text-2xl font-bold mt-1">{item.count.toLocaleString()}</p>
+                                <p className="text-2xl font-bold mt-1">{(item.count ?? 0).toLocaleString()}</p>
                             </div>
                             <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4 ${item.color}`}>
                                 {item.icon}

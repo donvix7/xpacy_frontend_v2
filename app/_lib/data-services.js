@@ -1,4 +1,7 @@
-export const url = "https://app.xpacy.com"
+import { cookies } from "next/headers";
+
+import { url } from "./constants";
+export { url };
 
 export async function getBanners() {
   try {
@@ -107,12 +110,14 @@ export async function getOtherProperties() {
   }
 }
 
-export async function getUserProfile(token) {
+export async function getUserProfile() {
 
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
   if (!token?.value) return null;
   try {
-    const response = await fetch(`${url}/user/fetch-profile`, {
-       next: {
+    const response = await fetch(`https://services.xpacy.com/api/v1/auth/profile`, {
+      next: {
         tags: ['user-profile']
       },
       method: "GET",
@@ -121,14 +126,15 @@ export async function getUserProfile(token) {
         "Content-type": "application/json",
       },
     });
+    const data = await response.json();
     if (!response.ok) {
-        if (response.status !== 401 && response.status !== 403) {
+        if (response.status !== 401 && response.status !== 403 && response.status !== 400) {
             console.error(`Error fetching user profile: ${response.status}`);
         }
         return null;
     }
-    const { user } = await response.json();
-    return user;
+    console.log(data)
+    return data;
   } catch (error) {
     console.error("Error fetching user profile:", error);
     return null;
@@ -165,7 +171,10 @@ export async function getPropertyOwnerProfile(token) {
 
 
 
-export async function getSavedProperties(token) {
+export async function getSavedProperties() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")
+    const profile = await getUserProfile(token);
   if (!token?.value) return { data: [], pagination: {} };
   try {
     const response = await fetch(`${url}/user-property/saved-properties`, {
@@ -183,21 +192,51 @@ export async function getSavedProperties(token) {
     console.error("Error fetching user profile:", error)
   }
 }
-
-export async function getUserNotifications(token) {
-  if (!token?.value) return [];
+export async function getUnreadNotificationsCount(passedToken) {
+  const cookieStore = await cookies();
+  const token = passedToken || cookieStore.get("token");
+  if (!token?.value) return 0;
   try {
-    const response = await fetch(`${url}/notification/fetch-notifications`, {
+    const response = await fetch(`https://services.xpacy.com/api/v1/notifications/unread-count`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
       }
     });
-    const { data } = await response.json();
-
-    return data
+    if (!response.ok) return 0;
+    const resData = await response.json();
+    if (typeof resData?.data === "number") return resData.data;
+    if (typeof resData?.data?.count === "number") return resData.data.count;
+    if (typeof resData?.count === "number") return resData.count;
+    if (typeof resData?.unreadCount === "number") return resData.unreadCount;
+    if (typeof resData === "number") return resData;
+    return 0;
   } catch (error) {
-    console.error("Error fetching user notifications:", error)
+    console.error("Error fetching unread notifications count:", error);
+    return 0;
+  }
+}
+
+export async function getUserNotifications(passedToken) {
+  const cookieStore = await cookies();
+  const token = passedToken || cookieStore.get("token");
+  if (!token?.value) return [];
+  try {
+    const response = await fetch(`https://services.xpacy.com/api/v1/notifications?page=1&limit=20&sortBy=createdAt&sortOrder=desc`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token?.value}`,
+      }
+    });
+    if (!response.ok) return [];
+    const resData = await response.json();
+    if (Array.isArray(resData)) return resData;
+    if (Array.isArray(resData?.data)) return resData.data;
+    if (Array.isArray(resData?.notifications)) return resData.notifications;
+    return [];
+  } catch (error) {
+    console.error("Error fetching user notifications:", error);
+    return [];
   }
 }
 
@@ -220,42 +259,28 @@ export async function getBookedServices(token) {
   }
 }
 
-export async function getInvoiceList(token) {
+
+export async function getRentedProperties(){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
   if (!token?.value) return [];
   try {
-    const response = await fetch(`${url}/user/fetch-invoices`, {
-      next: {
-        tags: ['fetch-invoices']
-      },
-      method: "GET",
+    const response = await fetch(`https://services.xpacy.com/api/v1/me/rented-properties?page=1&limit=20&sortBy=createdAt&sortOrder=desc`, {
       headers: {
         "Authorization": `Bearer ${token?.value}`,
       }
     });
-    const  data  = await response.json();
-    return data
+    const {data} = await response.json();
+    return data;
   } catch (error) {
-    console.error("Error fetching user invoices:", error)
+    console.error("Error fetching properties:", error);
+    return [];
   }
 }
-
-export async function getInvoice(token, id) {
-  if (!token?.value) return null;
-  try {
-    const response = await fetch(`${url}/user/fetch-invoice/${id}`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token?.value}`,
-      }
-    });
-    const  data  = await response.json();
-    return data
-  } catch (error) {
-    console.error("Error fetching user invoice:", error)
-  }
-}
-
-export async function getBookingList(token) {
+export async function getBookingList() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")
+    const profile = await getUserProfile(token);
   if (!token?.value) return [];
   try {
     const response = await fetch(`${url}/user/fetch-bookings`, {
@@ -448,24 +473,6 @@ export async function getPropertyOwnerProperties(token, searchParams = {}){
         return [[], {}];
     }
 }
-export async function getPropertyOwnerById(token, id) {
-  if (!token?.value) return null;
-  try {
-    const response = await fetch(`${url}/admin/property-owner/fetch-propertowner/${id}`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token?.value}`,
-        "Content-type": "application/json",
-      },
-    });
-    if (!response.ok) return null;
-    const {property_owner} = await response.json();
-    return property_owner
-  } catch (error) {
-    console.error("Error fetching property-owner:", error)
-    return null;
-  }
-}
 export async function getAllAdmin(token) {
   if (!token?.value) return [];
   try {
@@ -490,31 +497,6 @@ export async function getAllAdmin(token) {
   }
 }
 
-export async function getAllUsers(token) {
-  if (!token?.value) return [];
-  try {
-    const response = await fetch(`${url}/admin/users/fetch-users`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token?.value}`,
-        "Content-type": "application/json",
-      },
-    });
-    if (!response.ok) {
-        if (response.status === 404) {
-             console.warn("Fetch users endpoint not found (404).");
-        } else if (response.status !== 401 && response.status !== 403) {
-             console.error(`Error fetching users: ${response.status}`);
-        }
-        return [];
-    }
-    const { data } = await response.json();
-    return data 
-  } catch (error) {
-    console.error("Error fetching all users:", error);
-    return []; 
-  }
-}
 export async function getAdminBooking(token) {
   if (!token?.value) return [];
   try {
@@ -777,18 +759,6 @@ export async function getBookingSlots() {
   }
 }
 
-export async function getUserById(token, id) {
-  try {
-    const response = await fetch(`${url}/admin/users/fetch-user/${id}`, {
-      headers: { "Authorization": `Bearer ${token?.value}` }
-    });
-    const { user } = await response.json();
-    return user || null;
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    return null;
-  }
-}
 
 export async function getPropertyOwnerInfo(tokenKey) {
   // tokenKey represents the actual token string from URL, not cookie object
@@ -861,39 +831,79 @@ export async function getServiceProviderById(id) {
   }
 }
 
-export async function getInvoices(token) {
-  if (!token?.value) return [];
+/////////////////////////////////////*INVOICES*/////////////////////////////////////////////////
+
+
+
+export async function getInvoice(id) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  if (!token?.value) return null;
   try {
-    const response = await fetch(`${url}/invoice/fetch-invoices`, {
-      next: {
-        tags: ['invoices']
-      },
+    const response = await fetch(`https://services.xpacy.com/api/v1/invoices/${id}`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
-        "Content-type": "application/json",
-      },
+      }
     });
-    if (!response.ok) {
-        if (response.status === 404) {
-            console.warn("Invoices endpoint not found (404). Returning empty list.");
-        } else {
-            console.error("Failed to fetch invoices:", response.status, response.statusText);
-        }
-        return [];
-    }
-    const { data } = await response.json();
+    const  data  = await response.json();
     return data
   } catch (error) {
-    console.error("Error fetching invoices:", error)
-    return []
+    console.error("Error fetching user invoice:", error)
   }
 }
 
-export async function getAdminInvoice(token, id) {
+export async function getAllInvoices(organizationId, passedToken){
+    const cookieStore = await cookies();
+    const token = passedToken || cookieStore.get("token");
+    if (!token?.value) return [];
+    try {
+        const response = await fetch(`https://services.xpacy.com/api/v1/invoices?organizationId=${organizationId}&page=1&limit=20&sortBy=createdAt&sortOrder=desc`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token?.value}`,
+            }
+        });
+        const data = await response.json();
+        return data
+    } catch (error) {
+        console.error("Error fetching all invoices:", error);
+        return [];
+    }
+}
+
+export async function getInvoiceList() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  if (!token?.value) return [];
+  try {
+    const response = await fetch(`${url}/user/fetch-invoices`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token?.value}`,
+      }
+    });
+    if (!response.ok) return [];
+    const data = await response.json();
+    // Handle both { data: [...] }, { invoices: [...] }, and plain array shapes
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.invoices)) return data.invoices;
+    return [];
+  } catch (error) {
+    console.error("Error fetching user invoices:", error);
+    return [];
+  }
+}
+
+export async function getInvoiceById(id) {
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
   if (!token?.value) return null;
   try {
-    const response = await fetch(`${url}/invoice/fetch-invoice/${id}`, {
+    const response = await fetch(`https://services.xpacy.com/api/v1/invoices/${id}
+`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
@@ -915,6 +925,9 @@ export async function getAdminInvoice(token, id) {
     return null;
   }
 }
+
+/////////////////////////////////////*BLOGS*/////////////////////////////////////////////////
+
 
 export async function getBlogs() {
   try {
@@ -956,5 +969,684 @@ export async function debugFetch(urlStr) {
   } catch (err) {
     console.error("Debug Fetch Error:", urlStr, err);
     return null;
+  }
+}
+
+/////////////////////////////////////*LEASES*/////////////////////////////////////////////////
+
+export async function getLeases(){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  if (!token?.value) return [];
+  try {
+    const response = await fetch(`https://services.xpacy.com/api/v1/me/leases?page=1&limit=20&sortBy=createdAt&sortOrder=desc`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token?.value}`,
+      }
+    });
+    const {data} = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching user leases:", error);
+    return [];
+  }
+}
+
+export async function getAllLeases(){
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/properties/23/leases?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`)
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+export async function getLeaseById(id){
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/leases/${id}`)
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+
+/////////////////////////////////////*TENANTS*/////////////////////////////////////////////////
+
+export async function getAllTenants(){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/tenants?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getTenantById(id){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/tenants/${id}
+`,
+    {
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+
+/////////////////////////////////////*MAINTENANCE*/////////////////////////////////////////////////
+
+export async function getAllMaintenanceRequest(propertyId){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/maintenance?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getMaintenanceById(id){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/maintenance/${id}
+`,
+    {
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+
+/////////////////////////////////////*UNITS*/////////////////////////////////////////////////
+
+export async function getAllUnits(){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/units?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getUnitById(id){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/units/${id}
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+
+
+export async function getAllBuildings(propertyId){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/buildings?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getBuildingById(propertyId, id){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/buildings/${id}
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+
+/////////////////////////////////////*PROPERTYOWNERS*/////////////////////////////////////////////////
+
+
+export async function getAllPropertyOwners(){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/owners?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getPropertyOwnerById(id){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/owners/${id}
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+
+/////////////////////////////////////*EXPENSES*/////////////////////////////////////////////////
+
+
+export async function getAllExpenses(organisationId){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/expenses?organizationId=${organisationId}&page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getExpenseById(id){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/expenses/${id}
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+
+/////////////////////////////////////*DOCUMENTS*/////////////////////////////////////////////////
+
+
+export async function getAllDocuments(){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await fetch(`https://services.xpacy.com/api/v1/documents?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    }
+  });
+  return response.json(); 
+}
+
+export async function getDocumentById(id){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await fetch(`https://services.xpacy.com/api/v1/documents/${id}
+`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    }
+  });
+  return response.json(); 
+}
+
+/////////////////////////////////////*PAYMENTS*/////////////////////////////////////////////////
+
+
+export async function getPaymentById(id){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/payments/${id}
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+export async function getPaymentsForInvoice(invoiceId){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/payments/${invoiceId}
+`,
+`
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+/////////////////////////////////////*USER MANAGEMENTS*/////////////////////////////////////////////////
+
+
+export async function getMyProperties(){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/me/owned-properties?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getManagedProperties(){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/me/managed-properties?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getMyRentedProperties(){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/me/rented-properties?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getMyLeases(){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/me/leases?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getMyBookings(){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/me/bookings?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getAllOrganization(){
+
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token");
+
+    try {
+      const response = await fetch(`https://services.xpacy.com/api/v1/organizations?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token?.value}`,
+          "Content-type": "application/json",
+        },
+      });
+    
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+  
+}
+
+export async function getOrganizationById(id){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/organizations/${id}
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+
+export async function getOrganizationMembers(id){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/organizations/${id}/members?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,{
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+
+export async function getAllUsers() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  
+  try {
+    const response = await fetch(`https://services.xpacy.com/api/v1/users?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token?.value}`,
+        "Content-type": "application/json",
+      },
+    });
+    if (!response.ok) {
+        if (response.status === 404) {
+             console.warn("Fetch users endpoint not found (404).");
+        } else if (response.status !== 401 && response.status !== 403) {
+             console.error(`Error fetching users: ${response.status}`);
+        }
+        return [];
+    }
+    const { data } = await response.json();
+    console.log(data)
+    return data 
+  } catch (error) {
+    console.error("Error fetching all users:", error);
+    return []; 
+  }
+}
+
+export async function getUserById(id){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/users/${id}
+`,
+  {
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
+  }
+}
+
+/////////////////////////////////////*PROPERTY MANAGEMENTS*/////////////////////////////////////////////////
+
+
+
+export async function getOrganizationProperties(organizationId){
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/properties?organizationId=${organizationId}&page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`,
+  {
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || []
+  }catch(err){
+    console.log(err)
+    return []
+  }
+}
+
+export async function getPropertyById(id){
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/properties/${id}
+`,
+  {
+  method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+})
+    const { data } = await response.json()
+    return data || null
+  }catch(err){
+    console.log(err)
+    return null
   }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { getUserProfile } from '@/app/_lib/data-services';
+import { getUserProfileAction as getUserProfile } from '@/app/_lib/action';
 import React, { useEffect, useState, useCallback } from 'react';
 import { uploadKyc } from '../_lib/action';
 import FileUploadModal from './FileUploadModal';

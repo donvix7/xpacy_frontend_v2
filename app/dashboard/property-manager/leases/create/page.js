@@ -17,6 +17,38 @@ const billingCycleOptions = [
     { id: 4, value: "ANNUALLY", label: "Annually" },
 ];
 
+// Small helper to format a Naira amount
+const formatNaira = (value) => {
+    const n = Number(value) || 0;
+    return `₦${n.toLocaleString("en-NG")}`;
+};
+
+// Small helper to format a date string for display
+const formatDate = (value) => {
+    if (!value) return "—";
+    try {
+        return new Date(value).toLocaleDateString("en-NG", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+    } catch {
+        return value;
+    }
+};
+
+// Read-only row used inside the preview modal
+const PreviewRow = ({ label, value }) => (
+    <div className="flex items-start justify-between gap-6 py-3 border-b border-primary-100 last:border-b-0">
+        <span className="text-xs font-mono uppercase tracking-wider text-gray-500">
+            {label}
+        </span>
+        <span className="text-sm text-right text-black whitespace-pre-wrap break-words max-w-[60%]">
+            {value || "—"}
+        </span>
+    </div>
+);
+
 const AddNewLeaseForm = ({
     token,
     initialData = null,
@@ -27,6 +59,10 @@ const AddNewLeaseForm = ({
 }) => {
     const effectiveData = initialData || {};
     const [isPending, setIsPending] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    // Snapshot of the payload captured on preview-open, so the modal
+    // always shows the same data that will be submitted.
+    const [previewPayload, setPreviewPayload] = useState(null);
 
     const {
         register,
@@ -47,26 +83,30 @@ const AddNewLeaseForm = ({
         },
     });
 
-    const onSubmit = (data) => {
-        const payload = {
-            tenantProfileId: (data.tenantProfileId || "").trim(),
-            unitId: (data.unitId || "").trim(),
-            startDate: data.startDate
-                ? new Date(data.startDate).toISOString()
-                : "",
-            endDate: data.endDate
-                ? new Date(data.endDate).toISOString()
-                : "",
-            rentAmount: Number(data.rentAmount) || 0,
-            billingCycle: data.billingCycle,
-            securityDeposit: Number(data.securityDeposit) || 0,
-            renewalDate: data.renewalDate
-                ? new Date(data.renewalDate).toISOString()
-                : "",
-            terms: (data.terms || "").trim(),
-        };
+    // Build the payload from raw form data (shared by preview + submit)
+    const buildPayload = (data) => ({
+        tenantProfileId: (data.tenantProfileId || "").trim(),
+        unitId: (data.unitId || "").trim(),
+        startDate: data.startDate
+            ? new Date(data.startDate).toISOString()
+            : "",
+        endDate: data.endDate
+            ? new Date(data.endDate).toISOString()
+            : "",
+        rentAmount: Number(data.rentAmount) || 0,
+        billingCycle: data.billingCycle,
+        securityDeposit: Number(data.securityDeposit) || 0,
+        renewalDate: data.renewalDate
+            ? new Date(data.renewalDate).toISOString()
+            : "",
+        terms: (data.terms || "").trim(),
+    });
 
-        // Sanity checks before hitting the API
+    // Step 1: form submitted → validate → open preview modal
+    const onPreview = (data) => {
+        const payload = buildPayload(data);
+
+        // Sanity check: end date must be after start date
         if (
             payload.startDate &&
             payload.endDate &&
@@ -75,11 +115,21 @@ const AddNewLeaseForm = ({
             return toast.error("End date must be after start date.");
         }
 
+        setPreviewPayload(payload);
+        setIsPreviewOpen(true);
+    };
+
+    // Step 2: user confirms inside modal → actually submit
+    const onConfirm = () => {
+        if (!previewPayload) return;
+
         setIsPending(true);
-        toast.promise(addLease(payload), {
+        toast.promise(addLease(previewPayload), {
             loading: isEditMode ? "Updating lease..." : "Creating lease...",
             success: (res) => {
                 setIsPending(false);
+                setIsPreviewOpen(false);
+                setPreviewPayload(null);
                 if (!res?.success) {
                     throw new Error(
                         res?.message ||
@@ -124,6 +174,27 @@ const AddNewLeaseForm = ({
         }
     };
 
+    // Resolve human-readable labels for the preview modal
+    const tenantLabel = previewPayload
+        ? tenantProfiles.find(
+              (t) => String(t.id) === String(previewPayload.tenantProfileId)
+          )?.name || previewPayload.tenantProfileId
+        : "";
+    const unitLabel = previewPayload
+        ? units.find(
+              (u) => String(u.id) === String(previewPayload.unitId)
+          )?.name ||
+          units.find(
+              (u) => String(u.id) === String(previewPayload.unitId)
+          )?.unitNumber ||
+          previewPayload.unitId
+        : "";
+    const billingLabel = previewPayload
+        ? billingCycleOptions.find(
+              (b) => b.value === previewPayload.billingCycle
+          )?.label || previewPayload.billingCycle
+        : "";
+
     return (
         <div className="flex flex-col gap-12 w-[796px] mx-auto pb-12">
             <header className="flex flex-col items-center justify-center gap-4">
@@ -132,14 +203,15 @@ const AddNewLeaseForm = ({
                 </h2>
                 {!isEditMode && (
                     <p className="font-mono">
-                        Fill in the lease details below.
+                        Fill in the lease details below. You'll be able to
+                        preview before creating.
                     </p>
                 )}
             </header>
 
             <form
                 className="p-6 flex flex-col gap-10"
-                onSubmit={handleSubmit(onSubmit)}
+                onSubmit={handleSubmit(onPreview)}
             >
                 {/* ---------- Parties ---------- */}
                 <section className="flex flex-col gap-6">
@@ -359,7 +431,13 @@ const AddNewLeaseForm = ({
                                 </span>
                             )}
                         </FormInput>
-                        <div className="flex flex-col gap-6">
+                    </div>
+                </section>
+
+                {/* ---------- Renewal & Terms ---------- */}
+                <section className="flex flex-col gap-6">
+                    <h3 className="text-lg">Renewal & Terms</h3>
+                    <div className="flex flex-col gap-6">
                         <FormInput label="Renewal Date" id="renewalDate">
                             <input
                                 disabled={isReadOnly}
@@ -396,31 +474,147 @@ const AddNewLeaseForm = ({
                             />
                         </div>
                     </div>
-                    </div>
-                </section>
-
-                {/* ---------- Renewal & Terms ---------- */}
-                <section className="flex flex-col gap-6">
-                    <h3 className="text-lg">Renewal & Terms</h3>
-                    
                 </section>
 
                 {/* ---------- Submit ---------- */}
                 {!isReadOnly && (
                     <div className="self-end">
                         <button
-                            disabled={isPending}
                             type="submit"
-                            className="px-4 py-2 bg-primary-200 font-mono text-primary rounded-lg hover:bg-primary-200/80 cursor-pointer transition flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="px-4 py-2 bg-primary-200 font-mono text-primary rounded-lg hover:bg-primary-200/80 cursor-pointer transition flex items-center gap-2"
                         >
                             <span>
-                                {isEditMode ? "Save Changes" : "Create Lease"}
+                                {isEditMode ? "Preview Changes" : "Preview Lease"}
                             </span>
-                            {isPending && <SpinnerMini />}
                         </button>
                     </div>
                 )}
             </form>
+
+            {/* ---------- Preview Modal ---------- */}
+            {isPreviewOpen && previewPayload && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                    onClick={() => !isPending && setIsPreviewOpen(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-primary-100">
+                            <div className="flex flex-col gap-1">
+                                <h3 className="text-xl font-bold text-primary">
+                                    {isEditMode
+                                        ? "Review Lease Changes"
+                                        : "Review New Lease"}
+                                </h3>
+                                <p className="text-xs font-mono text-gray-500">
+                                    Please confirm the details below before
+                                    submitting.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => setIsPreviewOpen(false)}
+                                className="text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+                                aria-label="Close preview"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Body (scrollable) */}
+                        <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
+                            {/* Parties */}
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">
+                                    Lease Parties
+                                </span>
+                                <PreviewRow
+                                    label="Tenant"
+                                    value={tenantLabel}
+                                />
+                                <PreviewRow label="Unit" value={unitLabel} />
+                            </div>
+
+                            {/* Terms */}
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">
+                                    Lease Terms
+                                </span>
+                                <PreviewRow
+                                    label="Start Date"
+                                    value={formatDate(previewPayload.startDate)}
+                                />
+                                <PreviewRow
+                                    label="End Date"
+                                    value={formatDate(previewPayload.endDate)}
+                                />
+                                <PreviewRow
+                                    label="Rent Amount"
+                                    value={formatNaira(
+                                        previewPayload.rentAmount
+                                    )}
+                                />
+                                <PreviewRow
+                                    label="Billing Cycle"
+                                    value={billingLabel}
+                                />
+                                <PreviewRow
+                                    label="Security Deposit"
+                                    value={formatNaira(
+                                        previewPayload.securityDeposit
+                                    )}
+                                />
+                            </div>
+
+                            {/* Renewal */}
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">
+                                    Renewal & Terms
+                                </span>
+                                <PreviewRow
+                                    label="Renewal Date"
+                                    value={formatDate(
+                                        previewPayload.renewalDate
+                                    )}
+                                />
+                                <PreviewRow
+                                    label="Terms"
+                                    value={previewPayload.terms || "—"}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end gap-3 p-6 border-t border-primary-100">
+                            <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => setIsPreviewOpen(false)}
+                                className="px-4 py-2 font-mono text-primary rounded-lg hover:bg-primary-100/80 cursor-pointer transition disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={onConfirm}
+                                className="px-4 py-2 bg-primary-200 font-mono text-primary rounded-lg hover:bg-primary-200/80 cursor-pointer transition flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <span>
+                                    {isEditMode
+                                        ? "Save Changes"
+                                        : "Create Lease"}
+                                </span>
+                                {isPending && <SpinnerMini />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

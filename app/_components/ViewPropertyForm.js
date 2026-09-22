@@ -12,7 +12,7 @@ import DragnDrop from './DragnDrop';
 import CustomToogle from "./CustomToogle";
 import axios from "axios";
 import SpinnerMini from "./SpinnerMini";
-import { url } from "../_lib/data-services";
+import { url } from "../_lib/constants";
 import toast from "react-hot-toast";
 import { progress } from "../_lib/utils";
 import UploadingFileModal from "./UploadingFileModal";

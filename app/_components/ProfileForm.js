@@ -7,16 +7,15 @@ import { updateUserProfile } from "../_lib/action";
 import toast from "react-hot-toast";
 
 
-export default function ProfileForm({ profile, updateAction }) {
+export default function ProfileForm({ user, profile, updateAction }) {
+    console.log(user)
     const [pending, startTransition] = useTransition();
     const { register, handleSubmit, formState: { errors } } = useForm({
         defaultValues: {
-            firstname: profile?.firstname,
-            lastname: profile?.lastname,
-            email: profile?.email,
-            phone_number: profile?.phone_number,
-            address: profile?.address,
-            state: profile?.state
+            firstname: user?.firstName || profile?.firstName || user?.username,
+            lastname: user?.lastName || profile?.lastName,
+            email: user?.email || profile?.email,
+            phone_number: user?.phone || profile?.phone,
         }
     })
     async function onSubmit(data) {
@@ -60,12 +59,7 @@ export default function ProfileForm({ profile, updateAction }) {
                 })} type={"tel"} name={"phone_number"} id={"phone"} placeholder={"+2340000000000"} className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${errors.confirmPassword ? "border-error" : "border-primary-200"}`} />
                 {errors.phone_number && <span className="-mt-2 text-xs text-error">{errors.phone_number.message}</span>}
             </FormInput>
-            <FormInput label={"Address"} id={"address"} >
-                <input {...register("address", {
-                    required: "Please enter your lastname"
-                })} type={"text"} name={"address"} id={"address"} placeholder={"Enter your address"} className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${errors.confirmPassword ? "border-error" : "border-primary-200"}`} />
-                {errors.address && <span className="-mt-2 text-xs text-error">{errors.address.message}</span>}
-            </FormInput>
+            
             <div className="flex items-center justify-center gap-4 mt-6 ">
                 <button type="submit" disabled={pending} className="bg-primary text-white  cursor-pointer  px-5 py-3 font-semibold flex space-x-2.5 font-mono items-center justify-center rounded-md hover:shadow-md disabled:bg-gray-900 disabled:cursor-not-allowed"> <span>Save Changes</span> <span>{pending && <SpinnerMini />}</span> </button>
             </div>

@@ -1,6 +1,7 @@
 import "@/app/_styles/global.css";
 import {Toaster} from "react-hot-toast";
 import { UserProvider } from "./_context/UserContext";
+import TokenRefreshModal from "./_components/TokenRefreshModal";
 export const metadata = {
   title: {
     template: "%s | Xpacy",
@@ -14,7 +15,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="text-primary flex flex-col">
-        <UserProvider>{children}</UserProvider>
+        <UserProvider>
+          {children}
+          <TokenRefreshModal />
+        </UserProvider>
       <Toaster
           position="top-center"
           gutter={12}

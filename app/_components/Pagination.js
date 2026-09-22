@@ -4,12 +4,14 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
 
 
-export default function Pagination({ pagination }) {
+export default function Pagination({ pagination = {} }) {
     const { page: currentPage, totalPages, limit } = pagination;
     const pathname = usePathname();
     const searchParams = useSearchParams();
     // const currentPage = searchParams.get("page") ?? 1
-    const router = useRouter()
+    const router = useRouter();
+
+    if (!currentPage || !totalPages || totalPages <= 1) return null;
     function handleNext() {
         const params = new URLSearchParams(searchParams);
         params.set('page', Number(currentPage + 1))

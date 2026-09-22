@@ -10,7 +10,9 @@ import { cookies } from "next/headers";
 export default async function Page() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")
-    const [profile, cities] = await Promise.all([getUserProfile(token), getCities()])
+    const [profile, cities] = await Promise.all([getUserProfile(), getCities()])
+
+    console.log(profile)
     return (
         <div className="px-6 pt-6 lg:pb-[109px] pb-12">
             <MobileDashboardHeader/>
@@ -24,9 +26,7 @@ export default async function Page() {
                 <Section title={"Account Security"}>
                     <UpdatePasswordForm/>
                 </Section>
-                <Section title={"Location Preference"}>
-                    <LocationForm cities={cities} profile={profile}/>
-                </Section>
+               
             </div>
         </div>
     )
