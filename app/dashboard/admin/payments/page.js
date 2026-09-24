@@ -1,16 +1,14 @@
 import PaymentsTableList from "@/app/_components/PaymentsTableList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import PaymentsOverviewWrapper from "@/app/_components/PaymentsOverviewWrapper";
-import {getInvoices } from "@/app/_lib/data-services";
+import {getAllInvoices, getInvoices } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import DateFilter from "@/app/_components/DateFilter";
 import ExportButton from "@/app/_components/ExportButton";
 
 export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    // Placeholder data until endpoint is ready
-    const invoices = await getInvoices(token) || [];
+  
+    const invoices = await getAllInvoices() || [];
 
     return (
         <div className="space-y-8 p-2">

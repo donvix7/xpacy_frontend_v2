@@ -96,7 +96,7 @@ export default function AdminUsersList({ users = [], title = "All Users List", v
                         </div>
                         <div className="flex justify-between">
                         <label className="text-sm text-gray-500 ">Name</label>
-                        <h3 className="font-bold text-sm text-neutrals-900">{user.firstname} {user.lastname}</h3>
+                        <span className="text-sm font-semibold">{user.firstname || user.first_name || user.firstName} {user.lastname || user.last_name || user.lastName || user.username}</span>
 
                         </div>
                         {variant !== 'tenant' && 

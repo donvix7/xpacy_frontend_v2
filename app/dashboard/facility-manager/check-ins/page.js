@@ -5,6 +5,7 @@ import { getAdminBooking } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import { FaCalendarCheck, FaDoorOpen, FaPeopleRoof } from "react-icons/fa6";
 import { FiLogIn } from "react-icons/fi";
+import DashboardMobileCards from "@/app/_components/DashboardMobileCards";
 
 const statusKey = (s) => (s || "").toLowerCase();
 
@@ -69,7 +70,17 @@ export default async function Page() {
                 {myBookings.length === 0 ? (
                     <EmptyState message="No guest stays found. Bookings will appear here for check-in and check-out management." />
                 ) : (
-                    <div className="overflow-x-auto">
+                    <DashboardMobileCards items={myBookings.slice(0, 20).map((b, i) => ({
+                        key: b.id || b._id || i,
+                        title: b.guest_name || b.customer_name || b.user_name || b.client_name || `Guest ${i + 1}`,
+                        fields: [
+                            { label: "Property", value: b.property_name || b.property_id || "—" },
+                            { label: "Check-in", value: formatDate(b.check_in_date || b.checkin_date || b.start_date) },
+                            { label: "Check-out", value: formatDate(b.check_out_date || b.checkout_date || b.end_date) },
+                            { label: "Status", value: badge(b.status) },
+                        ],
+                    }))} />
+                    <div className="hidden overflow-x-auto lg:block">
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b border-primary-200">

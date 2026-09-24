@@ -16,6 +16,46 @@ export default function TokenRefreshModal() {
 
   const router = useRouter();
   const timerRef = useRef(null);
+  const refreshInFlightRef = useRef(null);
+  const autoRefreshAttemptedRef = useRef(false);
+
+  const handleRefreshSession = useCallback(async () => {
+    if (refreshInFlightRef.current) return refreshInFlightRef.current;
+
+    setIsRefreshing(true);
+    setErrorMessage(null);
+
+    const refreshAttempt = (async () => {
+      try {
+        const res = await refreshToken();
+
+        if (res.success) {
+          autoRefreshAttemptedRef.current = false;
+          toast.success(res.message || "Session refreshed successfully!");
+          setIsOpen(false);
+          setErrorMessage(null);
+          notifyTokenRefreshed(res);
+          router.refresh();
+          return true;
+        }
+
+        setErrorMessage(res.message || "Failed to refresh session. Please try again.");
+        toast.error(res.message || "Session refresh failed");
+        return false;
+      } catch (err) {
+        console.error("Error calling refreshToken:", err);
+        setErrorMessage(err.message || "An unexpected error occurred while refreshing your session.");
+        toast.error("Failed to refresh session");
+        return false;
+      } finally {
+        refreshInFlightRef.current = null;
+        setIsRefreshing(false);
+      }
+    })();
+
+    refreshInFlightRef.current = refreshAttempt;
+    return refreshAttempt;
+  }, [router]);
 
   const scheduleCheck = useCallback(async () => {
     try {
@@ -31,6 +71,10 @@ export default function TokenRefreshModal() {
 
       if (status.isExpired) {
         setIsOpen(true);
+        if (status.hasRefreshToken && !autoRefreshAttemptedRef.current) {
+          autoRefreshAttemptedRef.current = true;
+          await handleRefreshSession();
+        }
         return;
       }
 
@@ -38,13 +82,13 @@ export default function TokenRefreshModal() {
       if (typeof status.expiresInMs === "number" && status.expiresInMs > 0) {
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => {
-          setIsOpen(true);
+          void scheduleCheck();
         }, status.expiresInMs);
       }
     } catch (err) {
       console.error("Failed to check token status:", err);
     }
-  }, []);
+  }, [handleRefreshSession]);
 
   useEffect(() => {
     scheduleCheck();
@@ -60,8 +104,14 @@ export default function TokenRefreshModal() {
     const interval = setInterval(scheduleCheck, 60000);
 
     // Event listener for manual or 401 interceptor trigger
-    const handleExpiredEvent = () => {
+    const handleExpiredEvent = async () => {
       setIsOpen(true);
+      const status = await checkTokenStatus();
+      setHasRefreshToken(status.hasRefreshToken);
+      if (status.hasRefreshToken && !autoRefreshAttemptedRef.current) {
+        autoRefreshAttemptedRef.current = true;
+        await handleRefreshSession();
+      }
     };
 
     // Event listener for manual re-schedule
@@ -87,7 +137,7 @@ export default function TokenRefreshModal() {
       window.removeEventListener("xpacy:token-expired", handleExpiredEvent);
       window.removeEventListener("xpacy:token-refreshed", handleRefreshedEvent);
     };
-  }, [scheduleCheck]);
+  }, [handleRefreshSession, scheduleCheck]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -100,33 +150,6 @@ export default function TokenRefreshModal() {
       document.body.style.overflow = "unset";
     };
   }, [isOpen]);
-
-  async function handleRefreshSession() {
-    setIsRefreshing(true);
-    setErrorMessage(null);
-
-    try {
-      const res = await refreshToken();
-
-      if (res.success) {
-        toast.success(res.message || "Session refreshed successfully!");
-        setIsOpen(false);
-        setErrorMessage(null);
-        notifyTokenRefreshed(res);
-        router.refresh();
-        scheduleCheck();
-      } else {
-        setErrorMessage(res.message || "Failed to refresh token. Please log in again.");
-        toast.error(res.message || "Session refresh failed");
-      }
-    } catch (err) {
-      console.error("Error calling refreshToken:", err);
-      setErrorMessage(err.message || "An unexpected error occurred while refreshing your session.");
-      toast.error("Failed to refresh session");
-    } finally {
-      setIsRefreshing(false);
-    }
-  }
 
   function handleLogoutClick() {
     startLogoutTransition(async () => {
@@ -187,14 +210,14 @@ export default function TokenRefreshModal() {
 
         {/* Primary Action Button: Refresh Token */}
         <div className="w-full flex flex-col gap-3">
-          {hasRefreshToken && !errorMessage ? (
+          {hasRefreshToken ? (
             <button
               onClick={handleRefreshSession}
               disabled={isRefreshing || isPendingLogout}
               className="w-full py-3.5 px-4 bg-primary text-white rounded-xl font-semibold shadow-md hover:bg-primary-900 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              <span>{isRefreshing ? "Refreshing Session..." : "Refresh Session"}</span>
+              <span>{isRefreshing ? "Refreshing Session..." : errorMessage ? "Try Refreshing Again" : "Refresh Session"}</span>
             </button>
           ) : (
             <button

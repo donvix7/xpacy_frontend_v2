@@ -1,9 +1,6 @@
-import { cookies } from "next/headers";
 import { getUserNotifications } from "@/app/_lib/data-services";
 import CustomCheckbox from "@/app/_components/CustomCheckbox";
 import DashboardFilter from "@/app/_components/DashboardFilter";
-import EmptyState from "@/app/_components/EmptyState";
-import NotificationTableItem from "@/app/_components/NotificationTableItem";
 import SortBy from "@/app/_components/SortBy";
 import MobileDashboardHeader  from '@/app/_components/MobileDashboardHeader';
 import { IoCheckmarkDoneSharp } from "react-icons/io5";
@@ -14,9 +11,9 @@ import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import AdminNotificationsSummary from "@/app/_components/AdminNotificationsSummary";
 import { markAllAsRead } from "@/app/_lib/action";
 export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")
-    const notifications = await getUserNotifications(token);
+            const notifications = await getUserNotifications();
+            console.log(notifications)
+           
 
     return (
         <div className="p-2 flex flex-col gap-4">
@@ -55,7 +52,7 @@ export default async function Page() {
             </div>
             {/* Notification Table for large screens only*/}
                 <DashboardGridItem title={"Notifications"} >
-                    <NotificationList/>
+                    <NotificationList notifications={notifications}/>
                 </DashboardGridItem>
             {/* Notification List For small screens only */}
             {notifications?.map((notification, i) => <MobileNotificationItem notification={notification} key={i} />)}

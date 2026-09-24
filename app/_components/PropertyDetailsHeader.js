@@ -15,8 +15,8 @@ import { useRouter } from "next/navigation";
 export default function PropertyDetailsHeader({propertyName, propertyAddress, propertyStatus,  viewPhotos = null, children}){
     const router = useRouter();
     return ( 
-        <header className="flex flex-col gap-12 py-6">
-            <div className="flex items-center space-x-2 font-mono text-black text-sm md:text-base">
+        <header className="flex min-w-0 flex-col gap-6 py-5 sm:gap-8 sm:py-6 md:gap-12">
+            <div className="flex min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap font-mono text-sm text-black md:text-base">
                 <Link href={"/"}>Home</Link>
                 <span className="text-md"><MdKeyboardArrowRight /></span>
                 <Link href={`/${propertyStatus?.toLowerCase() || ""}`} className={"capitalize"}>{propertyStatus || "Details"}</Link>
@@ -28,14 +28,14 @@ export default function PropertyDetailsHeader({propertyName, propertyAddress, pr
                  </>)}
                 <span className={"text-blue-400 capitalize"}>{viewPhotos ?  "View Photos" : "Property Details"}</span>
             </div>
-            <div className="md:space-y-2 space-y-4 flex flex-col">
-                <h1 className="font-bold text-[28px] md:text-4xl capitalize ">{propertyName}</h1>
-                <div className="flex md:items-center md:justify-between gap-2 md:gap-0 flex-col md:flex-row">
-                    <p className="md:text-md text-base flex items-center gap-2 text-primary-700">
-                        <span className="text-2xl"><IoLocationOutline/></span>
-                        {propertyAddress}
+            <div className="flex min-w-0 flex-col space-y-3 md:space-y-2">
+                <h1 className="break-words text-2xl font-bold capitalize sm:text-[28px] md:text-4xl">{propertyName}</h1>
+                <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0">
+                    <p className="flex min-w-0 items-start gap-2 break-words text-sm text-primary-700 sm:text-base">
+                        <span className="shrink-0 text-2xl"><IoLocationOutline/></span>
+                        <span className="min-w-0">{propertyAddress}</span>
                     </p>
-                    <div className="space-x-2 flex">
+                    <div className="flex flex-wrap items-center gap-2">
                         <PropertySearchBtn />
                         {children}
                         <Modal>

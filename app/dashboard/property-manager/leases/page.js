@@ -1,428 +1,118 @@
-"use client";
+import { cookies } from "next/headers";
+import {
+    getPropertyOwnerProfile,
+    getPropertyOwnerProperties,
+    getPropertyOwnerBookings,
+} from "@/app/_lib/data-services";
+import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import SummaryCards from "@/app/_components/SummaryCards";
+import EmptyState from "@/app/_components/EmptyState";
+import { FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
+import { FaFileContract, FaHourglassHalf } from "react-icons/fa6";
+import { Button } from "@mui/material";
+import Link from "next/link";
 
-import FormInput from "@/app/_components/FormInput";
-import SpinnerMini from "@/app/_components/SpinnerMini";
-import { url } from "@/app/_lib/constants";
-import axios from "axios";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
-import { FaNairaSign } from "react-icons/fa6";
+export default async function Page() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token");
 
-// Billing cycle options (enum values expected by the backend)
-const billingCycleOptions = [
-    { id: 1, value: "MONTHLY", label: "Monthly" },
-    { id: 2, value: "QUARTERLY", label: "Quarterly" },
-    { id: 3, value: "BIANNUALLY", label: "Bi-Annually" },
-    { id: 4, value: "ANNUALLY", label: "Annually" },
+    const results = await Promise.allSettled([
+        getPropertyOwnerProfile(token),
+        getPropertyOwnerProperties(token, { limit: 10000 }),
+        getPropertyOwnerBookings(token),
+    ]);
+
+    const profile = results[0].status === "fulfilled" ? results[0].value : null;
+    const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
+    const bookings = results[2].status === "fulfilled" ? results[2].value : [];
+
+    const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
+    const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
+    const myBookings = Array.isArray(bookings) ? bookings : [];
+
+    const activeLeases = myBookings.filter(b => (b.status || "").toLowerCase() === "active" || (b.status || "").toLowerCase() === "confirmed");
+    const pendingLeases = myBookings.filter(b => (b.status || "").toLowerCase() === "pending");
+    const expiredLeases = myBookings.filter(b => (b.status || "").toLowerCase() === "expired" || (b.status || "").toLowerCase() === "cancelled");
+
+  
+const summaryCards = [
+    { 
+        label: "Total Leases", 
+        value: myBookings.length, 
+        color: "bg-primary-100", 
+        icon: <FaFileContract className="w-5 h-5 text-primary-700" /> 
+    },
+    { 
+        label: "Active", 
+        value: activeLeases.length, 
+        color: "bg-blue-100", 
+        icon: <FaCheckCircle className="w-5 h-5 text-blue-700" /> 
+    },
+    { 
+        label: "Pending", 
+        value: pendingLeases.length, 
+        color: "bg-amber-100", 
+        icon: <FaHourglassHalf className="w-5 h-5 text-amber-700" /> 
+    },
+    { 
+        label: "Expired", 
+        value: expiredLeases.length, 
+        color: "bg-red-100", 
+        icon: <FaExclamationCircle className="w-5 h-5 text-red-700" /> 
+    },
 ];
 
-const AddNewLeaseForm = ({
-    token,
-    initialData = null,
-    isEditMode = false,
-    isReadOnly = false,
-    tenantProfiles = [],
-    units = [],
-}) => {
-    const effectiveData = initialData || {};
-    const [isPending, setIsPending] = useState(false);
-
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        reset,
-    } = useForm({
-        defaultValues: {
-            tenantProfileId: effectiveData?.tenantProfileId || "",
-            unitId: effectiveData?.unitId || "",
-            startDate: effectiveData?.startDate?.slice(0, 10) || "",
-            endDate: effectiveData?.endDate?.slice(0, 10) || "",
-            rentAmount: effectiveData?.rentAmount ?? "",
-            billingCycle: effectiveData?.billingCycle || "",
-            securityDeposit: effectiveData?.securityDeposit ?? 0,
-            renewalDate: effectiveData?.renewalDate?.slice(0, 10) || "",
-            terms: effectiveData?.terms || "",
-        },
-    });
-
-    const onSubmit = (data) => {
-        const payload = {
-            tenantProfileId: (data.tenantProfileId || "").trim(),
-            unitId: (data.unitId || "").trim(),
-            startDate: data.startDate
-                ? new Date(data.startDate).toISOString()
-                : "",
-            endDate: data.endDate
-                ? new Date(data.endDate).toISOString()
-                : "",
-            rentAmount: Number(data.rentAmount) || 0,
-            billingCycle: data.billingCycle,
-            securityDeposit: Number(data.securityDeposit) || 0,
-            renewalDate: data.renewalDate
-                ? new Date(data.renewalDate).toISOString()
-                : "",
-            terms: (data.terms || "").trim(),
-        };
-
-        // Sanity checks before hitting the API
-        if (
-            payload.startDate &&
-            payload.endDate &&
-            new Date(payload.endDate) <= new Date(payload.startDate)
-        ) {
-            return toast.error("End date must be after start date.");
-        }
-
-        setIsPending(true);
-        toast.promise(addLease(payload), {
-            loading: isEditMode ? "Updating lease..." : "Creating lease...",
-            success: (res) => {
-                setIsPending(false);
-                if (!res?.success) {
-                    throw new Error(
-                        res?.message ||
-                            res?.errors?.[0]?.message ||
-                            "Failed to save lease."
-                    );
-                }
-                reset();
-                return isEditMode
-                    ? "Lease updated successfully!"
-                    : "Lease created successfully!";
-            },
-            error: (error) => {
-                setIsPending(false);
-                return `${error?.message || "Failed to save lease."}`;
-            },
-        });
-    };
-
-    const addLease = async (payload) => {
-        try {
-            const response = await axios({
-                method: isEditMode ? "PUT" : "POST",
-                url:
-                    isEditMode && effectiveData?.id
-                        ? `${url}/lease/update-lease/${effectiveData.id}`
-                        : `${url}/lease/create-lease`,
-                data: payload,
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token?.value}`,
-                },
-            });
-            return response.data;
-        } catch (error) {
-            console.error("addLease error:", error);
-            throw new Error(
-                error?.response?.data?.message ||
-                    error.message ||
-                    "An error occurred. Please try again."
-            );
-        }
-    };
-
     return (
-        <div className="flex flex-col gap-12 w-[796px] mx-auto pb-12">
-            <header className="flex flex-col items-center justify-center gap-4">
-                <h2 className="text-3xl font-bold text-primary">
-                    {isEditMode ? "Edit Lease" : "Create New Lease"}
-                </h2>
-                {!isEditMode && (
-                    <p className="font-mono">
-                        Fill in the lease details below.
-                    </p>
-                )}
-            </header>
+        <div className="space-y-6 p-2">
+            <div className="flex items-center justify-between">
+            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Leases</h1>
+             <Link
+        href="/dashboard/property-manager/leases/create"
+        className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-600 transition-colors font-medium"
+      >
+        + Create Lease
+      </Link>
+            </div>
+            <SummaryCards cards={summaryCards} title="Lease Overview" />
 
-            <form
-                className="p-6 flex flex-col gap-10"
-                onSubmit={handleSubmit(onSubmit)}
-            >
-                {/* ---------- Parties ---------- */}
-                <section className="flex flex-col gap-6">
-                    <h3 className="text-lg">Lease Parties</h3>
-                    <div className="flex flex-col gap-6">
-                        <FormInput label="Tenant" id="tenantProfileId">
-                            <select
-                                disabled={isReadOnly}
-                                {...register("tenantProfileId", {
-                                    required: "Tenant is required",
-                                })}
-                                id="tenantProfileId"
-                                className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                    errors.tenantProfileId
-                                        ? "border-error"
-                                        : "border-primary-200"
-                                }`}
-                            >
-                                <option value="">Select a tenant</option>
-                                {tenantProfiles.map((t) => (
-                                    <option key={t.id} value={t.id}>
-                                        {t.name ||
-                                            `${t.firstName || ""} ${
-                                                t.lastName || ""
-                                            }`}
-                                    </option>
+            <DashboardGridItem title="Lease Agreements">
+                {myBookings.length === 0 ? (
+                    <EmptyState message="No lease agreements found. Leases will appear here once properties are booked." />
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-primary-200">
+                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Booking</th>
+                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Property</th>
+                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Check-in</th>
+                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Check-out</th>
+                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {myBookings.slice(0, 20).map((booking, i) => (
+                                    <tr key={booking.id || booking._id || i} className="border-b border-primary-100 hover:bg-gray-50">
+                                        <td className="py-3 px-4 text-sm font-medium">{booking.booking_number || booking.id || `BK-${i + 1}`}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600">{booking.property_title || booking.property_name || "—"}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600">{booking.check_in || booking.start_date ? new Date(booking.check_in || booking.start_date).toLocaleDateString() : "—"}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600">{booking.check_out || booking.end_date ? new Date(booking.check_out || booking.end_date).toLocaleDateString() : "—"}</td>
+                                        <td className="py-3 px-4">
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                                (booking.status || "").toLowerCase() === "active" || (booking.status || "").toLowerCase() === "confirmed" ? "bg-green-100 text-green-700"
+                                                : (booking.status || "").toLowerCase() === "pending" ? "bg-yellow-100 text-yellow-700"
+                                                : "bg-gray-100 text-gray-600"
+                                            }`}>
+                                                {booking.status || "Unknown"}
+                                            </span>
+                                        </td>
+                                    </tr>
                                 ))}
-                            </select>
-                            {errors.tenantProfileId && (
-                                <span className="-mt-2 text-xs text-error">
-                                    {errors.tenantProfileId.message}
-                                </span>
-                            )}
-                        </FormInput>
-
-                        <FormInput label="Unit" id="unitId">
-                            <select
-                                disabled={isReadOnly}
-                                {...register("unitId", {
-                                    required: "Unit is required",
-                                })}
-                                id="unitId"
-                                className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                    errors.unitId
-                                        ? "border-error"
-                                        : "border-primary-200"
-                                }`}
-                            >
-                                <option value="">Select a unit</option>
-                                {units.map((u) => (
-                                    <option key={u.id} value={u.id}>
-                                        {u.name || u.unitNumber || u.id}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.unitId && (
-                                <span className="-mt-2 text-xs text-error">
-                                    {errors.unitId.message}
-                                </span>
-                            )}
-                        </FormInput>
-                    </div>
-                </section>
-
-                {/* ---------- Terms ---------- */}
-                <section className="flex flex-col gap-6">
-                    <h3 className="text-lg">Lease Terms</h3>
-                    <div className="flex flex-col gap-6">
-                        <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
-                            <FormInput label="Start Date" id="startDate">
-                                <input
-                                    disabled={isReadOnly}
-                                    {...register("startDate", {
-                                        required: "Start date is required",
-                                    })}
-                                    type="date"
-                                    id="startDate"
-                                    className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                        errors.startDate
-                                            ? "border-error"
-                                            : "border-primary-200"
-                                    }`}
-                                />
-                                {errors.startDate && (
-                                    <span className="-mt-2 text-xs text-error">
-                                        {errors.startDate.message}
-                                    </span>
-                                )}
-                            </FormInput>
-
-                            <FormInput label="End Date" id="endDate">
-                                <input
-                                    disabled={isReadOnly}
-                                    {...register("endDate", {
-                                        required: "End date is required",
-                                    })}
-                                    type="date"
-                                    id="endDate"
-                                    className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                        errors.endDate
-                                            ? "border-error"
-                                            : "border-primary-200"
-                                    }`}
-                                />
-                                {errors.endDate && (
-                                    <span className="-mt-2 text-xs text-error">
-                                        {errors.endDate.message}
-                                    </span>
-                                )}
-                            </FormInput>
-                        </div>
-
-                        <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
-                            <FormInput label="Rent Amount" id="rentAmount">
-                                <div
-                                    className={`flex items-center gap-2 rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                        errors.rentAmount
-                                            ? "border-error"
-                                            : "border-primary-200"
-                                    }`}
-                                >
-                                    <span>
-                                        <FaNairaSign />
-                                    </span>
-                                    <input
-                                        disabled={isReadOnly}
-                                        {...register("rentAmount", {
-                                            required:
-                                                "Rent amount is required",
-                                            min: {
-                                                value: 1,
-                                                message:
-                                                    "Rent amount must be greater than 0",
-                                            },
-                                        })}
-                                        type="number"
-                                        id="rentAmount"
-                                        placeholder="Enter rent amount"
-                                        className="focus:outline-none flex-1"
-                                    />
-                                </div>
-                                {errors.rentAmount && (
-                                    <span className="-mt-2 text-xs text-error">
-                                        {errors.rentAmount.message}
-                                    </span>
-                                )}
-                            </FormInput>
-
-                            <FormInput
-                                label="Billing Cycle"
-                                id="billingCycle"
-                            >
-                                <select
-                                    disabled={isReadOnly}
-                                    {...register("billingCycle", {
-                                        required: "Billing cycle is required",
-                                    })}
-                                    id="billingCycle"
-                                    className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                        errors.billingCycle
-                                            ? "border-error"
-                                            : "border-primary-200"
-                                    }`}
-                                >
-                                    <option value="">
-                                        Select a billing cycle
-                                    </option>
-                                    {billingCycleOptions.map((item) => (
-                                        <option
-                                            key={item.id}
-                                            value={item.value}
-                                        >
-                                            {item.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.billingCycle && (
-                                    <span className="-mt-2 text-xs text-error">
-                                        {errors.billingCycle.message}
-                                    </span>
-                                )}
-                            </FormInput>
-                        </div>
-
-                        <FormInput
-                            label="Security Deposit"
-                            id="securityDeposit"
-                        >
-                            <div
-                                className={`flex items-center gap-2 rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                    errors.securityDeposit
-                                        ? "border-error"
-                                        : "border-primary-200"
-                                }`}
-                            >
-                                <span>
-                                    <FaNairaSign />
-                                </span>
-                                <input
-                                    disabled={isReadOnly}
-                                    {...register("securityDeposit", {
-                                        min: {
-                                            value: 0,
-                                            message:
-                                                "Security deposit cannot be negative",
-                                        },
-                                    })}
-                                    type="number"
-                                    id="securityDeposit"
-                                    placeholder="Enter security deposit"
-                                    className="focus:outline-none flex-1"
-                                />
-                            </div>
-                            {errors.securityDeposit && (
-                                <span className="-mt-2 text-xs text-error">
-                                    {errors.securityDeposit.message}
-                                </span>
-                            )}
-                        </FormInput>
-                        <div className="flex flex-col gap-6">
-                        <FormInput label="Renewal Date" id="renewalDate">
-                            <input
-                                disabled={isReadOnly}
-                                {...register("renewalDate")}
-                                type="date"
-                                id="renewalDate"
-                                className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                    errors.renewalDate
-                                        ? "border-error"
-                                        : "border-primary-200"
-                                }`}
-                            />
-                            {errors.renewalDate && (
-                                <span className="-mt-2 text-xs text-error">
-                                    {errors.renewalDate.message}
-                                </span>
-                            )}
-                        </FormInput>
-
-                        <div className="w-full flex flex-col space-y-2 font-mono">
-                            <label
-                                htmlFor="terms"
-                                className="text-sm text-black"
-                            >
-                                Lease Terms
-                            </label>
-                            <textarea
-                                disabled={isReadOnly}
-                                {...register("terms")}
-                                id="terms"
-                                rows={8}
-                                className="rounded-lg border bg-[#FCFEFF] px-4.5 py-3 resize-none focus:outline-none border-primary-200"
-                                placeholder="Enter any additional terms of the lease..."
-                            />
-                        </div>
-                    </div>
-                    </div>
-                </section>
-
-                {/* ---------- Renewal & Terms ---------- */}
-                <section className="flex flex-col gap-6">
-                    <h3 className="text-lg">Renewal & Terms</h3>
-                    
-                </section>
-
-                {/* ---------- Submit ---------- */}
-                {!isReadOnly && (
-                    <div className="self-end">
-                        <button
-                            disabled={isPending}
-                            type="submit"
-                            className="px-4 py-2 bg-primary-200 font-mono text-primary rounded-lg hover:bg-primary-200/80 cursor-pointer transition flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <span>
-                                {isEditMode ? "Save Changes" : "Create Lease"}
-                            </span>
-                            {isPending && <SpinnerMini />}
-                        </button>
+                            </tbody>
+                        </table>
                     </div>
                 )}
-            </form>
+            </DashboardGridItem>
         </div>
     );
-};
-
-export default AddNewLeaseForm;
+}

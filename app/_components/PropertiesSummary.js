@@ -1,6 +1,7 @@
 import { Building, Building2 } from "lucide-react";
 import { BiBuildings } from "react-icons/bi";
 import { FaHome, FaCheckCircle, FaTools, FaTag, FaHandshake } from "react-icons/fa";
+import SummaryItemCard from "./SummaryItemCard";
 
 export default function PropertiesSummary({ properties, totalProperties, showHeading = true }) {
     // Calculate counts based on passed properties (which are already filtered if needed)
@@ -66,19 +67,11 @@ export default function PropertiesSummary({ properties, totalProperties, showHea
                 </div>
 
                 {/* Grid Items */}
-               <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            {summaryItems.map((item, index) => (
-                <div key={index} className="bg-white rounded-xl border border-primary-200  p-6 duration-300 flex justify-between ">
-                    <div className="flex flex-col gap-2">
-                        <p className="text-gray-600 text-sm capitalize">{item.title}</p>
-                        <p className="text-2xl font-bold mt-1">{item.count.toLocaleString()}</p>
-                    </div>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4 ${item.color}`}>
-                        {item.icon}
-                    </div>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 sm:gap-4">
+                    {summaryItems.map((item, index) => (
+                        <SummaryItemCard key={index} label={item.title} value={item.count} icon={item.icon} iconBackground={item.bgColor} />
+                    ))}
                 </div>
-            ))}
-        </div>
             </div>
         </div>
     );

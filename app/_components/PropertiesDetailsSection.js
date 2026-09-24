@@ -14,30 +14,30 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
 
     return (
         <>
-            <div className="flex flex-col gap-[72px] md:col-span-3">
+            <div className="flex min-w-0 flex-col gap-8 md:col-span-3 md:gap-[72px]">
                 {/* Specification */}
                 <div className="flex flex-col gap-4 ">
-                    <h3 className="text-primary-900 text-[1.375rem] font-normal">Specification</h3>
-                    <div className="px-12 py-6 bg-white shadow-lg md:flex md:justify-between rounded-lg grid gap-y-2 md:gap-y-0 grid-cols-[1fr_1fr]">
+                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Specification</h3>
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-4 rounded-lg bg-white p-4 shadow-lg sm:gap-4 sm:p-6 md:flex md:justify-between md:px-12 md:py-6">
                         {/* Bedroom */}
-                        <div className="flex flex-col gap-2 items-center font-mono">
-                            <div className="flex items-center gap-2 font-mono text-2xl text-black">
+                            <div className="flex min-w-0 flex-col items-center gap-2 font-mono">
+                            <div className="flex items-center gap-2 font-mono text-xl text-black sm:text-2xl">
                                 <RiHotelBedLine />
                                 <span className="text-base ">Bedrooms</span>
                             </div>
                             <span className="text-lg font-bold">{property?.total_bedrooms}</span>
                         </div>
                         {/* Bathroom */}
-                        <div className="flex flex-col gap-2 items-center font-mono">
-                            <div className="flex items-center gap-2 text-2xl text-black">
+                        <div className="flex min-w-0 flex-col items-center gap-2 font-mono">
+                            <div className="flex items-center gap-2 text-xl text-black sm:text-2xl">
                                 <LuBath />
                                 <span className="text-base ">Bathrooms</span>
                             </div>
                             <span className="text-lg font-bold">{property?.total_bathrooms}</span>
                         </div>
                         {/* Toilets */}
-                        <div className="flex flex-col gap-2 items-center font-mono">
-                            <div className="flex items-center gap-2 text-2xl text-black">
+                        <div className="flex min-w-0 flex-col items-center gap-2 font-mono">
+                            <div className="flex items-center gap-2 text-xl text-black sm:text-2xl">
                                 <LiaToiletSolid />
                                 <span className="text-base ">Toilets</span>
                             </div>
@@ -46,8 +46,8 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
                         {/* Square area */}
                         {
                             property?.property_square_area && (
-                                <div className="flex flex-col gap-2 items-center font-mono">
-                                    <div className="flex items-center gap-2 text-2xl text-black">
+                                <div className="flex min-w-0 flex-col items-center gap-2 font-mono">
+                                    <div className="flex items-center gap-2 text-xl text-black sm:text-2xl">
                                         <FaRegSquare />
                                         <span className="text-base ">Square Area</span>
                                     </div>
@@ -59,8 +59,8 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
                 {/* Description */}
                 <div className="border border-neutral-300"></div>
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-primary-900 text-[1.375rem] font-normal">Description</h3>
-                    <div className="text-base text-black font-mono tracking-wide">
+                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Description</h3>
+                    <div className="break-words text-sm leading-7 tracking-wide text-black sm:text-base">
                         <TextExpander>
                             {property?.description}
                         </TextExpander>
@@ -72,48 +72,48 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
                 <div className="border border-neutral-300"></div>
                 {/* Property features */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-primary-900 text-[1.375rem] font-normal">Property Features</h3>
-                    <div className="text-base text-black font-mono grid md:grid-cols-2 grid-cols-1 gap-x-20 gap-y-6 grid-rows-auto">
-                        <div className="flex justify-between text-base text-black font-mono">
-                            <span>Location</span>
-                            <span>{property?.city}, {property?.state}</span>
+                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Property Features</h3>
+                    <div className="grid grid-cols-1 gap-x-8 gap-y-4 font-mono text-sm text-black sm:text-base md:grid-cols-2 md:gap-x-20 md:gap-y-6">
+                        <div className="flex min-w-0 justify-between gap-3">
+                            <span className="shrink-0">Location</span>
+                            <span className="min-w-0 break-words text-right">{property?.city}, {property?.state}</span>
                         </div>
                         {property?.property_square_area && (
-                            <div className="flex justify-between text-base text-black font-mono">
-                                <span>Property Size</span>
-                                <span>{property?.property_square_area}</span>
+                            <div className="flex min-w-0 justify-between gap-3">
+                                <span className="shrink-0">Property Size</span>
+                                <span className="min-w-0 break-words text-right">{property?.property_square_area}</span>
                             </div>
                         )}
-                        <div className="flex justify-between text-base text-black font-mono">
-                            <span>Status</span>
-                            <span>{property?.property_status}</span>
+                        <div className="flex min-w-0 justify-between gap-3">
+                            <span className="shrink-0">Status</span>
+                            <span className="min-w-0 break-words text-right">{property?.property_status}</span>
                         </div>
                         {property?.land_area &&
-                            <div className="flex justify-between text-base text-black font-mono">
-                                <span>Land Size</span>
-                                <span>{property?.land_area}</span>
+                            <div className="flex min-w-0 justify-between gap-3">
+                                <span className="shrink-0">Land Size</span>
+                                <span className="min-w-0 break-words text-right">{property?.land_area}</span>
                             </div>}
-                        <div className="flex justify-between text-base text-black font-mono">
-                            <span>Type</span>
-                            <span>{property?.property_type}</span>
+                        <div className="flex min-w-0 justify-between gap-3">
+                            <span className="shrink-0">Type</span>
+                            <span className="min-w-0 break-words text-right">{property?.property_type}</span>
                         </div>
-                        <div className="flex justify-between text-base text-black font-mono">
-                            <span>Kitchen Type</span>
-                            <span>{property?.kitchen_type}</span>
+                        <div className="flex min-w-0 justify-between gap-3">
+                            <span className="shrink-0">Kitchen Type</span>
+                            <span className="min-w-0 break-words text-right">{property?.kitchen_type}</span>
                         </div>
-                        <div className="flex justify-between text-base text-black font-mono">
-                            <span>Parking Area</span>
-                            <span>{property?.parking_area}</span>
+                        <div className="flex min-w-0 justify-between gap-3">
+                            <span className="shrink-0">Parking Area</span>
+                            <span className="min-w-0 break-words text-right">{property?.parking_area}</span>
                         </div>
                     </div>
                 </div>
                 <div className="border border-neutral-300"></div>
                 {/* Property Amenties */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-primary-900 text-[1.375rem] font-normal">Amenities</h3>
-                    <div className="grid auto-rows-auto md:grid-cols-3 grid-cols-1 gap-x-10 gap-y-6 text-base text-black font-mono">
+                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Amenities</h3>
+                    <div className="grid auto-rows-auto grid-cols-1 gap-x-6 gap-y-4 break-words font-mono text-sm text-black sm:grid-cols-2 sm:text-base md:grid-cols-3 md:gap-x-10 md:gap-y-6">
                         {
-                            property?.property_amenities.map((amenity, index) => (<div className="flex gap-4 items-center" key={index}>
+                            property?.property_amenities?.map((amenity, index) => (<div className="flex min-w-0 items-center gap-3" key={index}>
                                 <IoMdCheckmark /> <span>{amenity}</span>
                             </div>))
                         }
@@ -128,16 +128,16 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
             <section className="md:col-span-1 hidden md:block">
                 <PropertyDetailsSidebar property={property} isAuthenticated={isAuthenticated} />
             </section>
-            <section className="flex flex-col col-span-4 gap-[72px]">
+            <section className="col-span-4 flex flex-col gap-8 md:gap-[72px]">
                 {/* Map */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-primary-900 text-[1.375rem] font-normal">Map</h3>
+                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Map</h3>
                     <iframe
                         title="google map"
                         src={`https://www.google.com/maps?q=${property?.lat},${property?.long}&hl=es;z=14&output=embed`}
                         style={{ border: "0px" }}
                         width="100%"
-                        height="455"
+                        className="h-64 rounded-lg sm:h-80 md:h-[455px]"
                         allowFullScreen
                         loading="lazy"
                         referrerPolicy="no-referrer-when-downgrade"
@@ -146,13 +146,13 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
                 <div className="border border-neutral-300"></div>
                 {/* Reviews */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-primary-900 text-[1.375rem] font-normal">Reviews</h3>
+                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Reviews</h3>
                     <TestimonySection />
                 </div>
                 <div className="border border-neutral-300"></div>
                 {/* other properties */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-primary-900 text-[1.375rem] font-normal">You many also like these properties</h3>
+                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">You may also like these properties</h3>
                     <Suspense fallback={<LoadingPropertiesCard lengths={6} />}>
                         <OtherProperties />
                     </Suspense>

@@ -2,6 +2,7 @@ import { FaUsers, FaUserTie, FaUserShield, FaUserCheck, FaUserSlash } from "reac
 import { RiUserUnfollowLine } from "react-icons/ri";
 import { BiUser } from "react-icons/bi";
 import { User2, Users, Users2Icon } from "lucide-react";
+import SummaryItemCard from "./SummaryItemCard";
 
 export default function UsersSummary({
     totalUsers = 0,
@@ -75,10 +76,7 @@ export default function UsersSummary({
                     {/* Grid Items */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         {items.map((item, index) => (
-                            <div key={index} className="flex flex-col items-center justify-center p-6 rounded-lg  bg-white border border-primary-200 w-full relative overflow-hidden group">
-                               <p className="font-mono text-primary-700 text-base text-center mb-1">{item.title}</p>
-                               <p className="text-center font-bold text-lg font-mono text-gray-800">{item.count}</p>
-                            </div>
+                            <SummaryItemCard key={index} label={item.title} value={item.count} icon={item.icon} iconBackground={item.color} />
                         ))}
                     </div>
                 </div>

@@ -7,15 +7,15 @@ export default function AdminServicesTabs({ services, serviceProviders }) {
     const [activeTab, setActiveTab] = useState("requests");
 
     return (
-        <div className="flex flex-col gap-10 items-center">
-            <header className="flex flex-col items-center gap-6">
-                <h1 className="text-[2.5rem] font-bold text-primary-900 font-mono tracking-tight">Manage Service Requests</h1>
+        <div className="flex min-w-0 flex-col items-center gap-6 sm:gap-10">
+            <header className="flex w-full flex-col items-center gap-4 sm:gap-6">
+                <h1 className="text-center text-2xl font-bold tracking-tight text-primary-900 sm:text-[2.5rem]">Manage Service Requests</h1>
                 
                 {/* Custom Tab Switcher */}
-                <div className="flex bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm">
+                <div className="grid w-full max-w-xl grid-cols-2 rounded-lg border border-gray-200 bg-white p-1.5 shadow-sm">
                     <button
                         onClick={() => setActiveTab("requests")}
-                        className={`py-2 px-6 rounded-md text-sm font-bold font-mono transition-all cursor-pointer ${
+                        className={`rounded-md px-2 py-2 text-xs font-bold transition-all cursor-pointer sm:px-6 sm:text-sm ${
                             activeTab === "requests" 
                             ? "bg-[#D2B48C] text-gray-900" 
                             : "text-gray-900 hover:bg-gray-50"
@@ -25,7 +25,7 @@ export default function AdminServicesTabs({ services, serviceProviders }) {
                     </button>
                     <button
                         onClick={() => setActiveTab("providers")}
-                        className={`py-2 px-6 rounded-md text-sm font-bold font-mono transition-all cursor-pointer ${
+                        className={`rounded-md px-2 py-2 text-xs font-bold transition-all cursor-pointer sm:px-6 sm:text-sm ${
                             activeTab === "providers" 
                             ? "bg-[#D2B48C] text-gray-900" 
                             : "text-gray-900 hover:bg-gray-50"

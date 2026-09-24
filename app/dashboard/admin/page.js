@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getAdminProperties, getAdminServices, getPropertyOwner, getAllAdmin, getAllUsers, getAdminBooking, getInvoices, getUserNotifications, getAdminProfile } from "@/app/_lib/data-services";
+import { getAdminProperties, getAdminServices, getPropertyOwner, getAllAdmin, getAllUsers, getAdminBooking, getInvoices, getUserNotifications, getAdminProfile, getAllInvoices } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import AdminPropertyList from "@/app/_components/AdminPropertyList";
@@ -23,7 +23,7 @@ export default async function Page() {
         getAllAdmin(token),
         getAllUsers(token),
         getAdminBooking(token),
-        getInvoices(token),
+        getAllInvoices(token),
         getUserNotifications(token),
     ]);
 

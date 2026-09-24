@@ -385,10 +385,10 @@ const EditPropertyForm = ({
     const imageUrlBase = process.env.NEXT_PUBLIC_IMAGE_URL || 'https://app.xpacy.com/src/upload/properties';
 
     return (
-        <div className="flex flex-col gap-12 w-[796px] mx-auto pb-12">
+        <div className="mx-auto flex w-full min-w-0 max-w-[796px] flex-col gap-6 px-2 pb-8 sm:gap-10 sm:px-4 sm:pb-12">
             {/* Header */}
             <header className="flex flex-col items-center justify-center gap-4">
-                <h2 className="text-3xl font-bold text-primary">
+                <h2 className="text-center text-2xl font-bold text-primary sm:text-3xl">
                     {pageTitle}
                 </h2>
                 {!isPropertyDetailsPage && !isEditMode && (
@@ -402,7 +402,7 @@ const EditPropertyForm = ({
             )}
             
             {/* Form Steps */}
-            <form className="p-6 flex flex-col gap-8" onSubmit={handleSubmit(onSubmit)}>
+            <form className="flex min-w-0 flex-col gap-6 rounded-xl border border-primary-100 bg-white p-4 shadow-sm sm:gap-8 sm:p-6" onSubmit={handleSubmit(onSubmit)}>
                 {/* 1. Owner Info */}
                 {activeStep === 1 && (
                     <>
@@ -787,13 +787,13 @@ const EditPropertyForm = ({
                         {isPropertyDetailsPage ? (
                             <>
                                 <p className="font-mono">Photos</p>
-                                <div className="grid grid-cols-3 gap-x-6 gap-y-12">
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6">
                                     {existingImages.map((file, index) => (
                                         <img 
                                             key={index} 
                                             src={`${imageUrlBase}/${file}`} 
                                             alt={`Property Image ${index + 1}`} 
-                                            className="object-cover rounded-lg" 
+                                            className="aspect-[4/3] w-full rounded-lg object-cover"
                                         />
                                     ))}
                                 </div>
@@ -848,7 +848,7 @@ const EditPropertyForm = ({
                                     {errors.long && <span className="-mt-2 text-xs text-error">{errors.long.message}</span>}
                                 </FormInput>
                             </div>
-                            <div className="flex items-center justify-between font-mono">
+                            <div className="flex items-center justify-between gap-4 font-mono">
                                 <span>Feature this property</span>
                                 <CustomToogle 
                                     disabled={isReadOnly} 
@@ -861,7 +861,7 @@ const EditPropertyForm = ({
                 )}
                 
                 {/* Navigation Buttons */}
-                <div className={`${activeStep > minStep ? "flex items-center justify-between" : "self-end"}`}>
+                <div className={`flex w-full items-center justify-between ${activeStep === minStep ? "justify-end" : ""}`}>
                     {activeStep > minStep && (
                         <button 
                             type="button" 

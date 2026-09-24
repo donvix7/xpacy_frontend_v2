@@ -1,8 +1,7 @@
-import AddNewPropertyForm from "@/app/_components/AddNewPropertyForm";
 import BackBtn from "@/app/_components/BackBtn";
 import Logo from "@/app/_components/Logo";
 import ViewPropertyForm from "@/app/_components/ViewPropertyForm";
-import { getCities, getProperty, getPropertyOwnerById, getAdminBooking } from "@/app/_lib/data-services";
+import { getCities, getProperty, getPropertyOwnerById, getAdminBooking, getPropertyById } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 
 
@@ -11,9 +10,10 @@ export default async function Page({ params }) {
     const param = await params;
     const cookieStore = await cookies();
     const token = cookieStore.get("token")
-    const property = await getProperty(param.propertyId);
-    const propertyOwner = await getPropertyOwnerById(token, property?.property_owner_id);
-    const [allCities, allBookings] = await Promise.all([
+    const property = await getPropertyById(param.propertyId)
+    console.log(property)
+    const [propertyOwner, allCities, allBookings] = await Promise.all([
+        getPropertyOwnerById(property?.property_owner_id),
         getCities(),
         getAdminBooking(token)
     ]);
@@ -31,16 +31,16 @@ export default async function Page({ params }) {
     }
 
     return (
-        <div className="flex-1 flex flex-col gap-4.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-4.5">
             {/* Navigation */}
-            <nav className="   flex  pl-[7%] py-6 border-b border-primary-100">
-                <div className="w-1/2 flex items-center justify-between">
+            <nav className="flex border-b border-primary-100 px-4 py-4 sm:px-6 md:px-[7%] md:py-6">
+                <div className="flex w-full items-center justify-between gap-4 md:w-1/2">
                     <BackBtn />
                     <Logo />
                 </div>
             </nav>
             {/* Form */}
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex min-w-0 flex-col items-center justify-center px-2 sm:px-4">
                 <ViewPropertyForm
                     allOwners={null}
                     allCities={allCities}

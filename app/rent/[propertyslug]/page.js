@@ -41,7 +41,7 @@ export default async function Page({ params }) {
                     <PropertySavedIcon propertyId={property?.id} />
                 </PropertyDetailsHeader>
                 <PropertyPhotoSection property={property} />
-                <div className="md:grid md:grid-cols-4 gap-12 py-12 flex flex-col ">
+                <div className="flex min-w-0 flex-col gap-8 py-8 md:grid md:grid-cols-4 md:gap-12 md:py-12">
                     <PropertiesDetailsSection property={property} isAuthenticated={isAuthenticated} />
                 </div>
             </main>

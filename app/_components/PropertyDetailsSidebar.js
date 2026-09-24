@@ -11,9 +11,9 @@ import { usePathname } from "next/navigation";
 export default function PropertyDetailsSidebar({property, isAuthenticated}){
     const pathname = usePathname();
     return (
-        <div className="flex flex-col gap-8 py-[38px]">
-            <div className="px-4 pt-8 pb-8 flex flex-col gap-4 shadow-lg rounded-lg">
-                <p className="text-[1.5rem] text-center tracking-widest font-mono font-bold text-secondary-500 ">{formatCurrency(property?.property_price)} {property?.property_status === "Shortlet" && "/night"}</p>
+        <div className="flex flex-col gap-4 py-4 sm:gap-6 md:gap-8 md:py-[38px]">
+            <div className="flex flex-col gap-4 rounded-lg px-4 py-5 shadow-lg sm:px-6 sm:py-7">
+                <p className="break-words text-center text-xl font-bold tracking-wide text-secondary-500 sm:text-2xl">{formatCurrency(property?.property_price)} {property?.property_status === "Shortlet" && "/night"}</p>
                 <Modal>
                     <Modal.Open name={isAuthenticated && (property?.property_status === "Shortlet" || property?.property_status === "Rent") ? "booking" : (!isAuthenticated ? "login" : "")} >
                         <BookShortletButton id={property?.id} property_status={property?.property_status} isAuthenticated={isAuthenticated}>
@@ -32,7 +32,7 @@ export default function PropertyDetailsSidebar({property, isAuthenticated}){
                 
             </div>
             {property?.virtual_tour_url && <VideoTour property={property} />}
-            <div className="flex flex-col p-4 shadow-lg items-center gap-6 rounded-lg">
+            <div className="flex flex-col items-center gap-4 rounded-lg p-4 shadow-lg sm:gap-6">
                 <p className="text-center text-md">For Enquiries</p>
                 <p className="font-mono flex items-center gap-1 text-base">
                     <span><FiPhone/></span>

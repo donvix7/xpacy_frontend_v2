@@ -28,7 +28,7 @@ export default function AdminServiceProvidersList({ providers = [] }) {
             <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-xl font-bold text-primary-900 font-mono">Service Providers List</h3>
                 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                     {/* Search */}
                     <div className="relative w-full md:w-[340px]">
                         <input 
@@ -58,8 +58,43 @@ export default function AdminServiceProvidersList({ providers = [] }) {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Mobile cards */}
+            <div className="grid gap-3 px-4 pb-4 lg:hidden">
+                {filteredProviders.length > 0 ? filteredProviders.map((provider, index) => {
+                    const name = `${provider.company_name || provider.name || provider.firstname || "N/A"} ${provider.lastname || ""}`.trim();
+                    return (
+                        <article key={provider._id || index} className="rounded-xl border border-primary-100 bg-white p-4 shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-100">
+                                    <Image
+                                        src={provider.display_picture ? `https://app.xpacy.com/src/upload/display_img/${provider.display_picture}` : "/avatar.png"}
+                                        alt=""
+                                        className="object-cover"
+                                        unoptimized
+                                        fill
+                                    />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <h3 className="break-words font-semibold text-gray-900">{name}</h3>
+                                        <UserOptionsMenu id={provider._id || provider.id} role={provider?.user_role || "provider"} />
+                                    </div>
+                                    <p className="mt-1 break-all text-xs text-gray-500">{provider.email || "No email"}</p>
+                                </div>
+                            </div>
+                            <dl className="mt-4 flex flex-col gap-y-3 border-t border-gray-100 pt-3 text-xs">
+                                <div className="flex justify-between"><dt className="text-gray-500">Phone</dt><dd className="mt-1 break-words font-medium text-gray-900">{provider.phone || "N/A"}</dd></div>
+                                <div className="flex justify-between"><dt className="text-gray-500">Service type</dt><dd className="mt-1 break-words font-medium capitalize text-gray-900">{provider.service_type || provider.specialization || "N/A"}</dd></div>
+                                <div className="flex justify-between"><dt className="text-gray-500">Location</dt><dd className="mt-1 break-words font-medium text-gray-900">{[provider.city, provider.state].filter(Boolean).join(", ") || "N/A"}</dd></div>
+                                <div className="flex justify-between"><dt className="text-gray-500">Completed services</dt><dd className="mt-1 font-semibold text-gray-900">{provider.completed_services || 0}</dd></div>
+                            </dl>
+                        </article>
+                    );
+                }) : <p className="rounded-xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500">No service providers found matching your search.</p>}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full text-left border-separate border-spacing-0">
                     <thead>
                         <tr className="text-gray-400 font-mono text-[10px] uppercase tracking-wider border-b border-gray-50">

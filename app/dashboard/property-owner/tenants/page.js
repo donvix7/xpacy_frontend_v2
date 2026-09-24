@@ -7,6 +7,7 @@ import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
 import { Building2, DoorOpen, Home, Users } from "lucide-react";
+import DashboardMobileCards from "@/app/_components/DashboardMobileCards";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -68,7 +69,16 @@ const summaryCards = [
                 {rentedProperties.length === 0 ? (
                     <EmptyState message="No tenants found. Tenants will appear here once properties are rented out." />
                 ) : (
-                    <div className="overflow-x-auto">
+                    <DashboardMobileCards items={rentedProperties.map((property, i) => ({
+                        key: property.id || property._id || i,
+                        title: property.title || property.name || "Untitled",
+                        fields: [
+                            { label: "Location", value: property.location || property.state || "—" },
+                            { label: "Type", value: property.property_type || property.type || "—" },
+                            { label: "Status", value: <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">Occupied</span> },
+                        ],
+                    }))} />
+                    <div className="hidden overflow-x-auto lg:block">
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b border-primary-200">

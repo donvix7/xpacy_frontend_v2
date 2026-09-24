@@ -30,7 +30,7 @@ export default function AdminServiceList({ services = [] }) {
             <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-xl font-bold text-primary-900 font-mono">Service Requests List</h3>
                 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                     {/* Search */}
                     <div className="relative w-full md:w-[340px]">
                         <input 
@@ -60,8 +60,36 @@ export default function AdminServiceList({ services = [] }) {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Mobile cards */}
+            <div className="grid gap-3 px-4 pb-4 lg:hidden">
+                {filteredServices.length > 0 ? filteredServices.map((service, index) => {
+                    const dateStr = service.scheduled_date ? format(new Date(service.scheduled_date), "dd/MM/yy") : "N/A";
+                    const timeStr = service.scheduled_time || "N/A";
+                    const provider = service.serviceProvider || service.assigned_provider;
+                    const tenantName = [service.user?.firstname, service.user?.lastname].filter(Boolean).join(" ") || "N/A";
+
+                    return (
+                        <article key={service._id || index} className="rounded-xl border border-primary-100 bg-white p-4 shadow-sm">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="truncate font-semibold text-gray-900">{service.service_type || "Service request"}</p>
+                                    <p className="mt-1 break-words text-xs text-gray-500">{service.address || "Address unavailable"}</p>
+                                </div>
+                                <ServiceOptionsMenu id={service._id || service.id} hasProvider={!!provider} />
+                            </div>
+                            <dl className="mt-4 flex flex-col gap-y-3 border-t border-gray-100 pt-3 text-xs">
+                                <div className="flex justify-between"><dt className="text-gray-500">Tenant / Owner</dt><dd className="mt-1 break-words font-medium text-gray-900">{tenantName}</dd></div>
+                                <div className="flex justify-between"><dt className="text-gray-500">Date / Time</dt><dd className="mt-1 font-medium text-gray-900">{dateStr} · {timeStr}</dd></div>
+                                <div className="flex justify-between"><dt className="text-gray-500">Status</dt><dd className="mt-1"><StatusChips status={service.service_status || "Pending"} /></dd></div>
+                                <div className="flex justify-between"><dt className="text-gray-500">Assigned provider</dt><dd className="mt-1 break-words font-medium text-gray-900">{provider || "Unassigned"}</dd></div>
+                            </dl>
+                        </article>
+                    );
+                }) : <p className="rounded-xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500">No service requests found matching your search.</p>}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full text-left border-separate border-spacing-0">
                     <thead>
                         <tr className="text-gray-400 font-mono text-[10px] uppercase tracking-wider border-b border-gray-50">

@@ -3,7 +3,8 @@ import MobileDashboardHeader from "@/app/_components/MobileDashboardHeader";
 import DataTable from "@/app/_components/DataTable";
 import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
-import { getBookings, getMyBookings } from "@/app/_lib/data-services";
+import { getMyBookings } from "@/app/_lib/data-services";
+import DashboardGridItem from "@/app/_components/DashboardGridItems";
 
 const tableHeadings = [
     { heading: "Unit" },
@@ -134,7 +135,8 @@ export default async function BookingList({ bookings }) {
     return (
         <div className="flex flex-col gap-6 p-2">
             <MobileDashboardHeader />
-            <DataTable
+            <DashboardGridItem title="Bookings">
+       <DataTable
                 headers={tableHeadings}
                 data={bookingList}
                 renderRow={renderRow}
@@ -142,6 +144,8 @@ export default async function BookingList({ bookings }) {
                 showPagination={false}
                 className="p-0! border-none shadow-none"
             />
+            </DashboardGridItem>
+     
         </div>
     );
 }

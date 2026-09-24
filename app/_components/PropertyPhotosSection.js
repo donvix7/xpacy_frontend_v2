@@ -1,52 +1,33 @@
 import Image from "next/image";
-import Link from "next/link"
-import { SlPicture } from "react-icons/sl";
 import ViewPhotos from "@/app/_components/ViewPhotos";
 export default function PropertyPhotoSection({property}){
+    const images = property?.images?.slice(0, 4) || [];
+
     return (
-        <div className="grid md:grid-cols-4 md:grid-rows-3 md:gap-6 grid-cols-3 gap-y-4 grid-rows-3 gap-x-2">
-            <div className="md:col-span-3 md:row-span-3 col-span-3 row-span-2 relative md:h-[615px] h-[250px]">
+        <div className="grid min-w-0 auto-rows-[130px] grid-cols-2 gap-2 sm:gap-3 md:auto-rows-auto md:grid-cols-4 md:grid-rows-3 md:gap-6">
+            <div className="relative col-span-2 row-span-2 h-[260px] md:col-span-3 md:row-span-3 md:h-[615px]">
+                {images[0] ? (
+                    <Image
+                        fill
+                        src={`https://app.xpacy.com/src/upload/properties/${images[0]}`}
+                        unoptimized
+                        alt="Property image"
+                        className="rounded-lg object-cover"
+                    />
+                ) : <div className="h-full rounded-lg bg-gray-100" />}
+                {images.length > 0 && <div className="md:hidden"><ViewPhotos propertySlug={property?.property_slug}/></div>}
+            </div>
+            {images.slice(1).map((image, index) => <div key={image} className="relative min-h-0">
                 <Image
                     fill
-                    src={`https://app.xpacy.com/src/upload/properties/${property?.images.at(0)}`}
+                    src={`https://app.xpacy.com/src/upload/properties/${image}`}
                     unoptimized
                     alt="Property image"
                     className="object-cover rounded-lg"
                 />
-                 <div className="md:hidden block">
-                    <ViewPhotos propertySlug={property?.property_slug}/>
-                </div>
-            </div>
-            <div className="relative">
-                <Image
-                    fill
-                    src={`https://app.xpacy.com/src/upload/properties/${property?.images.at(1)}`}
-                    unoptimized
-                    alt="Property image"
-                    className="object-cover rounded-lg"
-                />
-            </div>
-            <div className="relative">
-                <Image
-                    fill
-                    src={`https://app.xpacy.com/src/upload/properties/${property?.images.at(2)}`}
-                    unoptimized
-                    alt="Property image"
-                    className="object-cover rounded-lg"
-                />
-            </div>
-            <div className="relative">
-                <Image
-                    fill
-                    src={`https://app.xpacy.com/src/upload/properties/${property?.images.at(3)}`}
-                    unoptimized
-                    alt="Property image"
-                    className="object-cover rounded-lg"
-                />
-                <div className="hidden md:block">
-                    <ViewPhotos propertySlug={property?.property_slug}/>
-                </div>
-            </div>
+                {index === images.length - 2 && <div className="hidden md:block"><ViewPhotos propertySlug={property?.property_slug}/></div>}
+            </div>)}
+            {images.length === 1 && <div className="relative hidden md:block" />}
         </div>
     )
 }

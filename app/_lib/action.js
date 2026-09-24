@@ -847,74 +847,6 @@ export async function canceleInvoice(id){
   return data
 }
 
-export async function createNotification(data){
-
-  const payload = {
-  "channel": data.channel,
-  "title": data.title,
-  "message": data.message,
-  "data": data.data,
-  "priority": data.priority,
-  "userIds": [data.user_id],
-  "broadcast": data.broadcast,
-  "scheduledAt": data.scheduledAt,
-  "expiresAt": data.expiresAt
-}
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/notifications
-`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json();
-}
-
-export async function sedBroadcast(data){
-
-  const payload ={
-  "title": data.title,
-  "message": data.message,
-  "channel": data.channel,
-  "priority": data.priority,
-  "data": data.data
-}
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/notifications/broadcast
-`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json();
-}
-
-export async function markNotificationRead(id) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  if (!token?.value) return;
-  try {
-    const response = await fetch(`https://services.xpacy.com/api/v1/notifications/${id}/read`, {
-      method: "PATCH",
-      headers: {
-        "Authorization": `Bearer ${token?.value}`,
-      }
-    });
-    const { data } = await response.json();
-    revalidatePath("/dashboard/user/notifications");
-    return data;
-  } catch (error) {
-    console.error("Error marking notification as read:", error);
-  }
-}
 
 export async function updatePropertyOwnerDisplayPicture(formData) {
   const cookieStore = await cookies();
@@ -1424,24 +1356,6 @@ export async function getUserProfileAction() {
 }
 
 
-export async function markAllAsRead() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  if (!token?.value) return [];
-  try {
-    const response = await fetch(`https://services.xpacy.com/api/v1/notifications/read-all`, {
-      method: "PATCH",
-      headers: {
-        "Authorization": `Bearer ${token?.value}`,
-      }
-    });
-    const { data } = await response.json();
-    revalidatePath("/dashboard/user/notifications");
-    return data;
-  } catch (error) {
-    console.error("Error marking all notifications as read:", error);
-  }
-}
 
 /////////////////////////////////////*DOCUMENTS*/////////////////////////////////////////////////
 
@@ -2290,4 +2204,95 @@ export async function assignOwnerToProperty(id, data){
     },
   });
   return response.json(); 
+}
+
+
+
+export async function createNotification(data){
+
+  const payload = {
+  "channel": data.channel,
+  "title": data.title,
+  "message": data.message,
+  "data": data.data,
+  "priority": data.priority,
+  "userIds": [data.user_id],
+  "broadcast": data.broadcast,
+  "scheduledAt": data.scheduledAt,
+  "expiresAt": data.expiresAt
+}
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await fetch(`https://services.xpacy.com/api/v1/notifications
+`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+  return response.json();
+}
+
+export async function sedBroadcast(data){
+
+  const payload ={
+  "title": data.title,
+  "message": data.message,
+  "channel": data.channel,
+  "priority": data.priority,
+  "data": data.data
+}
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await fetch(`https://services.xpacy.com/api/v1/notifications/broadcast
+`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+  return response.json();
+}
+
+export async function markNotificationRead(id) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  if (!token?.value) return;
+  try {
+    const response = await fetch(`https://services.xpacy.com/api/v1/notifications/${id}/read`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${token?.value}`,
+      }
+    });
+    const { data } = await response.json();
+    revalidatePath("/dashboard/user/notifications");
+    return data;
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+  }
+}
+
+
+export async function markAllAsRead() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  if (!token?.value) return [];
+  try {
+    const response = await fetch(`https://services.xpacy.com/api/v1/notifications/read-all`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${token?.value}`,
+      }
+    });
+    const { data } = await response.json();
+    revalidatePath("/dashboard/user/notifications");
+    return data;
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+  }
 }

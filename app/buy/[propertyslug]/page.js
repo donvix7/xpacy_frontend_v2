@@ -35,12 +35,12 @@ export default async function Page({ params }) {
     return (
         <>
             <AppHeader />
-            <main className="flex flex-col px-[7%]">
+            <main className="flex min-w-0 flex-col px-4 sm:px-6 md:px-[7%]">
                 <PropertyDetailsHeader propertyName={property?.property_name} propertyStatus={property?.property_status} propertyAddress={property?.address}>
                     <PropertySavedIcon propertyId={property?.id} />
                 </PropertyDetailsHeader>
                 <PropertyPhotoSection property={property} />
-                <div className="grid grid-cols-4 gap-12 py-12">
+                <div className="grid min-w-0 grid-cols-1 gap-8 py-8 md:grid-cols-4 md:gap-12 md:py-12">
                     <PropertiesDetailsSection property={property} isAuthenticated={isAuthenticated} />
                 </div>
             </main>

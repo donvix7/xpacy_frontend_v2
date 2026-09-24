@@ -2,6 +2,7 @@ import { FaMoneyBillWave } from "react-icons/fa";
 import { formatCurrency } from "@/app/_lib/utils";
 import { BiBuildings } from "react-icons/bi";
 import { AlertCircle, Timer } from "lucide-react";
+import SummaryItemCard from "./SummaryItemCard";
 
 export default function PaymentsSummary({ invoices = [], showHeading = true }) {
     const isPaid = (b) => ['paid', 'completed', 'active', 'confirmed', 'success', 'successful'].includes((b.payment_status || b.status || "").toLowerCase());
@@ -69,15 +70,7 @@ export default function PaymentsSummary({ invoices = [], showHeading = true }) {
                       {/* Grid Items */}
                      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 md:gap-4">
                         {summaryItems.map((item, index) => (
-                            <div key={index} className="bg-white rounded-xl border border-primary-200 p-4 md:p-6 duration-300 flex items-center justify-between transition-shadow min-w-[160px]">
-                                <div className="flex flex-col gap-1 md:gap-2 min-w-0 flex-1">
-                                    <p className="text-gray-600 text-xs sm:text-sm capitalize truncate">{item.title}</p>
-                                    <p className="text-xl sm:text-2xl md:text-3xl font-bold mt-0.5">{item.count.toLocaleString()}</p>
-                                </div>
-                                <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl flex-shrink-0 ml-2 sm:ml-3 ${item.color} ${item.bgColor}`}>
-                                    {item.icon}
-                                </div>
-                            </div>
+                            <SummaryItemCard key={index} label={item.title} value={item.count} icon={item.icon} iconBackground={item.bgColor} />
                         ))}
                     </div>
                   </div>

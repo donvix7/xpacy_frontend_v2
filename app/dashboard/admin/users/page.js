@@ -5,20 +5,18 @@ import SummaryCards from "@/app/_components/SummaryCards";
 import UsersSummary from "@/app/_components/UsersSummary";
 import { getPropertyOwner, getAllAdmin, getAllUsers } from "@/app/_lib/data-services";
 import { UserPlus } from "lucide-react";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { FaUserTimes } from "react-icons/fa";
 import { FaFileSignature, FaPlus, FaUser, FaUserCheck, FaUsers, FaUserShield, FaUserSlash, FaUserTie } from "react-icons/fa6";
 
 export default async function Page(){
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")
         
         const [owners, admins, regularUsers] = await Promise.all([
-            getPropertyOwner(token),
-            getAllAdmin(token),
-            getAllUsers(token)
+            getPropertyOwner(),
+            getAllAdmin(),
+            getAllUsers()
         ]);
+        console.log(regularUsers)
 
         // Normalize data structure if needed
         const ownersList = (owners || []).map(u => ({ ...u, role: 'property-owner' }));

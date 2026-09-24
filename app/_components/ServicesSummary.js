@@ -3,6 +3,7 @@ import { BiBuildings } from "react-icons/bi";
 import { FaTools, FaClock, FaSpinner, FaCheckCircle, FaUserEdit } from "react-icons/fa";
 import { FaBuildingUser, FaUserGear, FaUsersGear } from "react-icons/fa6";
 import { IoCloseCircleOutline } from "react-icons/io5";
+import SummaryItemCard from "./SummaryItemCard";
 
 export default function ServicesSummary({ services, serviceProviders, showHeading = true }) {
     // Calculate counts
@@ -75,20 +76,7 @@ export default function ServicesSummary({ services, serviceProviders, showHeadin
                 {/* Grid Items - FIXED */}
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 md:gap-4">
                     {summaryItems.map((item, index) => (
-                        <div 
-                            key={index} 
-                            className="bg-white rounded-xl border border-primary-200 p-6 duration-300 flex justify-between"
-                        >
-                            <div className="flex flex-col gap-2">
-                                <p className="text-gray-600 text-sm capitalize">{item.title}</p>
-                                <p className="text-2xl font-bold mt-1">{item.count}</p>
-                            </div>
-                            {item.icon && (
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${item.bgColor}`}>
-                                    {item.icon}
-                                </div>
-                            )}
-                        </div>
+                        <SummaryItemCard key={index} label={item.title} value={item.count} icon={item.icon} iconBackground={item.bgColor} />
                     ))}
                 </div>
             </div>
