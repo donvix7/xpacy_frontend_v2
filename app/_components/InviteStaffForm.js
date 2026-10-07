@@ -58,7 +58,7 @@ const InviteStaffForm = () => {
         <div className="flex flex-col gap-12 w-[796px] mx-auto pb-12">
             {/* Header */}
             <header className="flex flex-col items-center justify-center gap-4">
-                <h2 className="text-3xl font-bold text-primary">Invite Staff</h2>
+                <p className="text-3xl font-bold text-primary">Invite Staff</p>
                 <p className="font-mono">Send an invitation email to onboard a new staff member.</p>
             </header>
             {/* Progress bar */}
@@ -68,7 +68,7 @@ const InviteStaffForm = () => {
                 {/* 1. Staff Info */}
                 {activeStep === 1 && (
                     <>
-                        <h3 className="text-lg">Staff Information</h3>
+                        <p className="text-lg">Staff Information</p>
                         <div className="flex flex-col gap-6">
                             <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
                                 <FormInput label={"First Name"} id={"firstname"} >
@@ -105,7 +105,7 @@ const InviteStaffForm = () => {
                 {/* 2. Invitation */}
                 {activeStep === 2 && (
                     <>
-                        <h3 className="text-lg">Invitation</h3>
+                        <p className="text-lg">Invitation</p>
                         <div className="flex flex-col gap-6">
                             <div className="flex gap-4 items-center p-4 rounded-lg border border-primary-100 bg-primary-100/40 font-mono text-sm text-gray-700">
                                 <span className="text-xl text-primary"><FaEnvelopeOpenText /></span>
@@ -130,7 +130,7 @@ const InviteStaffForm = () => {
                 {/* 3. Review & Send */}
                 {activeStep === 3 && (
                     <>
-                        <h3 className="text-lg">Review & Send</h3>
+                        <p className="text-lg">Review & Send</p>
                         <div className="flex flex-col divide-y divide-gray-100 rounded-lg border border-primary-100 overflow-hidden">
                             <div className="flex items-center justify-between p-4 font-mono text-sm">
                                 <span className="text-gray-500">Full Name</span>

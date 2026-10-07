@@ -47,7 +47,7 @@ export default function Error({ error, reset }) {
         </>
       </header >
       <main className="flex justify-center items-center flex-col gap-6 my-10">
-        <h1 className="text-3xl font-semibold">Something went wrong!</h1>
+        <p className="text-3xl font-semibold">Something went wrong!</p>
         <p className="text-lg font-mono">{error.message}</p>
 
         <button

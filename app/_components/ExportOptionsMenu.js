@@ -37,7 +37,7 @@ export default function ExportOptionsMenu({ options, onExport, onClose }) {
 
     return (
         <div className="flex flex-col gap-6 p-4 w-[280px] bg-white shadow-2xl rounded-lg border border-gray-100 overflow-hidden">
-            <h3 className="font-bold text-lg font-mono">Export Options</h3>
+            <p className="font-bold text-lg font-mono">Export Options</p>
             <div className="flex flex-col gap-4">
                 {options.map((option) => (
                     <div key={option.id} className="space-y-2">

@@ -21,7 +21,7 @@ export default function AddNewProviderPage() {
             {/* Content Area */}
             <main className="flex-1 max-w-[800px] mx-auto w-full py-12 px-6 flex flex-col gap-10">
                 <header className="flex flex-col items-center gap-4">
-                    <h1 className="text-[2.5rem] font-bold text-primary-900 font-mono tracking-tight">Add New Provider</h1>
+                    <p className="text-[2.5rem] font-bold text-primary-900 font-mono tracking-tight">Add New Provider</p>
                 </header>
 
                 <form className="flex flex-col gap-8 mt-4 pb-20">

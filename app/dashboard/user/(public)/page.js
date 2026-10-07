@@ -79,9 +79,9 @@ export default async function Page() {
     return (
         <div className="p-2">
             <MobileDashboardHeader />
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold">
+            <p className="lg:text-4xl text-[28px] text-primary font-bold">
                 Welcome {profile?.firstName},
-            </h1>
+            </p>
 
             <SummaryCards cards={summaryCards} />
 

@@ -17,7 +17,7 @@ export default function ServicesCard({service}){
         </div>
         </div>
         <div className="hidden h-full bg-primary absolute left-0 right-0 bottom-0 top-0 group-active:flex group-active:flex-col group-active:items-center group-active:justify-center group-hover:flex group-hover:flex-col group-hover:items-center group-hover:justify-center space-y-4 text-white text-center p-4 font-mono">
-          <h3 className="text-md font-semibold rounded-md">{title}</h3>
+          <p className="text-md font-semibold rounded-md">{title}</p>
           <p className="text-base">{body}</p>
         </div>
       </div>

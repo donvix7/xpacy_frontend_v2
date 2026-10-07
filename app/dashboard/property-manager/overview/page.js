@@ -83,9 +83,9 @@ const summaryCards = [
 
     return (
         <div className="space-y-8 p-4">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">
                 Welcome {profile?.first_name || profile?.firstname || profile?.name || profile?.full_name || "Manager"},
-            </h1>
+            </p>
             <SummaryCards cards={summaryCards} title="Overview" />
 
             <div className="flex flex-col gap-8">

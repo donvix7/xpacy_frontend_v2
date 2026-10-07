@@ -13,10 +13,10 @@ export default function PropertyHeader({ pagination }) {
             </div>
             {headerTxt === 'search' ? (
                 <div>
-                    <h1 className="font-bold text-4xl capitalize">We&apos;ve got {pagination.total} results for you</h1>
+                    <p className="font-bold text-4xl capitalize">We&apos;ve got {pagination.total} results for you</p>
                 </div>
             ) : (<div className="space-y-2">
-                <h1 className="font-bold md:text-4xl text-[28px] capitalize">Properties For {headerTxt}</h1>
+                <p className="font-bold md:text-4xl text-[28px] capitalize">Properties For {headerTxt}</p>
                 <p className="md:text-md text-black font-mono md:font-sans">Search for properties on {headerTxt}</p>
             </div>)
             }

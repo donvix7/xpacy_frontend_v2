@@ -90,9 +90,9 @@ const AddNewOwnerForm = ({
     return (
         <div className="flex flex-col gap-12 w-[796px] mx-auto pb-12">
             <header className="flex flex-col items-center justify-center gap-4">
-                <h2 className="text-3xl font-bold text-primary">
+                <p className="text-3xl font-bold text-primary">
                     {isEditMode ? "Edit Owner" : "Add New Owner"}
-                </h2>
+                </p>
                 {!isEditMode && (
                     <p className="font-mono">
                         Fill in the correct detailed information for the new owner.
@@ -113,7 +113,7 @@ const AddNewOwnerForm = ({
                 {/* ---------- STEP 1: Personal Info ---------- */}
                 {activeStep === 1 && (
                     <>
-                        <h3 className="text-lg">Personal Information</h3>
+                        <p className="text-lg">Personal Information</p>
                         <div className="flex flex-col gap-6">
                             <div className="flex md:items-center items-start gap-6 flex-col">
                                 <FormInput label="First Name" id="firstName">
@@ -167,7 +167,7 @@ const AddNewOwnerForm = ({
                 {/* ---------- STEP 2: Contact ---------- */}
                 {activeStep === 2 && (
                     <>
-                        <h3 className="text-lg">Contact Details</h3>
+                        <p className="text-lg">Contact Details</p>
                         <div className="flex flex-col gap-6">
                             <FormInput label="Email Address" id="email">
                                 <input
@@ -246,7 +246,7 @@ const AddNewOwnerForm = ({
                 {/* ---------- STEP 3: Company & Notes ---------- */}
                 {activeStep === 3 && (
                     <>
-                        <h3 className="text-lg">Company & Notes</h3>
+                        <p className="text-lg">Company & Notes</p>
                         <div className="flex flex-col gap-6">
                             <FormInput label="Company Name" id="companyName">
                                 <input

@@ -186,7 +186,7 @@ const AddNewPropertyForm = ({
     <div className="flex flex-col gap-12 w-[796px] mx-auto pb-12">
       {/* Header */}
       <header className="flex flex-col items-center justify-center gap-4">
-        <h2 className="text-3xl font-bold text-primary">{headerTitle}</h2>
+        <p className="text-3xl font-bold text-primary">{headerTitle}</p>
         {!isDetailsView && !isEditMode && (
           <p className="font-mono">
             Fill in the correct detailed information for the new property.
@@ -202,7 +202,7 @@ const AddNewPropertyForm = ({
         {/* ---------- STEP 1: Owner ---------- */}
         {activeStep === 1 && (
           <>
-            <h3 className="text-lg">Owner Information</h3>
+            <p className="text-lg">Owner Information</p>
             <SearchPropertyOwner
               disabled={disableSearch}
               propertyOwner={propertyOwner}
@@ -268,7 +268,7 @@ const AddNewPropertyForm = ({
         {/* ---------- STEP 2: Property Overview ---------- */}
         {activeStep === 2 && (
           <>
-            <h3 className="text-lg">Property Overview</h3>
+            <p className="text-lg">Property Overview</p>
             <div className="flex flex-col gap-6">
               <FormInput label="Property Name" id="name">
                 <input
@@ -447,7 +447,7 @@ const AddNewPropertyForm = ({
         {/* ---------- STEP 3: Location Coordinates ---------- */}
         {activeStep === 3 && (
           <>
-            <h3 className="text-lg">Location Coordinates</h3>
+            <p className="text-lg">Location Coordinates</p>
             <div className="flex flex-col gap-6">
               <span className="font-mono font-medium">
                 Coordinates{" "}

@@ -42,7 +42,7 @@ export default function Page() {
             </div>
           </div>
           <div className="text-center space-y-2">
-            <h3 className="text-white md:text-xl text-lg">Your Property Is In Safe Hands With Us!</h3>
+            <p className="text-white md:text-xl text-lg">Your Property Is In Safe Hands With Us!</p>
             <p className="font-mono text-white lg:text-base text-sm">
               Ready to experience ease with our facility management services?
             </p>

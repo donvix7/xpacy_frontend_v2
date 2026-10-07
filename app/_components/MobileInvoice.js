@@ -24,7 +24,7 @@ export default function MobileInvoice({ invoice, users = [], ref }) {
                 </div>
 
                 <div className="flex flex-col gap-4 sm:gap-6 w-full sm:w-auto items-center sm:items-end">
-                    <h1 className="text-[40px] sm:text-[48px] text-primary font-bold leading-none">INVOICE</h1>
+                    <p className="text-[40px] sm:text-[48px] text-primary font-bold leading-none">INVOICE</p>
                     <div className="flex flex-col items-center sm:items-end gap-2 sm:gap-6 font-mono w-full text-base lg:text-md text-black">
                         <p>
                             Invoice Number: {invoice?.invoiceNumber || invoice?.invoice_number || ""}
@@ -50,7 +50,7 @@ export default function MobileInvoice({ invoice, users = [], ref }) {
             {/* Recipient */}
             <section className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-6">
                 <div className="flex flex-col gap-4 text-center sm:text-left w-full sm:w-auto">
-                    <h2 className="text-primary text-xl font-bold">Recipient&apos;s Details</h2>
+                    <p className="text-primary text-xl font-bold">Recipient&apos;s Details</p>
                     <div className="space-y-1 font-mono text-sm sm:text-base">
                         <p>{recipient?.firstname || recipient?.first_name || ""} {recipient?.lastname || recipient?.last_name || ""}</p>
                         <p>{recipient?.address || ""}</p>

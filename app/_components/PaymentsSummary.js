@@ -3,20 +3,22 @@ import { formatCurrency } from "@/app/_lib/utils";
 import { BiBuildings } from "react-icons/bi";
 import { AlertCircle, Timer } from "lucide-react";
 import SummaryItemCard from "./SummaryItemCard";
+import { toRecordArray } from "@/app/_lib/utils";
 
 export default function PaymentsSummary({ invoices = [], showHeading = true }) {
+    const invoiceList = toRecordArray(invoices);
     const isPaid = (b) => ['paid', 'completed', 'active', 'confirmed', 'success', 'successful'].includes((b.payment_status || b.status || "").toLowerCase());
     const isPending = (b) => ['pending', 'processing'].includes((b.payment_status || b.status || "").toLowerCase());
     const isUnpaid = (b) => !isPaid(b) && !isPending(b);
 
     // Calculate counts and totals
     const counts = {
-        totalRevenue: invoices
+        totalRevenue: invoiceList
             .filter(isPaid)
             .reduce((acc, curr) => acc + Number(curr.total || 0), 0),
-        paidCount: invoices.filter(isPaid).length,
-        pendingCount: invoices.filter(isPending).length,
-        unpaidCount: invoices.filter(isUnpaid).length,
+        paidCount: invoiceList.filter(isPaid).length,
+        pendingCount: invoiceList.filter(isPending).length,
+        unpaidCount: invoiceList.filter(isUnpaid).length,
     };
 
 

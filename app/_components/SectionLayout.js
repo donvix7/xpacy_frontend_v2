@@ -9,7 +9,7 @@ export default function SectionLayout({children, heading, subheading, bgColor, f
         }`}
       >
         <div className="flex flex-col text-center space-y-4">
-          <h2 className="font-bold text-primary md:text-4xl text-[28px] ">{heading}</h2>
+          <p className="font-bold text-primary md:text-4xl text-[28px] ">{heading}</p>
           <p className="font-normal md:text-md text-black text-base font-mono md:font-sans">{subheading}</p>
         </div>
         {children}

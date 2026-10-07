@@ -165,9 +165,9 @@ export default function NewPropertyForm({ allOwners = [], allCities = [], defaul
               <ShieldCheck className="w-3.5 h-3.5 text-secondary" />
               Admin Portal • Property Registration
             </span>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            <p className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
               Add New Property
-            </h1>
+            </p>
             <p className="text-sm text-primary-100/80 max-w-lg leading-relaxed">
               Register a new property development or building into the Xpacy inventory database.
             </p>
@@ -189,10 +189,10 @@ export default function NewPropertyForm({ allOwners = [], allCities = [], defaul
         {/* SECTION 1: General Details */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm flex flex-col gap-6">
           <div className="border-b border-gray-100 pb-4">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <p className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <Building2 className="w-5 h-5 text-primary-700" />
               Basic Information
-            </h2>
+            </p>
             <p className="text-xs text-gray-500 mt-1">
               Provide the primary identity and classification of the property.
             </p>
@@ -271,10 +271,10 @@ export default function NewPropertyForm({ allOwners = [], allCities = [], defaul
         <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm flex flex-col gap-6">
           <div className="border-b border-gray-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <p className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-primary-700" />
                 Location & Coordinates
-              </h2>
+              </p>
               <p className="text-xs text-gray-500 mt-1">
                 Pinpoint the physical location and regional jurisdiction of this building.
               </p>
@@ -407,10 +407,10 @@ export default function NewPropertyForm({ allOwners = [], allCities = [], defaul
         {/* SECTION 3: Building Specifications */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm flex flex-col gap-6">
           <div className="border-b border-gray-100 pb-4">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <p className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary-700" />
               Building Specifications
-            </h2>
+            </p>
             <p className="text-xs text-gray-500 mt-1">
               Structural dimensions, capacity, and construction timeline.
             </p>
@@ -468,10 +468,10 @@ export default function NewPropertyForm({ allOwners = [], allCities = [], defaul
         {/* SECTION 4: Organization & Ownership */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm flex flex-col gap-6">
           <div className="border-b border-gray-100 pb-4">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <p className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <Hash className="w-5 h-5 text-primary-700" />
               Organization & Ownership
-            </h2>
+            </p>
             <p className="text-xs text-gray-500 mt-1">
               Associate this property with your organization and registered property owners.
             </p>

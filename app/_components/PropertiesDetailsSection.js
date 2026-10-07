@@ -17,7 +17,7 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
             <div className="flex min-w-0 flex-col gap-8 md:col-span-3 md:gap-[72px]">
                 {/* Specification */}
                 <div className="flex flex-col gap-4 ">
-                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Specification</h3>
+                    <p className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Specification</p>
                     <div className="grid grid-cols-2 gap-x-2 gap-y-4 rounded-lg bg-white p-4 shadow-lg sm:gap-4 sm:p-6 md:flex md:justify-between md:px-12 md:py-6">
                         {/* Bedroom */}
                             <div className="flex min-w-0 flex-col items-center gap-2 font-mono">
@@ -59,7 +59,7 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
                 {/* Description */}
                 <div className="border border-neutral-300"></div>
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Description</h3>
+                    <p className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Description</p>
                     <div className="break-words text-sm leading-7 tracking-wide text-black sm:text-base">
                         <TextExpander>
                             {property?.description}
@@ -72,7 +72,7 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
                 <div className="border border-neutral-300"></div>
                 {/* Property features */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Property Features</h3>
+                    <p className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Property Features</p>
                     <div className="grid grid-cols-1 gap-x-8 gap-y-4 font-mono text-sm text-black sm:text-base md:grid-cols-2 md:gap-x-20 md:gap-y-6">
                         <div className="flex min-w-0 justify-between gap-3">
                             <span className="shrink-0">Location</span>
@@ -110,7 +110,7 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
                 <div className="border border-neutral-300"></div>
                 {/* Property Amenties */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Amenities</h3>
+                    <p className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Amenities</p>
                     <div className="grid auto-rows-auto grid-cols-1 gap-x-6 gap-y-4 break-words font-mono text-sm text-black sm:grid-cols-2 sm:text-base md:grid-cols-3 md:gap-x-10 md:gap-y-6">
                         {
                             property?.property_amenities?.map((amenity, index) => (<div className="flex min-w-0 items-center gap-3" key={index}>
@@ -131,7 +131,7 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
             <section className="col-span-4 flex flex-col gap-8 md:gap-[72px]">
                 {/* Map */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Map</h3>
+                    <p className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Map</p>
                     <iframe
                         title="google map"
                         src={`https://www.google.com/maps?q=${property?.lat},${property?.long}&hl=es;z=14&output=embed`}
@@ -146,13 +146,13 @@ function PropertiesDetailsSection({ property, isAuthenticated }) {
                 <div className="border border-neutral-300"></div>
                 {/* Reviews */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Reviews</h3>
+                    <p className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">Reviews</p>
                     <TestimonySection />
                 </div>
                 <div className="border border-neutral-300"></div>
                 {/* other properties */}
                 <div className="flex flex-col gap-4">
-                    <h3 className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">You may also like these properties</h3>
+                    <p className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">You may also like these properties</p>
                     <Suspense fallback={<LoadingPropertiesCard lengths={6} />}>
                         <OtherProperties />
                     </Suspense>

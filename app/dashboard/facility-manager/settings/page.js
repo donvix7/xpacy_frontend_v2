@@ -11,7 +11,7 @@ export default async function Page() {
     const [profile, cities] = await Promise.all([getPropertyOwnerProfile(token), getCities()])
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-12">
-            <h1 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-4">Account Settings</h1>
+            <p className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-4">Account Settings</p>
             
             <Section title={"Profile Photo"}>
                 <ProfilePhoto profile={profile}/>
@@ -33,7 +33,7 @@ export default async function Page() {
 const Section = ({ children, title }) => {
     return (
         <section className="flex flex-col p-6 gap-8 rounded-lg border-2 bg-white border-primary-200">
-            <h3 className="lg:text-md text-base text-black">{title}</h3>
+            <p className="lg:text-md text-base text-black">{title}</p>
             {children}
         </section>
     )

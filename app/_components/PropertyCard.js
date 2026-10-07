@@ -33,7 +33,7 @@ export default function PropertyCard({ property }) {
                     <p className="font-mono text-s text-neutrals-900">
                         {property.property_type}
                     </p>
-                    <h1 className="text-base text-md">{property.property_name}</h1>
+                    <p className="text-base text-md">{property.property_name}</p>
                     <div className="flex space-x-2 items-center font-mono">
                         <MapPinIcon className="size-6" />
                         <span>

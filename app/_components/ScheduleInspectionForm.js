@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition, useMemo } from "react"
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import { createBooking } from "../_lib/action";
-import { getProperty } from "../_lib/data-services";
+import { getPropertyForInspection } from "../_lib/form-data-actions";
 import { useRouter } from "next/navigation";
 import CustomCheckbox from "./CustomCheckbox";
 import Link from "next/link";
@@ -28,7 +28,7 @@ function ScheduleInspectionForm({ onClose, properties = [] }) {
             }
             try {
                 setIsLoadingDates(true);
-                const property = await getProperty(selectedPropertyId);
+                const property = await getPropertyForInspection(selectedPropertyId);
 
                 if (property?.bookings?.length > 0) {
                     const allBookedDays = property.bookings.flatMap(booking => {
@@ -100,7 +100,7 @@ function ScheduleInspectionForm({ onClose, properties = [] }) {
 
     return (
         <div className="flex flex-col p-6 w-[350px] md:w-[480px] max-h-[600px] gap-6 font-mono">
-            <h3 className="text-primary md:text-xl text-md font-sans text-center font-bold lg:mb-4">Schedule an inspection</h3>
+            <p className="text-primary md:text-xl text-md font-sans text-center font-bold lg:mb-4">Schedule an inspection</p>
             <form className="flex flex-col gap-6 overflow-y-auto" onSubmit={handleSubmit}>
                 <div className="flex flex-col gap-2">
                     <label className="text-gray-700 text-sm">Property to inspect</label>

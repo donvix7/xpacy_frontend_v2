@@ -24,7 +24,7 @@ export default function AddNewOwnerForm() {
         <div className="flex w-[539px]  p-16">
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-4  rounded-lg border border-primary-100 shadow-2xs p-6 font-mono">
                 <div className="flex flex-col gap-2">
-                    <h3 className="text-lg font-bold">Create New Property Owner Account</h3>
+                    <p className="text-lg font-bold">Create New Property Owner Account</p>
                     <p className="text-neutral-700">Enter property owner’s details</p>
                 </div>
                 <FormInput label={"First Name"} id={"first_name"} >

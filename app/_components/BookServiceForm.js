@@ -38,7 +38,7 @@ const BookServiceForm = ({user}) => {
         <div className="flex flex-col gap-12 lg:px-6">
             <form className="p-6 flex flex-col  gap-12 max-w-[769px]" onSubmit={handleSubmit(onSubmit)}>
                 <header className="flex flex-col gap-4 text-center">
-                    <h1 className="text-primary text-3xl font-bold">Ready To Experience Ease?</h1>
+                    <p className="text-primary text-3xl font-bold">Ready To Experience Ease?</p>
                     <p className="font-mono">Need us to manage your facility? Kindly fill out the form below, and we&apos;ll get back to you shortly.</p>
                 </header>
                 {/* firstName and lastName */}

@@ -17,7 +17,7 @@ export default async function Page({ params }) {
                     <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-300">
                         <ChevronLeft size={40} />
                     </div>
-                    <h1 className="text-2xl font-black text-gray-900 mb-2 font-mono uppercase tracking-tighter italic">Blog Post Not Found</h1>
+                    <p className="text-2xl font-black text-gray-900 mb-2 font-mono uppercase tracking-tighter italic">Blog Post Not Found</p>
                     <p className="text-gray-500 mb-8 max-w-sm">The post you're trying to edit might have been removed or the ID is incorrect.</p>
                     <Link 
                         href="/dashboard/admin/blogs"

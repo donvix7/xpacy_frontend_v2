@@ -76,7 +76,7 @@ export default function CustomersTableList({ customers }) {
                     )}
                 </div>
                 <div className="flex flex-col gap-1">
-                    <h3 className="font-bold text-sm text-gray-900">{customer.firstname} {customer.lastname}</h3>
+                    <p className="font-bold text-sm text-gray-900">{customer.firstname} {customer.lastname}</p>
                     <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase w-fit">Active</span>
                 </div>
             </div>

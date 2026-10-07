@@ -388,9 +388,9 @@ const EditPropertyForm = ({
         <div className="mx-auto flex w-full min-w-0 max-w-[796px] flex-col gap-6 px-2 pb-8 sm:gap-10 sm:px-4 sm:pb-12">
             {/* Header */}
             <header className="flex flex-col items-center justify-center gap-4">
-                <h2 className="text-center text-2xl font-bold text-primary sm:text-3xl">
+                <p className="text-center text-2xl font-bold text-primary sm:text-3xl">
                     {pageTitle}
-                </h2>
+                </p>
                 {!isPropertyDetailsPage && !isEditMode && (
                     <p className="font-mono">Fill in the correct detailed information for the new property.</p>
                 )}
@@ -406,7 +406,7 @@ const EditPropertyForm = ({
                 {/* 1. Owner Info */}
                 {activeStep === 1 && (
                     <>
-                        <h3 className="text-lg">Owner Information</h3>
+                        <p className="text-lg">Owner Information</p>
                         <SearchPropertyOwner 
                             disabled={disableSearch || isReadOnly} 
                             propertyOwner={propertyOwner} 
@@ -488,7 +488,7 @@ const EditPropertyForm = ({
                 {/* 2. Property Overview */}
                 {activeStep === 2 && (
                     <>
-                        <h3 className="text-lg">Property Overview</h3>
+                        <p className="text-lg">Property Overview</p>
                         <div className="flex flex-col gap-6">
                             <FormInput label={"Property Name"} id={"property_name"}>
                                 <input 
@@ -675,7 +675,7 @@ const EditPropertyForm = ({
                 {/* 3. Property Information */}
                 {activeStep === 3 && (
                     <>
-                        <h3 className="text-lg">Property Information</h3>
+                        <p className="text-lg">Property Information</p>
                         <div className="flex flex-col gap-6">
                             <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
                                 <FormInput label={"Bedrooms"} id={"total_bedrooms"}>
@@ -783,7 +783,7 @@ const EditPropertyForm = ({
                 {/* 4. Media */}
                 {activeStep === 4 && (
                     <>
-                        <h3 className="text-lg">Media</h3>
+                        <p className="text-lg">Media</p>
                         {isPropertyDetailsPage ? (
                             <>
                                 <p className="font-mono">Photos</p>

@@ -31,7 +31,7 @@ const Section = ({ children, title, subtitle }) => {
     return (
         <section className="flex flex-col p-6 lg:gap-8 gap-12 rounded-lg border-2 bg-white border-primary-200">
             <div className="space-y-4">
-                <h3 className="lg:text-md text-base text-black">{title}</h3>
+                <p className="lg:text-md text-base text-black">{title}</p>
                 {subtitle && <p className="text-neutral-800 font-mono">{subtitle}</p>}
             </div>
             {children}

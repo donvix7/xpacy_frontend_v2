@@ -46,7 +46,7 @@ export default function InspectionsTable({ inspections }) {
             <div key={inspection.id || inspection._id} className="py-6 flex flex-col gap-4 border-b border-gray-100 bg-white last:border-0 font-mono">
                 <div className="flex justify-between items-start">
                     <div className="flex flex-col gap-1">
-                        <h3 className="text-sm font-bold text-gray-800">{inspection.property?.property_name || inspection.property_name || "N/A"}</h3>
+                        <p className="text-sm font-bold text-gray-800">{inspection.property?.property_name || inspection.property_name || "N/A"}</p>
                         <p className="text-xs text-gray-500">{date ? format(date, "MMM dd, yyyy") : "N/A"}</p>
                     </div>
                     <StatusChips status={inspectionStatus(inspection)} />

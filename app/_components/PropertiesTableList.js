@@ -132,9 +132,9 @@ export default function PropertiesTableList({ properties, bookings = [], paginat
     <div className="flex flex-col gap-1.5 min-w-0 flex-1">
       {/* Header: title + menu */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-bold text-sm text-neutrals-900 truncate">
+        <p className="font-bold text-sm text-neutrals-900 truncate">
           {property.property_name}
-        </h3>
+        </p>
         <PropertyOptionsMenu id={property.id || property._id} />
       </div>
 

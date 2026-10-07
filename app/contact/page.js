@@ -20,7 +20,7 @@ export default async function Page() {
           <span className="text-md"><MdKeyboardArrowRight /></span>
           <span className={"text-blue-400 capitalize"}>Contact</span>
         </div>
-        <h1 className="lg:text-4xl text-2xl font-bold ">Contact Us</h1>
+        <p className="lg:text-4xl text-2xl font-bold ">Contact Us</p>
       </div>
       <main className="lg:pl-[7%] px-6 lg:px-0 grid lg:grid-cols-2 grid-cols-1">
         <div className=" py-12 lg:w-[530px] w-full flex flex-col gap-12">

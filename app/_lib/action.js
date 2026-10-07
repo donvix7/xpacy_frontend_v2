@@ -1,14 +1,27 @@
 "use server";
+import { safeFetch } from "./safe-fetch";
 import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers"
 import { revalidatePath, revalidateTag } from "next/cache";
 
 const URL = "https://app.xpacy.com";
+const dashboardByRole = {
+  user: "/dashboard/user",
+  admin: "/dashboard/admin",
+  administrator: "/dashboard/admin",
+  superadmin: "/dashboard/admin",
+  propertyowner: "/dashboard/property-owner",
+  propertymanager: "/dashboard/property-manager",
+  facilitymanager: "/dashboard/facility-manager",
+};
+
+const normalizeRole = (role) => String(role || "").trim().toLowerCase().replace(/[\s_-]/g, "");
+
 
 export const submitSubscribe = async (formData) => {
   const email = formData.get("email");
-  const response = await fetch(`${URL}/newsletter/subscribe`, {
+  const response = await safeFetch(`${URL}/newsletter/subscribe`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -41,7 +54,7 @@ export const handleSearch = async (formData) => {
   redirect(`/search?purpose=${purpose}&type=${type}&state=${location}&minBedrooms=${minBedrooms}&minPrice=${minPrice}&maxPrice=${maxPrice}`)
 }
 
-export async function handleUserLogin(userData, redirectUrl) {
+export async function handleUserLogin(userData, requestedRedirectUrl) {
   const response = await fetch(`https://services.xpacy.com/api/v1/auth/login`, {
     method: "POST",
     headers: {
@@ -50,72 +63,101 @@ export async function handleUserLogin(userData, redirectUrl) {
     body: JSON.stringify({ ...userData }),
   });
   const data = await response.json();
-  if (!response.ok) return { success: false, message: data.message };
+  if (!response.ok || data?.success === false) {
+    return { success: false, message: data?.message || "Unable to log in. Check your details and try again." };
+  }
+
+  const auth = data?.data && typeof data.data === "object" ? data.data : data;
+  const user = auth?.user || data?.user || auth?.profile || {};
+  const rawRole = user.role || auth.role || data.role || user.user_role || data.user_role;
+  const role = normalizeRole(rawRole);
+  const roleDestination = dashboardByRole[role];
+  if (!roleDestination) {
+    return { success: false, message: "Your account role is not supported for dashboard access." };
+  }
+
+  const accessToken = auth.accessToken || auth.access_token || auth.token || data.accessToken || data.access_token || data.token;
+  if (typeof accessToken !== "string" || !accessToken) {
+    return { success: false, message: "Login succeeded, but the session token was missing. Please try again." };
+  }
 
   const cookieStore = await cookies();
-  cookieStore.set("token", data.accessToken, {
+  cookieStore.set("token", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24, // 1 day
   });
-  cookieStore.set("refreshToken", data.refreshToken, {
+  cookieStore.set("userRole", role, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24,
   });
-  if (data.role === "USER" || data.role === "user") redirect(redirectUrl);
-  return { success: true, message: 'Logged in successfully' };
-};
+  const refreshToken = auth.refreshToken || auth.refresh_token || data.refreshToken || data.refresh_token;
+  if (typeof refreshToken === "string" && refreshToken) {
+    cookieStore.set("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+  } else {
+    cookieStore.delete("refreshToken");
+  }
 
-export async function handleAdminLogin(userData, redirectUrl) {
-  const response = await fetch(`${URL}/admin/admin-login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ ...userData }),
-  });
-  const data = await response.json();
-  if (!response.ok) return { success: false, message: data.message }
+  const returnTo = typeof requestedRedirectUrl === "string" &&
+    requestedRedirectUrl.startsWith("/") &&
+    !requestedRedirectUrl.startsWith("//") &&
+    role === "user"
+    ? requestedRedirectUrl
+    : role === "admin" || role === "SUPER_ADMIN" ? "/dashboard/admin" : roleDestination;
 
+  const proceedParams = new URLSearchParams({ role });
+  if (role === "user" && returnTo !== roleDestination) {
+    proceedParams.set("returnTo", returnTo);
+  }
+
+  return {
+    success: true,
+    message: "Logged in successfully",
+    role: rawRole,
+    redirectTo: `/auth/proceed?${proceedParams.toString()}`,
+  };
+}
+
+export async function completeProceedSelection(organizationId, requestedReturnTo) {
   const cookieStore = await cookies();
-  cookieStore.set("token", data.token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    maxAge: 60 * 60, // 1 hour
-  });
-  if (data.role === "Admin" || data.role === "admin") redirect(redirectUrl)
-  return { success: true, message: data.message }
-};
+  const role = normalizeRole(cookieStore.get("userRole")?.value);
+  const redirectTo = dashboardByRole[role];
+  if (!cookieStore.get("token")?.value || !redirectTo) {
+    return { success: false, message: "Your session has expired. Please log in again." };
+  }
 
-export async function handlePropertyOwnerLogin(userData, redirectUrl) {
-  const response = await fetch(`${URL}/property-owner/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ ...userData }),
-  });
-  const data = await response.json();
-  if (!response.ok) return { success: false, message: data.message }
+  if (typeof organizationId === "string" && organizationId.trim()) {
+    cookieStore.set("organizationId", organizationId.trim(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+  } else {
+    cookieStore.delete("organizationId");
+  }
 
-  const cookieStore = await cookies();
-  cookieStore.set("token", data.token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    maxAge: 60 * 60, // 1 hour
-  });
-  if (data.role === "PropertyOwner" || data.role === "property-owner") redirect(redirectUrl)
-  return { success: true, message: data.message }
-};
+  const returnTo = role === "user" &&
+    typeof requestedReturnTo === "string" &&
+    requestedReturnTo.startsWith("/") &&
+    !requestedReturnTo.startsWith("//")
+    ? requestedReturnTo
+    : redirectTo;
+
+  return { success: true, redirectTo: returnTo };
+}
 
 
 export async function handleSignup(userData, referralCode) {
@@ -126,8 +168,8 @@ export async function handleSignup(userData, referralCode) {
     email: userData.email,
     password: userData.password,
   }
-  //const response = await fetch(`${URL}/user/register?referralCode=${referralCode}`, {
-  const response = await fetch(`https://services.xpacy.com/api/v1/auth/register`, {
+  //const response = await safeFetch(`${URL}/user/register?referralCode=${referralCode}`, {
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/auth/register`, {
 
     method: "POST",
     headers: {
@@ -136,7 +178,6 @@ export async function handleSignup(userData, referralCode) {
     body: JSON.stringify(payload)
   })
   const data = await response.json();
-  console.log(data)
 
   if (!response.ok) return { success: false, message: data.message }
 
@@ -144,7 +185,7 @@ export async function handleSignup(userData, referralCode) {
 }
 
 export async function handlePropertyOwnerSignup(userData, referralCode) {
-  const response = await fetch(`${URL}/property-owner/register?referralCode=${referralCode}`, {
+  const response = await safeFetch(`${URL}/property-owner/register?referralCode=${referralCode}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -167,7 +208,7 @@ export async function handleCompleteOwnerRegistration(userData, token) {
   try {
     if (!token) return { success: false, message: "Token is missing" }
 
-    const response = await fetch(`${URL}/property-owner/complete-registration?token=${token}`, {
+    const response = await safeFetch(`${URL}/property-owner/complete-registration?token=${token}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -193,7 +234,7 @@ export async function handleCompleteOwnerRegistration(userData, token) {
 }
 
 export async function resendPropertyOwnerRegistrationEmail(email) {
-  const response = await fetch(`${URL}/property-owner/resend-registration-email`, {
+  const response = await safeFetch(`${URL}/property-owner/resend-registration-email`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -214,7 +255,7 @@ export async function handleSaveProperty(id) {
   
   const body = JSON.stringify({ propertyId: id });
 
-  const response = await fetch(`${URL}/user-property/saved-properties`, {
+  const response = await safeFetch(`${URL}/user-property/saved-properties`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -238,7 +279,7 @@ export async function handleBookProperty(id) {
   if (!token?.value) throw new Error("Please Log in to book this property");
   
   try {
-    const res = await fetch(`${URL}/user/create-booking`, {
+    const res = await safeFetch(`${URL}/user/create-booking`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
@@ -261,7 +302,7 @@ export async function handleDelteSavedProp(savedPropertyId) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
-  const response = await fetch(`${URL}/user-property/delete-saved-property/${savedPropertyId}`, {
+  const response = await safeFetch(`${URL}/user-property/delete-saved-property/${savedPropertyId}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -280,7 +321,7 @@ export async function handleLogOut() {
 
   // Best-effort server-side session invalidation — always clear local cookies regardless of result
   try {
-    await fetch(`https://services.xpacy.com/api/v1/auth/logout`, {
+    await safeFetch(`https://services.xpacy.com/api/v1/auth/logout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -301,7 +342,7 @@ export async function uploadDisplayPhoto(formData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
-  const response = await fetch(`${URL}/user/upload-display-image`, {
+  const response = await safeFetch(`${URL}/user/upload-display-image`, {
     method: "PUT",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -317,7 +358,7 @@ export async function updateUserProfile(userData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
-  const response = await fetch(`https://services.xpacy.com/api/v1/users/${userData.id}`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/users/${userData.id}`,
    {
     method: "PATCH",
     headers: {
@@ -335,7 +376,7 @@ export async function updateUserPassword(userData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
-  const response = await fetch(`${URL}/user/change-password`, {
+  const response = await safeFetch(`${URL}/user/change-password`, {
     method: "PUT",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -355,7 +396,7 @@ export async function createBooking(formData) {
     const token = cookieStore.get("token");
     if (!token?.value) return { success: false, message: "Please Log in to continue" };
     
-    const response = await fetch(`${URL}/user/create-booking`, {
+    const response = await safeFetch(`${URL}/user/create-booking`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
@@ -397,7 +438,7 @@ export async function handleBookService(form) {
       data.append(key, value);
     }
   });
-  const response = await fetch(`${URL}/service/request-service`, {
+  const response = await safeFetch(`${URL}/service/request-service`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -409,7 +450,7 @@ export async function handleBookService(form) {
 };
 
 export async function handleContact(formData) {
-  const response = await fetch(`${URL}/contact/send-mail`, {
+  const response = await safeFetch(`${URL}/contact/send-mail`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -423,7 +464,7 @@ export async function handleContact(formData) {
 export async function handleRegisterOwner(formData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/admin/register-propertyowner`, {
+  const response = await safeFetch(`${URL}/admin/register-propertyowner`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -462,7 +503,7 @@ export async function createInvoice(invoice, organisationId) {
 
 const cookieStore = await cookies();
 const token = cookieStore.get("token");
-  const res = await fetch(`https://services.xpacy.com/api/v1/invoices?organizationId=${organisationId}`, {
+  const res = await safeFetch(`https://services.xpacy.com/api/v1/invoices?organizationId=${organisationId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -491,13 +532,58 @@ const token = cookieStore.get("token");
   return res.json()
 }
 
+export async function submitInvoiceAction(invoice) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) throw new Error("Please log in to continue");
+  if (!invoice || !Array.isArray(invoice.items) || invoice.items.length === 0) {
+    throw new Error("Add at least one invoice item before submitting");
+  }
+
+  const subtotal = Number(invoice.subTotal ?? invoice.subtotal ?? 0);
+  const tax = Number(invoice.tax ?? 0);
+  const total = Number(invoice.total ?? subtotal + (subtotal * tax) / 100);
+  const payload = {
+    ...invoice,
+    recipientId: invoice.recipientId || invoice.recipientID || invoice.customerId,
+    subtotal,
+    tax,
+    total,
+    currency: invoice.currency || "NGN",
+    items: invoice.items.map((item) => ({
+      ...item,
+      quantity: Number(item.quantity || 1),
+      unitPrice: Number(item.unitPrice || 0),
+    })),
+  };
+
+  const response = await safeFetch("https://services.xpacy.com/api/v1/invoices", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(result?.message || result?.error || "Invoice submission failed");
+  }
+
+  revalidatePath("/dashboard/admin/payments");
+  revalidatePath("/dashboard/user/payments");
+  return result;
+}
+
 
 
 
 export async function cancelInvoice(id) {
   const cookieStore = await cookies();
 const token = cookieStore.get("token");
-  const res = await fetch(`https://services.xpacy.com/api/v1/invoices/${id}/cancel`, {
+  const res = await safeFetch(`https://services.xpacy.com/api/v1/invoices/${id}/cancel`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -532,7 +618,7 @@ export async function processInvoice(id) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
-  const response = await fetch(`${URL}/payment/paystack/initialize`, {
+  const response = await safeFetch(`${URL}/payment/paystack/initialize`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -560,7 +646,7 @@ export async function iniializePayment(invoice){
 
   const cookieStore = await cookies();
 const token = cookieStore.get("token");
-  const res = await fetch(`https://services.xpacy.com/api/v1/payments/initialize`, {
+  const res = await safeFetch(`https://services.xpacy.com/api/v1/payments/initialize`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -595,7 +681,7 @@ export async function verifyPayment(reference){
 }
   const cookieStore = await cookies();
 const token = cookieStore.get("token");
-  const res = await fetch(`https://services.xpacy.com/api/v1/payments/verify
+  const res = await safeFetch(`https://services.xpacy.com/api/v1/payments/verify
 `, {
       method: "POST",
       headers: {
@@ -630,7 +716,7 @@ const token = cookieStore.get("token");
 
 
 export async function requestPasswordReset(email) {
-  const response = await fetch(`${URL}/user/request-password-reset`, {
+  const response = await safeFetch(`${URL}/user/request-password-reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email })
@@ -640,7 +726,7 @@ export async function requestPasswordReset(email) {
 }
 
 export async function resetPassword(token, newPassword) {
-  const response = await fetch(`${URL}/user/reset-password`, {
+  const response = await safeFetch(`${URL}/user/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, newPassword })
@@ -654,7 +740,7 @@ export async function uploadKyc(formData) {
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
 
-  const response = await fetch(`${URL}/user/upload-kyc`, {
+  const response = await safeFetch(`${URL}/user/upload-kyc`, {
     method: "PUT",
     headers: { "Authorization": `Bearer ${token?.value}` },
     body: formData,
@@ -667,7 +753,7 @@ export async function uploadKyc(formData) {
 export async function addFeaturedProperty(propertyId) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/property/add-featured-property/${propertyId}`, {
+  const response = await safeFetch(`${URL}/property/add-featured-property/${propertyId}`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -682,7 +768,7 @@ export async function addFeaturedProperty(propertyId) {
 export async function removeFeaturedProperty(propertyId) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/property/remove-featured-property/${propertyId}`, {
+  const response = await safeFetch(`${URL}/property/remove-featured-property/${propertyId}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -697,7 +783,7 @@ export async function removeFeaturedProperty(propertyId) {
 export async function deleteProperty(propertyId) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/property/delete-property/${propertyId}`, {
+  const response = await safeFetch(`${URL}/property/delete-property/${propertyId}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -711,7 +797,7 @@ export async function deleteProperty(propertyId) {
 export async function rescheduleService(serviceId, scheduled_date, scheduled_time) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/user/update-service/${serviceId}`, {
+  const response = await safeFetch(`${URL}/user/update-service/${serviceId}`, {
     method: "PUT",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -727,7 +813,7 @@ export async function rescheduleService(serviceId, scheduled_date, scheduled_tim
 export async function cancelService(serviceId) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/user/cancel-service/${serviceId}`, {
+  const response = await safeFetch(`${URL}/user/cancel-service/${serviceId}`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -742,7 +828,7 @@ export async function cancelService(serviceId) {
 export async function createServiceProvider(formData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/service-provider/create-service-provider`, {
+  const response = await safeFetch(`${URL}/service-provider/create-service-provider`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -757,7 +843,7 @@ export async function createServiceProvider(formData) {
 export async function updateServiceProvider(id, formData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/service-provider/update-service-provider/${id}`, {
+  const response = await safeFetch(`${URL}/service-provider/update-service-provider/${id}`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -772,7 +858,7 @@ export async function updateServiceProvider(id, formData) {
 export async function deleteServiceProvider(id) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/service-provider/delete-service-provider/${id}`, {
+  const response = await safeFetch(`${URL}/service-provider/delete-service-provider/${id}`, {
     method: "GET",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -791,7 +877,7 @@ export async function updateInvoice(invoiceId, invoiceData){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
-  const response = await fetch(`https://services.xpacy.com/api/v1/invoices/${invoiceId}
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/invoices/${invoiceId}
 `, {
     method: "PATCH",
     headers: {
@@ -807,7 +893,7 @@ export async function updateInvoice(invoiceId, invoiceData){
 export async function deleteInvoice(id) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/invoice/delete-invoice/${id}`, {
+  const response = await safeFetch(`${URL}/invoice/delete-invoice/${id}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -821,7 +907,7 @@ export async function issueInvoice(id){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
-  const response = await fetch(`https://services.xpacy.com/api/v1/invoices/${id}/issue`, {
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/invoices/${id}/issue`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -835,7 +921,7 @@ export async function canceleInvoice(id){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token?.value) throw new Error("Please Log in to continue");
-  const response = await fetch(`https://services.xpacy.com/api/v1/invoices/${id}/cancel
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/invoices/${id}/cancel
 `, {
     method: "POST",
     headers: {
@@ -851,7 +937,7 @@ export async function canceleInvoice(id){
 export async function updatePropertyOwnerDisplayPicture(formData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/property-owner/upload-display-image`, {
+  const response = await safeFetch(`${URL}/property-owner/upload-display-image`, {
     method: "PUT",
     headers: { "Authorization": `Bearer ${token?.value}` },
     body: formData
@@ -878,7 +964,7 @@ export async function updatePropertyOwnerProfile(formData) {
   delete mappedData.lastname;
   delete mappedData.phone_number;
 
-  const response = await fetch(`${URL}/property-owner/update-profile`, {
+  const response = await safeFetch(`${URL}/property-owner/update-profile`, {
     method: "PUT",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -894,7 +980,7 @@ export async function updatePropertyOwnerProfile(formData) {
 export async function createFaq(formData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/faq/create-faq`, {
+  const response = await safeFetch(`${URL}/faq/create-faq`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -908,7 +994,7 @@ export async function createFaq(formData) {
 export async function updateFaq(id, formData) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/faq/update-faq/${id}`, {
+  const response = await safeFetch(`${URL}/faq/update-faq/${id}`, {
     method: "PUT",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -922,7 +1008,7 @@ export async function updateFaq(id, formData) {
 export async function deleteFaq(id) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`${URL}/faq/delete-faq/${id}`, {
+  const response = await safeFetch(`${URL}/faq/delete-faq/${id}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -951,7 +1037,7 @@ export async function invitePropertyOwner(formData) {
     message: `${formData.get("message") || "You have been invited to join Xpacy as a property owner. Please sign up to manage your properties."}\n\nAccept your invitation here: ${origin}/auth/accept-invite?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
   };
 
-  const response = await fetch(`${URL}/contact/send-mail`, {
+  const response = await safeFetch(`${URL}/contact/send-mail`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -983,7 +1069,7 @@ export async function invitePropertyManager(formData) {
     message: `${formData.get("message") || "You have been invited to join Xpacy as a property manager. Please sign up to start managing properties."}\n\nAccept your invitation here: ${origin}/auth/accept-invite?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
   };
 
-  const response = await fetch(`${URL}/contact/send-mail`, {
+  const response = await safeFetch(`${URL}/contact/send-mail`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -1015,7 +1101,7 @@ export async function inviteStaffMember(formData) {
     message: `${formData.get("message") || "You have been invited to join Xpacy as staff. Please sign up to get started."}\n\nAccept your invitation here: ${origin}/auth/accept-invite?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
   };
 
-  const response = await fetch(`${URL}/contact/send-mail`, {
+  const response = await safeFetch(`${URL}/contact/send-mail`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -1029,7 +1115,7 @@ export async function inviteStaffMember(formData) {
 }
 
 export async function createProperty(formData, token) {
-  const response = await fetch(`${URL}/property/create-property`, {
+  const response = await safeFetch(`${URL}/property/create-property`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -1070,7 +1156,7 @@ export async function createPropertyNew(propertyData) {
         : []
     };
 
-    const response = await fetch(`https://services.xpacy.com/api/v1/properties`, {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/properties`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token.value}`,
@@ -1103,7 +1189,7 @@ export async function createPropertyNew(propertyData) {
       message: resData?.message || "Property created successfully!"
     };
   } catch (error) {
-    console.error("Error creating property:", error);
+    console.warn("Error creating property:", error);
     return { success: false, message: error.message || "Failed to create property" };
   }
 }
@@ -1115,7 +1201,7 @@ export async function createBlog(formData) {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
     
-    const response = await fetch(`${URL}/blog/create-post`, {
+    const response = await safeFetch(`${URL}/blog/create-post`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
@@ -1147,7 +1233,7 @@ export async function updateBlog(id, formData) {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
 
-    const response = await fetch(`${URL}/blog/update-post/${id}`, {
+    const response = await safeFetch(`${URL}/blog/update-post/${id}`, {
       method: "PUT",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
@@ -1179,7 +1265,7 @@ export async function deleteBlog(id) {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
 
-    const response = await fetch(`${URL}/blog/delete-post/${id}`, {
+    const response = await safeFetch(`${URL}/blog/delete-post/${id}`, {
       method: "DELETE",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
@@ -1215,7 +1301,7 @@ export async function refreshToken() {
 
     if (!refToken?.value) return { success: false, message: "No refresh token found" };
 
-    const response = await fetch(`https://services.xpacy.com/api/v1/auth/refresh`, {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/auth/refresh`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1279,7 +1365,7 @@ export async function refreshToken() {
       message: "Session refreshed successfully"
     };
   } catch (error) {
-    console.error("Error refreshing token:", error);
+    console.warn("Error refreshing token:", error);
     return { success: false, message: error.message };
   }
 }
@@ -1327,7 +1413,7 @@ export async function checkTokenStatus() {
       expiresAt: exp,
     };
   } catch (error) {
-    console.error("Error checking token status:", error);
+    console.warn("Error checking token status:", error);
     return { isAuthenticated: false, isExpired: false, hasRefreshToken: false, expiresInMs: null, expiresAt: null };
   }
 }
@@ -1338,7 +1424,7 @@ export async function getUserProfileAction() {
     const token = cookieStore.get("token");
     if (!token?.value) return null;
 
-    const response = await fetch(`https://services.xpacy.com/api/v1/auth/profile`, {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/auth/profile`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
@@ -1350,7 +1436,7 @@ export async function getUserProfileAction() {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("Error fetching user profile:", error);
+    console.warn("Error fetching user profile:", error);
     return null;
   }
 }
@@ -1371,7 +1457,7 @@ export async function createDocument(data){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/documents
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/documents
 `, {
     method: "POST",
     headers: {
@@ -1387,7 +1473,7 @@ export async function createDocument(data){
 export async function deleteDocument(id){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/documents/${id}
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/documents/${id}
 `, {
     method: "DELETE",
     headers: {
@@ -1404,7 +1490,7 @@ export async function deleteDocument(id){
 export async function addProperty(propertyData){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties
 
 `, {
     method: "POST",
@@ -1420,7 +1506,7 @@ export async function addProperty(propertyData){
 export async function addOwner(payload){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/owners
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners
 `, {
     method: "POST",
     headers: {
@@ -1452,7 +1538,7 @@ export async function createExpense(data, organizationId){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
 
-const response = await fetch(`https://services.xpacy.com/api/v1/expenses?organizationId=${organizationId}
+const response = await safeFetch(`https://services.xpacy.com/api/v1/expenses?organizationId=${organizationId}
 `,{
   method: "POST",
     headers: {
@@ -1479,7 +1565,7 @@ export async function updateExpense(id, data, organizationId){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
 
-const response = await fetch(`https://services.xpacy.com/api/v1/expenses/${id}
+const response = await safeFetch(`https://services.xpacy.com/api/v1/expenses/${id}
 `,{
   method: "PATCH",
     headers: {
@@ -1512,7 +1598,7 @@ export async function createLease(data,organizationId){
   "terms": data.terms
 }
 
-  const response = await fetch(`https://services.xpacy.com/api/v1/leases?organizationId=${organizationId}
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/leases?organizationId=${organizationId}
 `,{
   method: "POST",
     headers: {
@@ -1539,7 +1625,7 @@ export async function updateLease(data,id,organizationId){
   "status": data.status
 }
 
-  const response = await fetch(`https://services.xpacy.com/api/v1/leases/${id}
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/leases/${id}
 
 `,{
   method: "PATCH",
@@ -1556,7 +1642,7 @@ export async function activateLease(id,organizationId){
   
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/leases/${id}/activate?organizationId=${organizationId}
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/leases/${id}/activate?organizationId=${organizationId}
 
 `,{
   method: "POST",
@@ -1572,7 +1658,7 @@ export async function terminateLease(id,organizationId){
   
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/leases/${id}/terminate
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/leases/${id}/terminate
 `,{
   method: "POST",
     headers: {
@@ -1589,7 +1675,7 @@ export async function terminateLease(id,organizationId){
 export async function createTenant(data){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/tenants
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/tenants
 `,{
   method: "POST",
     headers: {
@@ -1616,7 +1702,7 @@ export async function updateTenant(id,data){
   "occupation": data.occupation,
   "employmentInformation": data.employmentInformation
 }
-  const response = await fetch(`https://services.xpacy.com/api/v1/tenants/${id}
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/tenants/${id}
 
 `,{
   method: "PATCH",
@@ -1632,7 +1718,7 @@ export async function updateTenant(id,data){
 export async function linkTenant(id){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/tenants/${id}/link-user`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/tenants/${id}/link-user`,
   {
   method: "POST",
     headers: {
@@ -1660,7 +1746,7 @@ export async function createMaintenanceRequest(data, propertyId){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/maintenance
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/maintenance
 `,{
   method: "POST",
     headers: {
@@ -1687,7 +1773,7 @@ export async function updateMaintenanceRequest(data,id,propertyId){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/maintenance/${id}
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/maintenance/${id}
 `,{
   method: "PATCH",
     headers: {
@@ -1703,7 +1789,7 @@ export async function assignStaffToMaintenance(id,data,propertyId){
   
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/maintenance/${id}/assign
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/maintenance/${id}/assign
 `,{
   method: "POST",
     headers: {
@@ -1719,7 +1805,7 @@ export async function commentOnMaintenanceRequest(id,data,propertyId){
   
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/maintenance/${id}/comments
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/maintenance/${id}/comments
 `,{
   method: "POST",
     headers: {
@@ -1753,7 +1839,7 @@ export async function createUnit(data,propertyId){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/units
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/units
 `,{
   method: "POST",
     headers: {
@@ -1784,7 +1870,7 @@ export async function updateUnit(id,data){
   "securityDeposit": Number(data.securityDeposit),
   "description": data.description
 }
-  const response = await fetch(`https://services.xpacy.com/api/v1/units/${id}
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/units/${id}
 `,{
   method: "PATCH",
     headers: {
@@ -1799,7 +1885,7 @@ export async function updateUnit(id,data){
 export async function deleteUnit(id){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/units/${id}`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/units/${id}`,
   {
   method: "DELETE",
     headers: {
@@ -1821,7 +1907,7 @@ export async function createBuilding(data,propertyId){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/buildings
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/buildings
 `,{
   method: "POST",
     headers: {
@@ -1842,7 +1928,7 @@ export async function updateBuilding(id,data){
   "description": data.description,
   "totalFloors": Number(data.totalFloors)
 }
-  const response = await fetch(`https://services.xpacy.com/api/v1/buildings/${id}
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/buildings/${id}
 `,{
   method: "PATCH",
     headers: {
@@ -1857,7 +1943,7 @@ export async function updateBuilding(id,data){
 export async function deleteBuilding(id){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/buildings/${id}`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/buildings/${id}`,
   {
   method: "DELETE",
     headers: {
@@ -1883,7 +1969,7 @@ export async function createPropertyOwner(data){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/owners
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners
 `,
   {
   method: "POST",
@@ -1910,7 +1996,7 @@ export async function updatePropertyOwner(id,data){
   
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/owners/2`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners/2`,
   {
   method: "PATCH",
     headers: {
@@ -1925,7 +2011,7 @@ export async function updatePropertyOwner(id,data){
 export async function deletePropertyOwner(id){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/owners/${id}`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners/${id}`,
   {
   method: "DELETE",
     headers: {
@@ -1941,7 +2027,7 @@ export async function linkOwnerToUser(id){
 
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/owners/${id}/link-user
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners/${id}/link-user
 `,
   {
   method: "POST",
@@ -1967,7 +2053,7 @@ export async function unlinkOwnerToUser(id, data){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/owners/${id}/unlink-to-user`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners/${id}/unlink-to-user`,
   {
   method: "POST",
     headers: {
@@ -1995,7 +2081,7 @@ export async function updateUser(id,data){
 
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/users/${id}`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/users/${id}`,
   {
   method: "PATCH",
     headers: {
@@ -2027,7 +2113,7 @@ export async function createOrganization(data){
 
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/organizations
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/organizations
 `,
   {
   method: "POST",
@@ -2037,6 +2123,7 @@ export async function createOrganization(data){
     },
     body: JSON.stringify(payload)
   });
+  console.log(response.json())
   return response.json(); 
 }
 
@@ -2056,7 +2143,7 @@ export async function updateOrganization(id, data){
 
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/organizations/${id}`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/organizations/${id}`,
   {
   method: "PATCH",
     headers: {
@@ -2091,7 +2178,7 @@ export async function createNewProperty(data){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties
 `,
   {
   method: "POST",
@@ -2124,7 +2211,7 @@ export async function updateProperty(id,data){
 
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties/${id}`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}`,
   {
   method: "PATCH",
     headers: {
@@ -2139,7 +2226,7 @@ export async function updateProperty(id,data){
 export async function archiveProperty(id){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties/${id}`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}`,
   {
   method: "DELETE",
     headers: {
@@ -2158,7 +2245,7 @@ export async function addManagerTOProperty(id, data){
 
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties/${id}/managers`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}/managers`,
   {
   method: "POST",
     headers: {
@@ -2174,7 +2261,7 @@ export async function deleteManagerFromProperty(id, managerId){
 
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties/${id}/managers/${managerId}`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}/managers/${managerId}`,
   {
   method: "DELETE",
     headers: {
@@ -2194,7 +2281,7 @@ export async function assignOwnerToProperty(id, data){
 
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/properties/${id}/owners
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}/owners
 `,
   {
   method: "POST",
@@ -2223,7 +2310,7 @@ export async function createNotification(data){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/notifications
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/notifications
 `, {
     method: "POST",
     headers: {
@@ -2246,7 +2333,7 @@ export async function sedBroadcast(data){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await fetch(`https://services.xpacy.com/api/v1/notifications/broadcast
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/notifications/broadcast
 `, {
     method: "POST",
     headers: {
@@ -2263,7 +2350,7 @@ export async function markNotificationRead(id) {
   const token = cookieStore.get("token");
   if (!token?.value) return;
   try {
-    const response = await fetch(`https://services.xpacy.com/api/v1/notifications/${id}/read`, {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/notifications/${id}/read`, {
       method: "PATCH",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
@@ -2273,7 +2360,7 @@ export async function markNotificationRead(id) {
     revalidatePath("/dashboard/user/notifications");
     return data;
   } catch (error) {
-    console.error("Error marking notification as read:", error);
+    console.warn("Error marking notification as read:", error);
   }
 }
 
@@ -2283,7 +2370,7 @@ export async function markAllAsRead() {
   const token = cookieStore.get("token");
   if (!token?.value) return [];
   try {
-    const response = await fetch(`https://services.xpacy.com/api/v1/notifications/read-all`, {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/notifications/read-all`, {
       method: "PATCH",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
@@ -2293,6 +2380,6 @@ export async function markAllAsRead() {
     revalidatePath("/dashboard/user/notifications");
     return data;
   } catch (error) {
-    console.error("Error marking all notifications as read:", error);
+    console.warn("Error marking all notifications as read:", error);
   }
 }

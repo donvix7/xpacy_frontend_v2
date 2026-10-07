@@ -1,18 +1,12 @@
 import DistributionDonutChart from "./DistributionDonutChart";
+import { getReportStatus, toReportArray } from "@/app/_lib/report-utils";
 
 const ServiceStatusChart = ({ services = [] }) => {
-  const counts = services.reduce((acc, service) => {
-    const status = (service.status || service.service_status || "pending").toLowerCase();
-    let label = "Other";
-    if (status === "pending") label = "Pending";
-    else if (status === "in-progress" || status === "in progress") label = "In Progress";
-    else if (status === "completed") label = "Completed";
-    else if (status === "assigned") label = "Assigned";
-    else if (status === "accepted") label = "Accepted";
-    else if (status === "awaiting-parts") label = "Awaiting Parts";
-    else if (status === "closed") label = "Closed";
-    else if (status === "cancelled" || status === "canceled") label = "Cancelled";
-    else if (status !== "unknown") label = status.charAt(0).toUpperCase() + status.slice(1);
+  const counts = toReportArray(services).reduce((acc, service) => {
+    const rawStatus = getReportStatus(service, ["service_status", "status"]);
+    const status = rawStatus === "canceled" ? "cancelled" : rawStatus;
+    const label = ({ pending: "Pending", "in-progress": "In Progress", completed: "Completed", assigned: "Assigned", accepted: "Accepted", "awaiting-parts": "Awaiting Parts", closed: "Closed", cancelled: "Cancelled", canceled: "Cancelled", unspecified: "Unspecified", unknown: "Unspecified" })[status]
+      || status.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
     acc[label] = (acc[label] || 0) + 1;
     return acc;
   }, {});

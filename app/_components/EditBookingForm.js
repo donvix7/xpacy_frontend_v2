@@ -57,7 +57,7 @@ export default function EditBookingForm({ booking }) {
             
             {/* Header */}
             <header className="flex flex-col items-center justify-center gap-4 relative w-full">
-                <h2 className="text-3xl font-bold text-primary">Edit Booking</h2>
+                <p className="text-3xl font-bold text-primary">Edit Booking</p>
                 <span className="text-gray-500 font-mono text-sm">ID: #{_id || id}</span>
             </header>
 
@@ -66,7 +66,7 @@ export default function EditBookingForm({ booking }) {
                 
                 {/* 1. Modify Details Section */}
                 <div className="flex flex-col gap-6">
-                    <h3 className="text-lg font-bold text-primary border-b border-gray-100 pb-2">Modify Details</h3>
+                    <p className="text-lg font-bold text-primary border-b border-gray-100 pb-2">Modify Details</p>
                     <div className="flex flex-col gap-6">
                         <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
                             <FormInput label="Booking Status" id="status">
@@ -111,7 +111,7 @@ export default function EditBookingForm({ booking }) {
 
                 {/* 2. Read-only Contextual Info Section */}
                 <div className="flex flex-col gap-6">
-                    <h3 className="text-lg font-bold text-primary border-b border-gray-100 pb-2">Reference Context</h3>
+                    <p className="text-lg font-bold text-primary border-b border-gray-100 pb-2">Reference Context</p>
                     
                     <div className="flex flex-col gap-6">
                         <FormInput label="Tenant" id="ref_tenant">

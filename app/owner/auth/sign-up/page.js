@@ -56,7 +56,7 @@ function SignUpForm() {
     if (!token) {
         return (
              <div className="text-center">
-                <h3 className="text-xl font-bold text-red-600 mb-4">Invalid Link</h3>
+                <p className="text-xl font-bold text-red-600 mb-4">Invalid Link</p>
                 <p className="text-gray-600 mb-6">This registration link is missing a valid token.</p>
                 <Link href="/" className="text-primary hover:underline">Return Home</Link>
             </div>
@@ -123,7 +123,7 @@ export default function Page() {
              {/* Left Text / Branding Side (Optional, matching typical auth layouts) */}
              <div className="bg-primary-900 hidden lg:flex flex-col items-center justify-center p-12 text-white relative overflow-hidden">
                 <div className="relative z-10 max-w-md text-center">
-                     <h1 className="text-4xl font-bold mb-6">Welcome to Xpacy</h1>
+                     <p className="text-4xl font-bold mb-6">Welcome to Xpacy</p>
                      <p className="text-primary-100 text-lg">
                         Complete your property owner account setup to start managing your listings and services.
                      </p>
@@ -136,7 +136,7 @@ export default function Page() {
             <div className="flex flex-col justify-center items-center p-6 lg:p-12 bg-white">
                 <div className="w-full max-w-md flex flex-col gap-8">
                      <div className="text-center lg:text-left">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-2">Finalize Your Account</h2>
+                        <p className="text-3xl font-bold text-gray-900 mb-2">Finalize Your Account</p>
                         <p className="text-gray-500">Set a secure password to access your dashboard.</p>
                     </div>
 

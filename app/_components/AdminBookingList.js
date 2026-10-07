@@ -63,7 +63,7 @@ export default async function AdminBookingList({ bookings }) {
                         </div>
                         <div className="flex justify-between">
                             <label className="text-sm text-gray-500">Property Name:</label>
-                        <h3 className="text-sm font-bold text-gray-800">{booking.property?.property_name || "N/A"}</h3>
+                        <p className="text-sm font-bold text-gray-800">{booking.property?.property_name || "N/A"}</p>
 
                         </div>
                         <div className="flex justify-between">

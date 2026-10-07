@@ -6,6 +6,6 @@ export default function DashboardHeading(){
     let heading = pathname.split("/")[3] || "Dashboard Overview"
     heading = heading?.includes("-") ? heading.split("-").join(" ") : heading
     return (
-        <h1 className="text-[22px] hidden lg:block capitalize">{heading}</h1>
+        <p className="text-[22px] hidden lg:block capitalize">{heading}</p>
     )
 }

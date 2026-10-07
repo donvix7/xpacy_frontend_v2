@@ -102,7 +102,7 @@ const summaryCards = [
 ];
     return (
         <div className="p-2 space-y-6">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-2">User Management</h1>
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-2">User Management</p>
             <SummaryCards cards={summaryCards} title="User Summary" />
             <DashboardGridItem title="All Users List">
                

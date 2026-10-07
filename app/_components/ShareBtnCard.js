@@ -23,7 +23,7 @@ function ShareBtnCard({onClose}) {
     }
     return (
         <div className="md:w-[400px] w-[250px] flex flex-col gap-4 font-mono my-2 mx-3">
-            <h3 className="font-sans text-md ">Share </h3>
+            <p className="font-sans text-md ">Share </p>
             <div className="flex items-center justify-between ">
                 <Link href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pathname)}`} target="_blank" rel="noopener noreferrer" className="bg-[#0d6efd] text-white text-4xl flex items-center justify-center w-[60px] h-[60px] rounded-full">
                     <FaFacebookF/>

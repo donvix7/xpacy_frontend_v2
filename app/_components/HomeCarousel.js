@@ -14,7 +14,7 @@ export default async function HomeCarousel() {
           alt="Xpacy Hero"
         />
         <div className="absolute flex flex-col p-4 md:p-0 space-y-8 z-20 md:w-10/12 w-full text-white text-center translate-x-[-50%] translate-y-[-50%] md:top-1/3 top-1/2 left-[50%]">
-          <h1 className="leading-15 text-[32px] md:text-5xl">{banner?.title}</h1>
+          <p className="leading-15 text-[32px] md:text-5xl">{banner?.title}</p>
           <p className="md:text-xl text-lg font-light ">
             Search, buy, or rent properties across Nigeria
           </p>

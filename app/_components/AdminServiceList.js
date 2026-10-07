@@ -28,7 +28,7 @@ export default function AdminServiceList({ services = [] }) {
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             {/* Top Bar */}
             <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h3 className="text-xl font-bold text-primary-900 font-mono">Service Requests List</h3>
+                <p className="text-xl font-bold text-primary-900 font-mono">Service Requests List</p>
                 
                 <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                     {/* Search */}

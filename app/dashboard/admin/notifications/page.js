@@ -11,7 +11,7 @@ export default async function Page() {
 
     return (
         <div className="space-y-8 p-2">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Notifications</h1>
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Notifications</p>
             <DashboardGridItem title="Summary">
             <AdminNotificationsSummary notifications={notifications} />
             </DashboardGridItem>

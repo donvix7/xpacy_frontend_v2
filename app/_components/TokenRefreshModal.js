@@ -17,7 +17,6 @@ export default function TokenRefreshModal() {
   const router = useRouter();
   const timerRef = useRef(null);
   const refreshInFlightRef = useRef(null);
-  const autoRefreshAttemptedRef = useRef(false);
 
   const handleRefreshSession = useCallback(async () => {
     if (refreshInFlightRef.current) return refreshInFlightRef.current;
@@ -30,7 +29,6 @@ export default function TokenRefreshModal() {
         const res = await refreshToken();
 
         if (res.success) {
-          autoRefreshAttemptedRef.current = false;
           toast.success(res.message || "Session refreshed successfully!");
           setIsOpen(false);
           setErrorMessage(null);
@@ -71,10 +69,6 @@ export default function TokenRefreshModal() {
 
       if (status.isExpired) {
         setIsOpen(true);
-        if (status.hasRefreshToken && !autoRefreshAttemptedRef.current) {
-          autoRefreshAttemptedRef.current = true;
-          await handleRefreshSession();
-        }
         return;
       }
 
@@ -88,7 +82,7 @@ export default function TokenRefreshModal() {
     } catch (err) {
       console.error("Failed to check token status:", err);
     }
-  }, [handleRefreshSession]);
+  }, []);
 
   useEffect(() => {
     scheduleCheck();
@@ -108,10 +102,6 @@ export default function TokenRefreshModal() {
       setIsOpen(true);
       const status = await checkTokenStatus();
       setHasRefreshToken(status.hasRefreshToken);
-      if (status.hasRefreshToken && !autoRefreshAttemptedRef.current) {
-        autoRefreshAttemptedRef.current = true;
-        await handleRefreshSession();
-      }
     };
 
     // Event listener for manual re-schedule
@@ -137,7 +127,7 @@ export default function TokenRefreshModal() {
       window.removeEventListener("xpacy:token-expired", handleExpiredEvent);
       window.removeEventListener("xpacy:token-refreshed", handleRefreshedEvent);
     };
-  }, [handleRefreshSession, scheduleCheck]);
+  }, [scheduleCheck]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -188,13 +178,13 @@ export default function TokenRefreshModal() {
         </div>
 
         {/* Heading */}
-        <h3 id="token-modal-title" className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+        <p id="token-modal-title" className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
           Session Expired
-        </h3>
+        </p>
 
         {/* Description */}
         <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-          Your access token has expired. Refresh your session now to continue working smoothly without losing your changes.
+          Your session has expired. Refresh your session now to continue access to site without losing your changes.
         </p>
 
         {/* Error notification if refresh failed */}

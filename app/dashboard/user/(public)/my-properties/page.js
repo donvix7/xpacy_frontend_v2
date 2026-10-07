@@ -19,6 +19,10 @@ export default async function Page(){
             getManagedProperties(),
             getMyRentedProperties(),
         ]);
+
+        console.log("owned: ", ownedProperties)
+        console.log("managed: ", managedProperties)
+        console.log("rented: ", rentedProperties)
    
      const counts = {
             owned: ownedProperties.length,
@@ -52,7 +56,7 @@ export default async function Page(){
     
     return (
         <div className="p-2 space-y-6">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">My Properties</h1>
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">My Properties</p>
             <DashboardGridItem title="Properties Summary">
             <SummaryCards cards={summaryCards} />
 

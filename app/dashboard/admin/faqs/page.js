@@ -7,7 +7,7 @@ export default async function Page() {
     const faqs = await getFaqs();
     return (
         <div className="p-2">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">FAQs</h1>
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">FAQs</p>
             
             <AdminFaqsSummary faqs={faqs} />
 

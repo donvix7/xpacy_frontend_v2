@@ -7,9 +7,12 @@ import ReferralSidebarNav from "./ReferralSidebarNav";
 import SidebarLogo from "./SidebarLogo";
 import SidebarNav from "./SidebarNav";
 import { useCloseModal } from "../_hooks/useCloseModal";
+import { usePathname } from "next/navigation";
+import { isPublicNavigationLinkActive, publicNavigationLinks } from "@/app/_lib/public-navigation";
 
 
 export default function MobileNav({ children, isSidebar = false, role = "user" }) {
+    const pathname = usePathname();
 
     return (
         <NavMenu>
@@ -23,7 +26,7 @@ export default function MobileNav({ children, isSidebar = false, role = "user" }
                             <MobileSideBarWindow role={role} />
                         ) :
                         (
-                            <MainAppWindow>
+                            <MainAppWindow pathname={pathname}>
                                 {children}
                             </MainAppWindow>
                         )
@@ -50,30 +53,19 @@ const MobileNavBtns = ({ isOpen, open }) => {
 }
 
 
-const MainAppWindow = ({ children }) => {
+const MainAppWindow = ({ children, pathname }) => {
     return (
         <ul className="border border-primary-200 rounded-lg font-mono lg:hidden">
-            <li className="py-2 border-b border-primary-100">
-                <Link href={"/"}>Home</Link>
-            </li>
-            <li className="py-2 border-b border-primary-100">
-                <Link href={"/shortlet"}>Shortlet</Link>
-            </li>
-            <li className="py-2 border-b border-primary-100">
-                <Link href={"/rent"}>Rent</Link>
-            </li>
-            <li className="py-2 border-b border-primary-100">
-                <Link href={"/buy"}>Buy</Link>
-            </li>
-            <li className="py-2 border-b border-primary-100">
-                <Link href={"/blogs"}>Blogs</Link>
-            </li>
-            <li className="py-2 border-b border-primary-100">
-                <Link href={"/management"}>Management</Link>
-            </li>
-            <li className="py-2 border-b border-primary-100">
-                <Link href={"/contact"}>Contact </Link>
-            </li>
+            {publicNavigationLinks.map(({ label, href }) => {
+                const active = isPublicNavigationLinkActive(pathname, href);
+                return (
+                    <li key={href} className={`border-b border-primary-100 py-2 ${active ? "font-semibold text-primary" : "text-gray-700"}`}>
+                        <Link href={href} aria-current={active ? "page" : undefined} className="block">
+                            {label}
+                        </Link>
+                    </li>
+                );
+            })}
             {children}
         </ul>
     )

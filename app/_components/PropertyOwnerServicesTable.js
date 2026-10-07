@@ -62,7 +62,7 @@ export default function PropertyOwnerServicesTable({ services, pagination, showF
             <div key={service.id || service._id} className="flex flex-col gap-4 p-4 border-b border-primary-100 bg-white last:border-0 font-mono">
                 <div className="flex justify-between items-start gap-4">
                     <div className="flex flex-col gap-1">
-                        <h3 className="font-bold text-sm text-gray-900">{service.service_type || service.type || "Service"}</h3>
+                        <p className="font-bold text-sm text-gray-900">{service.service_type || service.type || "Service"}</p>
                         <p className="text-xs text-gray-500">{propertyAddress}</p>
                     </div>
                     <StatusChips status={service.service_status || service.status || 'pending'} />

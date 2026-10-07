@@ -48,15 +48,26 @@ export default function AdminPropertyOwnersList({ owners,  variant = "default" }
     const renderMobileCard = (owner) => (
          <div key={owner._id || owner.id} className="flex flex-col gap-4 p-4 border-b border-primary-100 bg-white last:border-0 w-full border-2">
                     <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-center gap-3 relative w-full">
+                        <div className="flex flex-col items-center gap-3 relative w-full">
                              
-                            <div className="w-12 h-12 relative shrink-0">
-                                <Image src={owner.display_picture ? `https://app.xpacy.com/src/upload/display_img/${owner.display_picture}` : "/avatar.png"} alt="owner-photo" className="object-cover rounded-full" unoptimized fill />
-                            </div>
-                            <div className="flex flex-col w-full">
-                               <div className="backdrop-blur-sm self-end ">
-                                <OwnerOptionsMenu id={owner._id || owner.id} />
+                           <div className="flex items-start justify-between w-full gap-3">
+                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-100">
+                                    <Image
+                                        src={owner.display_picture ? `https://app.xpacy.com/src/upload/display_img/${owner.display_picture}` : "/avatar.png"}
+                                        alt=""
+                                        className="object-cover"
+                                        unoptimized
+                                        fill
+                                    />
                                 </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <p className="break-words font-semibold text-gray-900">{name}</p>
+                                        <OwnerOptionsMenu id={owner._id || owner.id} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-y-3 w-full">
                                 <div className="flex justify-between">
                                 <label className="text-sm text-gray-500 ">Name</label>
                                 <span className="text-sm font-semibold">{owner.first_name} {owner.last_name}</span>

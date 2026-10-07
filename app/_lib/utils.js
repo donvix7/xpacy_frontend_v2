@@ -2,6 +2,22 @@
 import { parse } from "date-fns";
 
 export const URL = process.env.BACKEND_URL;
+export const toRecordArray = (response) => {
+  if (Array.isArray(response)) return response;
+  const candidates = [
+    response?.data,
+    response?.invoices,
+    response?.bookings,
+    response?.results,
+    response?.items,
+    response?.data?.invoices,
+    response?.data?.bookings,
+    response?.data?.results,
+    response?.data?.items,
+  ];
+  return candidates.find(Array.isArray) || [];
+};
+
 export const formatCurrency = (value) =>
   new Intl.NumberFormat("en-NG", {
     style: "currency",

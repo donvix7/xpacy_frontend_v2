@@ -55,7 +55,7 @@ export default async function Page() {
         <div className=" space-y-6 p-2">
              <div className=" space-y-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Bookings</h1>
+                <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Bookings</p>
                 <Link 
                     href="/dashboard/admin/bookings/create" 
                     className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium text-sm"

@@ -5,14 +5,19 @@ import { FaBuildingUser, FaUserGear, FaUsersGear } from "react-icons/fa6";
 import { IoCloseCircleOutline } from "react-icons/io5";
 import SummaryItemCard from "./SummaryItemCard";
 
-export default function ServicesSummary({ services, serviceProviders, showHeading = true }) {
+const getServiceStatus = (service) => String(service?.service_status || service?.status || "").toLowerCase();
+
+export default function ServicesSummary({ services = [], serviceProviders = [], showHeading = true }) {
+    const serviceList = Array.isArray(services) ? services.filter(Boolean) : [];
+    const providers = Array.isArray(serviceProviders) ? serviceProviders.filter(Boolean) : [];
+
     // Calculate counts
     const counts = {
-        total: services.length,
-        pending: services.filter(s => s.service_status?.toLowerCase() === 'pending').length,
-        inProgress: services.filter(s => s.service_status?.toLowerCase() === 'in-progress').length,
-        completed: services.filter(s => s.service_status?.toLowerCase() === 'completed').length,
-        cancelled: services.filter(s => s.service_status?.toLowerCase() === 'cancelled').length,
+        total: serviceList.length,
+        pending: serviceList.filter(s => getServiceStatus(s) === 'pending').length,
+        inProgress: serviceList.filter(s => getServiceStatus(s) === 'in-progress').length,
+        completed: serviceList.filter(s => getServiceStatus(s) === 'completed').length,
+        cancelled: serviceList.filter(s => getServiceStatus(s) === 'cancelled').length,
     };
 
     const summaryItems = [
@@ -46,7 +51,7 @@ export default function ServicesSummary({ services, serviceProviders, showHeadin
         },
         {
             title: "Service Providers",
-            count: serviceProviders.length,
+            count: providers.length,
             icon: <Users className="text-primary" size={24} />,
             color: "text-primary",
             bgColor: "bg-primary-100/80"

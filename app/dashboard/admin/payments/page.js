@@ -5,15 +5,16 @@ import {getAllInvoices, getInvoices } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import DateFilter from "@/app/_components/DateFilter";
 import ExportButton from "@/app/_components/ExportButton";
+import { toRecordArray } from "@/app/_lib/utils";
 
 export default async function Page() {
   
-    const invoices = await getAllInvoices() || [];
+    const invoices = toRecordArray(await getAllInvoices());
 
     return (
         <div className="space-y-8 p-2">
             <div className="flex justify-between items-center  gap-2 mb-8">
-                <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Payments</h1>
+                <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Payments</p>
                     <div className="flex gap-2">
     
                     <DateFilter />

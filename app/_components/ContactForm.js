@@ -75,7 +75,7 @@ const ContactForm = ({ user }) => {
             <Modal open={open} onOpen={setOpen}>
                 <Modal.Window>
                     <div className="lg:px-12 lg:pb-16 lg:pt-10 p-4 w-[300px] lg:w-[350px] rounded-lg space-y-2 font-mono">
-                        <h3 className="font-bold text-md ">Thank you for contacting us!</h3>
+                        <p className="font-bold text-md ">Thank you for contacting us!</p>
                         <p>We will get back to you shortly.</p>
                     </div>
                 </Modal.Window>

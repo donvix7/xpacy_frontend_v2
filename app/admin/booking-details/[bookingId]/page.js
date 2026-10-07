@@ -21,7 +21,7 @@ export default async function ViewBookingPage({ params }) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-12">
                 <BackBtn />
-                <h1 className="text-2xl font-bold mt-4 text-gray-800">Booking Not Found</h1>
+                <p className="text-2xl font-bold mt-4 text-gray-800">Booking Not Found</p>
                 <p className="text-gray-500 mt-2 text-center max-w-md">The booking you are looking for does not exist or has been deleted.</p>
             </div>
         );
@@ -37,7 +37,7 @@ export default async function ViewBookingPage({ params }) {
                 <div className="flex items-center gap-8">
                     <BackBtn />
                     <div className="h-8 w-px bg-primary-100"></div>
-                    <h2 className="text-xl font-bold text-primary">Booking Details</h2>
+                    <p className="text-xl font-bold text-primary">Booking Details</p>
                 </div>
                 <Logo />
             </nav>
@@ -49,7 +49,7 @@ export default async function ViewBookingPage({ params }) {
                         
                         {/* 1. Tenant Info Section */}
                         <div className="flex flex-col gap-6">
-                            <h3 className="text-lg font-bold text-primary border-b border-gray-100 pb-2">Tenant Information</h3>
+                            <p className="text-lg font-bold text-primary border-b border-gray-100 pb-2">Tenant Information</p>
                             <div className="flex flex-col gap-6">
                                 <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
                                     <FormInput label="First Name" id="tenant_firstname">
@@ -86,7 +86,7 @@ export default async function ViewBookingPage({ params }) {
 
                         {/* 2. Property & Booking Info Section */}
                         <div className="flex flex-col gap-6">
-                            <h3 className="text-lg font-bold text-primary border-b border-gray-100 pb-2">Property & Booking Details</h3>
+                            <p className="text-lg font-bold text-primary border-b border-gray-100 pb-2">Property & Booking Details</p>
                             <div className="flex flex-col gap-6">
                                 <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
                                     <FormInput label="Property Name" id="property_name">

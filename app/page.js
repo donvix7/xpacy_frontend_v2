@@ -66,7 +66,7 @@ export default async function Home() {
               </div>
             </div>
             <div className="text-center space-y-2">
-              <h3 className="text-white md:text-xl text-lg">Still have questions?</h3>
+              <p className="text-white md:text-xl text-lg">Still have questions?</p>
               <p className="font-mono text-white md:text-base text-sm">
                 Can’t find the answer you’re looking for? Please chat to our
                 friendly team.
@@ -89,7 +89,7 @@ export default async function Home() {
           <Image src={image4} fill alt="" className="object-cover md:rounded-lg" />
         </div>
         <div className=" flex flex-col items-center justify-center text-center gap-8 px-6 pb-12 md:pb-0 md:px-0 ">
-          <h2 className="font-bold md:text-4xl text-[28px]">Want To List Your Property?</h2>
+          <p className="font-bold md:text-4xl text-[28px]">Want To List Your Property?</p>
           <p className="text-base font-mono ">
             At Xpacy, we manage your property listings from start to finish,
             ensuring you enjoy peace of mind while maximizing your returns.
@@ -108,9 +108,9 @@ export default async function Home() {
         <div className="bg-primary md:px-[120px] md:py-12 px-6 py-12">
           <div className="flex items-center flex-col md:flex-row">
             <div className="flex flex-col items-center justify-center space-y-8 text-white text-center px-6 md:px-0">
-              <h2 className="font-bold md:text-4xl text-[28px]">
+              <p className="font-bold md:text-4xl text-[28px]">
                 Take Xpacy with You Anywhere!
-              </h2>
+              </p>
               <p className="font-mono md:text-base text-sm">
                 Download our mobile app and enjoy seamless property management
                 on the go.

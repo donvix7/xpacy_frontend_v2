@@ -125,7 +125,7 @@ export default async function AdminPropertyList({ properties, bookings = [], pag
                             </div>
 
                             <div className="flex items-center gap-2">
-                                 <h3 className="font-bold text-sm text-neutrals-900 truncate">{property?.property_name}</h3>
+                                 <p className="font-bold text-sm text-neutrals-900 truncate">{property?.property_name}</p>
 
                             </div>
                             <div className="flex items-center gap-2">

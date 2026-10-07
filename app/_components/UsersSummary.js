@@ -58,7 +58,7 @@ export default function UsersSummary({
             {/* ... Existing Users Summary ... */}
             <div>
                 <div className="flex justify-between items-center pb-4 border-b border-gray-100 mb-6">
-                    <h3 className="text-lg font-bold text-gray-800">User Statistics</h3>
+                    <p className="text-lg font-bold text-gray-800">User Statistics</p>
                 </div>
 
                 <div className="flex flex-col gap-4">

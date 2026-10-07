@@ -25,7 +25,7 @@ export default function Error({ error, reset }) {
           />
         </svg>
       </div>
-      <h2 className="text-xl font-bold text-gray-900">Something went wrong!</h2>
+      <p className="text-xl font-bold text-gray-900">Something went wrong!</p>
       <p className="text-gray-600 max-w-sm">
         We encountered an error while loading your dashboard. Please try again later.
       </p>

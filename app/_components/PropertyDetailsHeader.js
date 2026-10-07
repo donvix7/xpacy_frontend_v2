@@ -29,7 +29,7 @@ export default function PropertyDetailsHeader({propertyName, propertyAddress, pr
                 <span className={"text-blue-400 capitalize"}>{viewPhotos ?  "View Photos" : "Property Details"}</span>
             </div>
             <div className="flex min-w-0 flex-col space-y-3 md:space-y-2">
-                <h1 className="break-words text-2xl font-bold capitalize sm:text-[28px] md:text-4xl">{propertyName}</h1>
+                <p className="break-words text-2xl font-bold capitalize sm:text-[28px] md:text-4xl">{propertyName}</p>
                 <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0">
                     <p className="flex min-w-0 items-start gap-2 break-words text-sm text-primary-700 sm:text-base">
                         <span className="shrink-0 text-2xl"><IoLocationOutline/></span>

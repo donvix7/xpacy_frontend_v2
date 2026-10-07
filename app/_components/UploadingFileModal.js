@@ -8,7 +8,7 @@ const UploadingFileModal = ({ isOpenModal, setIsOpenModal, uploadingProgress, es
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl p-8 transition-all duration-300 border border-primary-100">
         <div className="w-[330px] flex justify-center items-center flex-col gap-6 font-mono text-center">
           <div className="flex flex-col gap-2 items-center">
-            <h3 className="text-xl font-bold text-primary-700">Uploading File</h3>
+            <p className="text-xl font-bold text-primary-700">Uploading File</p>
             <p className="text-xs text-neutrals-500 italic">Please wait while we process your request</p>
           </div>
 

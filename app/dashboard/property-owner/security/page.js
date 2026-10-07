@@ -58,7 +58,7 @@ const summaryCards = [
 
     return (
         <div className="space-y-8 p-2">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Security</h1>
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Security</p>
 
             <SummaryCards cards={summaryCards} />
 

@@ -129,7 +129,7 @@ export default function PropertyManagerInventory({ properties = [] }) {
                     <div key={category.id} className="border-[1.5px] border-primary-200 rounded-lg overflow-hidden">
                         <div className={`px-4 py-3 flex items-center gap-3 ${category.color}`}>
                             {category.icon}
-                            <h3 className="font-bold text-gray-900 font-sans">{category.label} Inventory</h3>
+                            <p className="font-bold text-gray-900 font-sans">{category.label} Inventory</p>
                         </div>
                         <div className="divide-y divide-gray-100">
                             {category.items.map(item => {

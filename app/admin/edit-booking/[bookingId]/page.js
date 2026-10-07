@@ -16,7 +16,7 @@ export default async function EditBookingPage({ params }) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-12">
                 <BackBtn />
-                <h1 className="text-2xl font-bold mt-4 text-gray-800">Booking Not Found</h1>
+                <p className="text-2xl font-bold mt-4 text-gray-800">Booking Not Found</p>
                 <p className="text-gray-500 mt-2 text-center max-w-md">The booking you are trying to edit does not exist.</p>
             </div>
         );
@@ -29,7 +29,7 @@ export default async function EditBookingPage({ params }) {
                 <div className="flex items-center gap-8">
                     <BackBtn />
                     <div className="h-8 w-px bg-primary-100"></div>
-                    <h2 className="text-xl font-bold text-primary">Edit Booking</h2>
+                    <p className="text-xl font-bold text-primary">Edit Booking</p>
                 </div>
                 <Logo />
             </nav>

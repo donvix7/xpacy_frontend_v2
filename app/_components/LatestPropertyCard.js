@@ -19,7 +19,7 @@ export default function LatestPropertyCard({property}){
             <div className="p-2 flex flex-col font-mono gap-2">
                 <div className="space-y-1">
                     <span className="text-xs text-neutrals-900">{property.property_type}</span>
-                    <h2 className="text-sm font-semibold text-black">{property.property_name}</h2>
+                    <p className="text-sm font-semibold text-black">{property.property_name}</p>
                 </div>
                 <div className="space-y-2 flex-end">
                     <div className="flex space-x-1 items-center font-mono">

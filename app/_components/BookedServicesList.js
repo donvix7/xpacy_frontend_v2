@@ -47,7 +47,7 @@ export default async function BookedServiceList({ services }) {
             </div>
             
             <div className="flex flex-col gap-1">
-                <h3 className="text-sm font-bold text-gray-800">{service.service_type}</h3>
+                <p className="text-sm font-bold text-gray-800">{service.service_type}</p>
                 <div className="flex justify-between items-center mt-1">
                     <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Status:</span>
                     <StatusChips status={service.service_status} />

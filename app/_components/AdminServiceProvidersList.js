@@ -26,7 +26,7 @@ export default function AdminServiceProvidersList({ providers = [] }) {
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             {/* Top Bar */}
             <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h3 className="text-xl font-bold text-primary-900 font-mono">Service Providers List</h3>
+                <p className="text-xl font-bold text-primary-900 font-mono">Service Providers List</p>
                 
                 <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                     {/* Search */}
@@ -76,7 +76,7 @@ export default function AdminServiceProvidersList({ providers = [] }) {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-2">
-                                        <h3 className="break-words font-semibold text-gray-900">{name}</h3>
+                                        <p className="break-words font-semibold text-gray-900">{name}</p>
                                         <UserOptionsMenu id={provider._id || provider.id} role={provider?.user_role || "provider"} />
                                     </div>
                                     <p className="mt-1 break-all text-xs text-gray-500">{provider.email || "No email"}</p>

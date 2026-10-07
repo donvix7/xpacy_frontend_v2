@@ -5,12 +5,12 @@ import { RxDashboard } from "react-icons/rx";
 import { FiBell } from "react-icons/fi";
 import { BiBuildingHouse, BiShield } from "react-icons/bi";
 import { FaIdCard, FaRegHeart } from "react-icons/fa";
-import { IoCardOutline, IoLogInOutline, IoPeopleOutline } from "react-icons/io5";
+import { IoCardOutline, IoDocumentOutline, IoLogInOutline, IoPeopleOutline } from "react-icons/io5";
 import { RiUserSettingsLine } from "react-icons/ri";
 import { LuBell, LuLayoutDashboard, LuMessageCircleQuestion, LuMessageSquare, LuWrench } from "react-icons/lu";
 import { IoCalendarOutline } from "react-icons/io5";
 import { RiHome2Line, RiSearchLine, RiSettings3Line, RiPulseLine } from "react-icons/ri";
-import { Archive, MessageSquare, Settings, User } from "lucide-react";
+import { Archive, Calendar1, MessageSquare, Settings, User } from "lucide-react";
 import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaWrench } from "react-icons/fa6";
 import { TbBuilding, TbBuildingCommunity, TbFileText, TbHelp, TbReportAnalytics, TbSettings, TbUsers } from "react-icons/tb";
 import { HiOutlineClipboardList } from "react-icons/hi";
@@ -46,10 +46,21 @@ export default function SidebarNav({ role = "user" }) {
             link: "/dashboard/user/saved-properties",
             icon: <FaRegHeart />
         },
+
+        {
+            text: "Bookings",
+            link: "/dashboard/user/bookings",
+            icon: <Calendar1 />
+        },
         {
             text: "Booked Services",
             link: "/dashboard/user/booked-services",
             icon: <IoCalendarOutline />
+        },
+         {
+            text: "Leases",
+            link: "/dashboard/user/leases",
+            icon: <IoDocumentOutline />
         },
         {
             text: "Payments",
@@ -98,6 +109,11 @@ export default function SidebarNav({ role = "user" }) {
             text: "Users",
             link: "/dashboard/admin/users",
             icon: <User />
+        },
+        {
+            text: "Organizations",
+            link: "/dashboard/admin/organizations",
+            icon: <TbBuildingCommunity />
         },
         {
             text: "Blogs",

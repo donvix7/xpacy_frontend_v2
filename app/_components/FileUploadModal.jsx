@@ -126,9 +126,9 @@ const FileUploadModal = ({ isOpen, onClose, onFileUpload }) => {
         <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full">
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-900">
+            <p className="text-xl font-semibold text-gray-900">
               Upload file
-            </h3>
+            </p>
             <button
               onClick={handleClose}
               disabled={isUploading}

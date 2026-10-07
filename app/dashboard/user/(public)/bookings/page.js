@@ -5,6 +5,7 @@ import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
 import { getMyBookings } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import SummaryCards from "@/app/_components/SummaryCards";
 
 const tableHeadings = [
     { heading: "Unit" },
@@ -17,16 +18,17 @@ const tableHeadings = [
 
 const formatDate = (value) => {
     if (!value) return "—";
-    try {
-        return new Date(value).toLocaleDateString("en-NG", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
-    } catch {
-        return value;
-    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString("en-NG", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+    });
 };
+
+const bookingStatus = (booking) => String(booking.status || "pending").toLowerCase();
+const bookingCheckIn = (booking) => booking.checkIn || booking.check_in || booking.start_date;
 
 const formatGuestCount = (booking) => {
     const total =
@@ -41,20 +43,26 @@ export default async function BookingList({ bookings }) {
 
     // If not passed in, fetch using the token from cookies
     if (!bookingList) {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token");
-        bookingList = await getMyBookings(token);
+        bookingList = await getMyBookings();
     }
 
-    if (!bookingList || bookingList.length <= 0) {
-        return (
-            <EmptyState
-                message={"Oops!... You have no bookings yet."}
-                cta={"Browse Listings"}
-                link={"/listings"}
-            />
-        );
-    }
+    bookingList = Array.isArray(bookingList) ? bookingList : [];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcomingCount = bookingList.filter((booking) => {
+        const checkIn = new Date(bookingCheckIn(booking));
+        return !Number.isNaN(checkIn.getTime()) && checkIn >= today &&
+            !["cancelled", "canceled", "completed"].includes(bookingStatus(booking));
+    }).length;
+    const pendingCount = bookingList.filter((booking) => ["pending", "awaiting payment"].includes(bookingStatus(booking))).length;
+    const completedCount = bookingList.filter((booking) => ["completed", "complete"].includes(bookingStatus(booking))).length;
+    const summaryCards = [
+        { label: "Total bookings", value: bookingList.length },
+        { label: "Upcoming", value: upcomingCount },
+        { label: "Pending", value: pendingCount },
+        { label: "Completed", value: completedCount },
+    ];
 
     const renderRow = (booking) => (
         <tr
@@ -90,9 +98,9 @@ export default async function BookingList({ bookings }) {
             </div>
 
             <div className="flex flex-col gap-1">
-                <h3 className="text-sm font-bold text-gray-800">
+                <p className="text-sm font-bold text-gray-800">
                     {booking.unitId || "—"}
-                </h3>
+                </p>
                 <div className="flex justify-between items-center mt-1">
                     <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">
                         Status:
@@ -135,17 +143,25 @@ export default async function BookingList({ bookings }) {
     return (
         <div className="flex flex-col gap-6 p-2">
             <MobileDashboardHeader />
+            <SummaryCards cards={summaryCards} title="Booking summary" />
             <DashboardGridItem title="Bookings">
-       <DataTable
-                headers={tableHeadings}
-                data={bookingList}
-                renderRow={renderRow}
-                renderMobileCard={renderMobileCard}
-                showPagination={false}
-                className="p-0! border-none shadow-none"
-            />
+                {bookingList.length === 0 ? (
+                    <EmptyState
+                        message="You have no bookings yet."
+                        cta="Browse Listings"
+                        link="/listings"
+                    />
+                ) : (
+                    <DataTable
+                        headers={tableHeadings}
+                        data={bookingList}
+                        renderRow={renderRow}
+                        renderMobileCard={renderMobileCard}
+                        showPagination={false}
+                        className="p-0! border-none shadow-none"
+                    />
+                )}
             </DashboardGridItem>
-     
         </div>
     );
 }

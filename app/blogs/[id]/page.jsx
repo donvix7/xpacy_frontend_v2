@@ -14,7 +14,7 @@ export default async function BlogPage({ params }) {
       <div className="min-h-screen flex flex-col font-mono bg-white">
         <AppHeader />
         <main className="grow flex items-center justify-center">
-          <h1 className="text-2xl font-bold font-mono">Blog post not found</h1>
+          <p className="text-2xl font-bold font-mono">Blog post not found</p>
         </main>
         <Footer />
       </div>

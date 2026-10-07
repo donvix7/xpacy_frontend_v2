@@ -12,7 +12,7 @@ export default function MobileDashboardHeader({showMenu = true}) {
     heading = heading?.includes("-") ? heading.split("-").join(" ") : heading
     return (
         <div className="flex lg:hidden items-center justify-between mb-3 relative">
-            <h2 className="text-md capitalize">{heading}</h2>
+            <p className="text-md capitalize">{heading}</p>
            {showMenu &&  <Option/>}
         </div>
     )

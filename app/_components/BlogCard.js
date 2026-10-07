@@ -58,9 +58,9 @@ export default function BlogCard({ blog, isAdmin = false }) {
           )}
         </div>
 
-        <h3 className="font-bold text-lg md:text-xl text-gray-900 line-clamp-2 leading-[1.3] md:leading-[1.4] group-hover:text-primary transition-colors mb-3 md:mb-4">
+        <p className="font-bold text-lg md:text-xl text-gray-900 line-clamp-2 leading-[1.3] md:leading-[1.4] group-hover:text-primary transition-colors mb-3 md:mb-4">
           {blog.title}
-        </h3> 
+        </p>
         
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100/80">
           <p className="text-[10px] md:text-[11px] font-semibold text-gray-400 uppercase tracking-wider font-mono">

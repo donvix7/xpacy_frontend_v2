@@ -21,7 +21,8 @@ const registeredHeadings = [
 
 const tenantHeadings = [
     { heading: "Name" },
-    { heading: "Contact/Info", center: true },
+    { heading: "Contact/Info" },
+    { heading: "Role" },
     { heading: "" }
 ];
 
@@ -43,12 +44,14 @@ export default function AdminUsersList({ users = [], title = "All Users List", v
 
             {variant === 'tenant' ? (
                 <>
-                    <td className="p-4 text-center">
-                        <div className="flex flex-col justify-center items-center">
+                    <td className="p-4">
+                        <div className="flex flex-col">
                             <span className="text-gray-900 text-xs">{user.email}</span>
                             <span className="text-gray-500 text-[10px]">{user.phone || "N/A"}</span>
-                            <span className="text-gray-400 font-semibold text-[10px] mt-1 uppercase">{user.user_type || user.role || ""}</span>
                         </div>
+                    </td>
+                    <td className="p-4">
+                        <span className="text-gray-400 font-semibold text-[10px] mt-1 uppercase">{user.user_type || user.role || ""}</span>
                     </td>
                 </>
             ) : (
@@ -85,14 +88,26 @@ export default function AdminUsersList({ users = [], title = "All Users List", v
     const renderMobileCard = (user) => (
         <div key={user._id || user.id} className="flex flex-col gap-4 p-4 border-b border-primary-100 bg-white last:border-0 w-full border-2">
             <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3 relative w-full">
+                <div className="flex flex-col items-center gap-3 relative w-full">
                      
-                    <div className="w-12 h-12 relative shrink-0">
-                        <Image src={user.display_picture ? `https://app.xpacy.com/src/upload/display_img/${user.display_picture}` : "/avatar.png"} alt="user-photo" className="object-cover rounded-full" unoptimized fill />
+                    <div className="flex items-start justify-between w-full gap-3">
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-100">
+                            <Image
+                                src={user.display_picture ? `https://app.xpacy.com/src/upload/display_img/${user.display_picture}` : "/avatar.png"}
+                                alt=""
+                                className="object-cover"
+                                unoptimized
+                                fill
+                            />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                                    <UserOptionsMenu id={user._id || user.id} role={user.role} />
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex flex-col w-full">
+                    <div className="flex flex-col gap-y-3 w-full">
                        <div className="backdrop-blur-sm self-end ">
-                        <UserOptionsMenu id={user._id || user.id} role={user.role} />
                         </div>
                         <div className="flex justify-between">
                         <label className="text-sm text-gray-500 ">Name</label>
@@ -122,7 +137,7 @@ export default function AdminUsersList({ users = [], title = "All Users List", v
                         {variant === 'tenant' ? (
                             <>
                                 <div className="flex justify-between items-center text-xs">
-                                    <span className="font-semibold text-gray-500 ">Property:</span>
+                                    <span className="font-semibold text-gray-500 ">Property</span>
                                     <span className="font-medium text-gray-900 truncate max-w-[120px]">{user.property_name || "N/A"}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-xs">
@@ -136,11 +151,11 @@ export default function AdminUsersList({ users = [], title = "All Users List", v
                         ) : (
                             <>
                                 <div className="flex justify-between items-center text-xs">
-                                    <span className="font-semibold text-gray-500 ">Phone:</span>
+                                    <span className="font-semibold text-gray-500 ">Phone</span>
                                     <span className="font-medium text-gray-900">{user.phone || "N/A"}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-xs">
-                                    <span className="font-semibold text-gray-500 ">Status:</span>
+                                    <span className="font-semibold text-gray-500 ">Status</span>
                                     <StatusChips status={user.status || "active"} />
                                 </div>
                                 {variant === 'registered' && (

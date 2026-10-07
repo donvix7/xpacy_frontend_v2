@@ -14,77 +14,23 @@ import {
 } from "react-icons/fa";
 import { FaCheck } from "react-icons/fa6";
 
-import { handleUserLogin, handleAdminLogin, handlePropertyOwnerLogin } from "../_lib/action";
+import { handleUserLogin } from "../_lib/action";
 import FormInput from "./FormInput";
 import Logo from "./Logo";
 import SpinnerMini from "./SpinnerMini";
-import Modal from "./Modal";
 
 // Role configuration is defined inside the component to prevent
 // hydration mismatches from module-scope JSX instantiation.
 export default function LoginForm({ role: initialRole = "user", customRedirectUrl }) {
-  const ROLES = {
-    user: {
-      label: "User",
-      shortLabel: "User",
-      icon: <FaUser className="w-4 h-4" />,
-      loginHandler: handleUserLogin,
-      signUpPath: "/auth/sign-up",
-      defaultRedirect: "/dashboard/user",
-    },
-    admin: {
-      label: "Admin",
-      shortLabel: "Admin",
-      icon: <FaUserShield className="w-4 h-4" />,
-      loginHandler: handleAdminLogin,
-      signUpPath: "/auth/sign-up",
-      defaultRedirect: "/dashboard/admin",
-    },
-    "property-owner": {
-      label: "Property Owner",
-      shortLabel: "Owner",
-      icon: <FaBuilding className="w-4 h-4" />,
-      loginHandler: handlePropertyOwnerLogin,
-      signUpPath: "/property-owner/sign-up",
-      defaultRedirect: "/dashboard/property-owner",
-    },
-    "property-manager": {
-      label: "Property Manager",
-      shortLabel: "Manager",
-      icon: <FaHome className="w-4 h-4" />,
-      loginHandler: handlePropertyOwnerLogin,
-      signUpPath: "/auth/sign-up",
-      defaultRedirect: "/dashboard/property-manager",
-    },
-    "facility-manager": {
-      label: "Facility Manager",
-      shortLabel: "Facility",
-      icon: <FaHardHat className="w-4 h-4" />,
-      loginHandler: handlePropertyOwnerLogin,
-      signUpPath: "/auth/sign-up",
-      defaultRedirect: "/dashboard/facility-manager",
-    },
-  };
+  
 
   const searchParams = useSearchParams();
-  const [selectedRole, setSelectedRole] = useState(initialRole);
   const [pending, startTransition] = useTransition();
-
-  const [modal, setModal] = useState(false);
-
   const [captchaValue, setCaptchaValue] = useState(null);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
   const router = useRouter();
 
-  const roleConfig = ROLES[selectedRole] || ROLES.user;
-  const redirectUrl = customRedirectUrl ?? searchParams.get("redirectUrl") ?? roleConfig.defaultRedirect;
-
-  const roleOptions = Object.keys(ROLES).map((key) => ({
-    value: key,
-    label: ROLES[key].label,
-    shortLabel: ROLES[key].shortLabel,
-    icon: ROLES[key].icon,
-  }));
+  const requestedRedirectUrl = customRedirectUrl ?? searchParams.get("redirectUrl");
 
   async function onSubmit(data) {
     if (!captchaValue) {
@@ -92,77 +38,23 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
       return;
     }
 
-    const handler = roleConfig.loginHandler;
-    const redirectPath = roleConfig.defaultRedirect;
-
     startTransition(async () => {
       try {
-        const response = await handler(data, redirectPath);
+        const response = await handleUserLogin(data, requestedRedirectUrl);
         if (response.success) {
           toast.success(response.message);
-          if (redirectPath) {
-            router.push(redirectPath);
+          console.log(response)
+          if (response.redirectTo) {
+            router.push(response.redirectTo);
           }
         } else {
           toast.error(response.message);
         }
         reset();
       } catch (error) {
-        toast.error("An error occurred during login. Please try again.");
+        toast.error(error?.message || "An error occurred during login. Please try again.");
       }
     });
-  }
-
-  const handleRoleChange = (roleValue) => {
-    roleValue === "user" ?
-    router.push(`/auth/log-in`) :
-    roleValue === "admin" ?
-    router.push(`/admin/log-in`) :
-    roleValue === "property-owner" ?
-    router.push(`/property-owner/log-in`) :
-    roleValue === "facility-manager" ?
-    router.push(`/facility-manager/log-in`) :
-    roleValue === "property-manager" ?
-    router.push(`/property-manager/log-in`) :
-    null;
-  };
-  const isModalOpen = () => {
-    return(
-      <div className="p-4 backdrop-blur-sm h-full w-full border absolute top-0 left-0 z-100 flex items-center justify-center">
-        <div className="flex flex-col items-stretch justify-center gap-2 p-1.5 bg-[#FCFEFF] border-2 border-primary-100 rounded-2xl w-full max-w-2xl mx-auto sm:min-w-2xl">
-  {roleOptions.map((role) => {
-    const isActive = selectedRole === role.value;
-    return (
-      <button
-        key={role.value}
-        type="button"
-        onClick={() => handleRoleChange(role.value)}
-        title={role.label}
-        aria-pressed={isActive}
-        className={`relative flex flex-col items-center gap-1 sm:gap-1.5 min-w-0 sm:min-w-[86px] flex-1 px-2 py-2 sm:px-3 sm:py-3 rounded-xl transition-all duration-200 ${
-          isActive
-            ? "bg-primary text-white"
-            : "text-gray-500 hover:bg-primary-50 hover:text-primary"
-        }`}
-      >
-        <span className={`text-base sm:text-xl ${isActive ? "text-white" : "text-gray-400"}`}>
-          {role.icon}
-        </span>
-        <span className="text-[10px] sm:text-xs font-semibold text-center leading-tight">
-          {role.shortLabel}
-        </span>
-      </button>
-    );
-  })}
-  <button
-    onClick={() => setModal(false)}
-    className="px-4 py-1 mt-4 text-primary  rounded cursor-pointer w-full sm:w-fit sm:self-end text-center align-middle"
-  >
-    close
-  </button>
-</div>
-      </div>
-    )
   }
 
   return (
@@ -173,31 +65,14 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
         </div>
 
         <div className="space-y-8">
-          {/* Role Selector Toggle */}
-         
-
           <div className="space-y-2 text-center flex flex-col items-center">
-            <h1 className="text-3xl md:text-4xl text-primary font-bold">
+            <p className="text-3xl md:text-4xl text-primary font-bold">
               Welcome back!
-            </h1>
-            <div className="flex items-center gap-2 text-lg md:text-xl font-mono text-gray-500 font-semibold uppercase">
-              {roleConfig.icon}
-              <span>{roleConfig.label}</span>
-            </div>
+            </p>
+            
             <p className="text-base text-black font-mono text-center">
               Enter your email address and password to log in.
             </p>
-            <span>or</span>
-             <div>
-            <button onClick={() => setModal(true)} className="px-4 py-1 items-center  text-white bg-primary rounded">
-              Select Role
-            </button>
-            {modal && 
-            <Modal onclose={() => setModal(false)}>
-              {isModalOpen()}
-            </Modal>
-            }
-          </div>
           </div>
 
           <form className="space-y-6 flex flex-col w-full" onSubmit={handleSubmit(onSubmit)}>
@@ -276,7 +151,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
 
           <p className="text-base text-black font-mono -mt-4 text-center">
             Don&apos;t have an account?{" "}
-            <Link href={roleConfig.signUpPath} className="text-primary text-base font-bold hover:underline">
+            <Link href={"/auth/sign-up"} className="text-primary text-base font-bold hover:underline">
               Sign Up
             </Link>
           </p>

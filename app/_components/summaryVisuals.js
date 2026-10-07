@@ -20,7 +20,7 @@ const visuals = [
     { match: ["total tenants", "tenants", "owners managed", "property owners", "service providers", "admins", "users", "inactive users", "unverified users", "in-house guests"], Icon: Users, tone: "text-violet-700", background: "bg-violet-100" },
     { match: ["occupied units", "occupied"], Icon: Home, tone: "text-green-700", background: "bg-green-100" },
     { match: ["vacant units", "vacant"], Icon: DoorOpen, tone: "text-amber-700", background: "bg-amber-100" },
-    { match: ["total bookings", "bookings", "expected check-ins", "check-in overview"], Icon: CalendarCheck, tone: "text-blue-700", background: "bg-blue-100" },
+    { match: ["total bookings", "bookings", "upcoming", "expected check-ins", "check-in overview"], Icon: CalendarCheck, tone: "text-blue-700", background: "bg-blue-100" },
     { match: ["pending", "expected", "in progress"], Icon: Clock3, tone: "text-amber-700", background: "bg-amber-100" },
     { match: ["completed", "active", "paid", "available", "successful"], Icon: CheckCircle2, tone: "text-green-700", background: "bg-green-100" },
     { match: ["expired", "cancelled", "canceled", "unpaid"], Icon: XCircle, tone: "text-red-700", background: "bg-red-100" },

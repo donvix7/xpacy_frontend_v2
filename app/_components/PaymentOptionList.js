@@ -29,7 +29,7 @@ export default function PaymentOptionList({ onClose }) {
 
     return (
         <div className="lg:p-10 p-6 flex flex-col gap-6 lg:w-[433px] w-[300px]">
-            <h3 className="text-md py-2.5">Choose Payment Method </h3>
+            <p className="text-md py-2.5">Choose Payment Method </p>
             <div className={` ${checked && "bg-gray-200"} p-4 rounded-lg border border-primary-100`}>
                 <CustomCheckbox label={"Paystack"} handleChange={handleChange} checked={checked} labelSize={" text-md "} />
             </div>

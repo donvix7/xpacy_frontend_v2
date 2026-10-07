@@ -154,7 +154,7 @@ const KycForm = ({token}) => {
           <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Profile</h2>
+          <p className="text-xl font-semibold text-red-800 mb-2">Error Loading Profile</p>
           <p className="text-red-600 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -198,9 +198,9 @@ const KycForm = ({token}) => {
         
         {/* Form Title Heading */}
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 tracking-wide mb-2">
+          <p className="text-3xl md:text-4xl font-semibold text-slate-900 tracking-wide mb-2">
             KYC Registration
-          </h1>
+          </p>
           <p className="text-gray-500">Please fill in the required information below.</p>
         </div>
 
@@ -208,9 +208,9 @@ const KycForm = ({token}) => {
         <form onSubmit={handleSubmit} className="space-y-8">
           
           <div className="border border-gray-200 rounded-lg p-6 md:p-8 bg-white shadow-sm">
-            <h2 className="text-xl font-medium text-slate-800 border-b border-gray-100 pb-3 mb-6">
+            <p className="text-xl font-medium text-slate-800 border-b border-gray-100 pb-3 mb-6">
               Applicant's Details
-            </h2>
+            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {/* First Name */}

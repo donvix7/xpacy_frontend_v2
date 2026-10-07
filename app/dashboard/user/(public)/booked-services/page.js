@@ -89,9 +89,9 @@ export default async function BookingList({ bookings }) {
             </div>
 
             <div className="flex flex-col gap-1">
-                <h3 className="text-sm font-bold text-gray-800">
+                <p className="text-sm font-bold text-gray-800">
                     {booking.unitId || "—"}
-                </h3>
+                </p>
                 <div className="flex justify-between items-center mt-1">
                     <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">
                         Status:

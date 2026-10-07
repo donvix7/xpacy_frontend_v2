@@ -37,7 +37,7 @@ export default function SavedPropCard({ property }) {
                     <p className="font-mono text-xs text-neutrals-900">
                         {property.property_type}
                     </p>
-                    <h1 className="text-sm text-md">{property.property_name}</h1>
+                    <p className="text-sm text-md">{property.property_name}</p>
                     <div className="flex space-x-2 items-center font-mono">
                         <MapPinIcon className="size-4" />
                         <span className="text-xs">

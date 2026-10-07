@@ -18,7 +18,7 @@ const MangementHowItWorks = () => {
   return (
     <section className="flex flex-col lg:py-[120px] gap-16 ">
       <div className="flex flex-col gap-4">
-        <h2 className="text-center lg:text-2xl text-lg text-primary font-bold ">How It Works</h2>
+        <p className="text-center lg:text-2xl text-lg text-primary font-bold ">How It Works</p>
         <p className="lg:text-lg text-base text-center">Book our facility management services in these 3 simple steps.</p>
       </div>
       <div className="grid lg:grid-cols-3 grid-cols-1 gap-4">
@@ -30,7 +30,7 @@ const MangementHowItWorks = () => {
               </p>
             </div>
             <div className="flex flex-col gap-3">
-              <h3 className="text-lg text-white">{title}</h3>
+              <p className="text-lg text-white">{title}</p>
               <p className="text-white font-mono">{subTitle}</p>
             </div>
           </div>

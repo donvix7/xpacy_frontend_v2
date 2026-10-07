@@ -36,7 +36,7 @@ export default async function Page() {
 const Section = ({ children, title }) => {
     return (
         <section className="flex flex-col p-6 gap-8 rounded-lg border-2 bg-white border-primary-200">
-            <h3 className="lg:text-md text-base text-black">{title}</h3>
+            <p className="lg:text-md text-base text-black">{title}</p>
             {children}
         </section>
     )

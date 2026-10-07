@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import {
-    getPropertyOwnerProfile,
     getPropertyOwnerProperties,
     getPropertyOwnerServices,
     getPropertyOwnerBookings,
@@ -20,41 +19,39 @@ import InvoiceStatusChart from "@/app/_components/InvoiceStatusChart";
 import ExportButton from "@/app/_components/ExportButton";
 import { MdWarning } from "react-icons/md";
 import { FaBuilding, FaChartPie, FaFileContract, FaMoneyBillWave } from "react-icons/fa6";
+import { formatCurrency } from "@/app/_lib/utils";
+import { getReportAmount, getReportPaidAmount, getReportStatus, toReportArray } from "@/app/_lib/report-utils";
 
-const chartBox = "bg-white p-6 rounded-lg border border-primary-100 shadow-sm min-h-[350px]";
+const chartBox = "bg-white p-3 sm:p-6 rounded-lg border border-primary-100 shadow-sm min-h-[320px] min-w-0";
 
 export default async function Page() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
 
     const results = await Promise.allSettled([
-        getPropertyOwnerProfile(token),
         getPropertyOwnerProperties(token, { limit: 10000 }),
         getPropertyOwnerServices(token),
         getPropertyOwnerBookings(token),
         getPropertyOwnerInvoices(token),
     ]);
 
-    const profile = results[0].status === "fulfilled" ? results[0].value : null;
-    const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
-    const services = results[2].status === "fulfilled" ? results[2].value : [];
-    const bookings = results[3].status === "fulfilled" ? results[3].value : [];
-    const invoices = results[4].status === "fulfilled" ? results[4].value : [];
+    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
+    const services = results[1].status === "fulfilled" ? results[1].value : [];
+    const bookings = results[2].status === "fulfilled" ? results[2].value : [];
+    const invoices = results[3].status === "fulfilled" ? results[3].value : [];
 
-    const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
-    const myServices = Array.isArray(services) ? services : [];
-    const myBookings = Array.isArray(bookings) ? bookings : [];
-    const myInvoices = Array.isArray(invoices) ? invoices : [];
+    const properties = toReportArray(Array.isArray(propertiesData?.[0]) ? propertiesData[0] : propertiesData);
+    const myServices = toReportArray(services);
+    const myBookings = toReportArray(bookings);
+    const myInvoices = toReportArray(invoices);
 
-    const occupiedCount = properties.filter(p => (p.availability_status || "").toLowerCase() === "occupied").length;
+    const occupiedCount = properties.filter(p => ["occupied", "rented", "leased"].includes(getReportStatus(p, ["availability_status", "occupancy_status", "status"]))).length;
     const occupancyRate = properties.length > 0 ? Math.round((occupiedCount / properties.length) * 100) : 0;
 
-    const activeLeases = myBookings.filter(b => (b.status || "").toLowerCase() === "active" || (b.status || "").toLowerCase() === "confirmed");
-    const pendingLeases = myBookings.filter(b => (b.status || "").toLowerCase() === "pending");
+    const activeLeases = myBookings.filter(b => ["active", "confirmed"].includes(getReportStatus(b, ["booking_status", "status"])));
 
-    const totalCollected = myInvoices.filter(inv => (inv.status || "").toLowerCase() === "paid").reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
-    const totalOutstanding = myInvoices.filter(inv => (inv.status || "").toLowerCase() === "pending").reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
+    const totalCollected = myInvoices.filter(inv => ["paid", "completed", "successful", "success"].includes(getReportStatus(inv, ["payment_status", "invoice_status", "status"]))).reduce((sum, inv) => sum + getReportPaidAmount(inv), 0);
+    const totalOutstanding = myInvoices.filter(inv => ["pending", "overdue", "partial", "partially-paid", "unpaid"].includes(getReportStatus(inv, ["payment_status", "invoice_status", "status"]))).reduce((sum, inv) => sum + getReportAmount(inv), 0);
 
     
 const summaryCards = [
@@ -78,13 +75,13 @@ const summaryCards = [
     },
     { 
         label: "Collected", 
-        value: `$${totalCollected.toLocaleString()}`, 
+        value: formatCurrency(totalCollected),
         color: "bg-green-100", 
         icon: <FaMoneyBillWave className="w-5 h-5 text-green-700" /> 
     },
     { 
         label: "Outstanding", 
-        value: `$${totalOutstanding.toLocaleString()}`, 
+        value: formatCurrency(totalOutstanding),
         color: "bg-red-100", 
         icon: <MdWarning className="w-5 h-5 text-red-700" /> 
     },
@@ -93,7 +90,7 @@ const summaryCards = [
     return (
         <div className="space-y-8 p-2">
             <div className="flex items-center justify-between mb-8">
-                <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Reports & Analytics</h1>
+                <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Reports & Analytics</p>
                 <div className="flex gap-2">
                     <ExportButton
                         data={myServices}

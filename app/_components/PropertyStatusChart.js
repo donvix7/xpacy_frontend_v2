@@ -1,16 +1,11 @@
 import DistributionDonutChart from "./DistributionDonutChart";
+import { getReportStatus, toReportArray } from "@/app/_lib/report-utils";
 
 const PropertyStatusChart = ({ properties = [] }) => {
-  const counts = properties.reduce((acc, property) => {
-    const status = (property.availability_status || property.status || "unknown").toLowerCase();
-    let label = "Other";
-    if (status === "occupied") label = "Occupied";
-    else if (status === "vacant") label = "Vacant";
-    else if (status === "available") label = "Available";
-    else if (status === "active") label = "Active";
-    else if (status === "under-review") label = "Under Review";
-    else if (status === "pending") label = "Pending";
-    else if (status !== "unknown") label = status.charAt(0).toUpperCase() + status.slice(1);
+  const counts = toReportArray(properties).reduce((acc, property) => {
+    const status = getReportStatus(property, ["availability_status", "occupancy_status", "status"]);
+    const label = ({ active: "Active", available: "Available", vacant: "Vacant", occupied: "Occupied", rented: "Occupied", leased: "Occupied", "under-review": "Under Review", pending: "Pending", unspecified: "Unspecified", unknown: "Unspecified" })[status]
+      || status.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
     acc[label] = (acc[label] || 0) + 1;
     return acc;
   }, {});

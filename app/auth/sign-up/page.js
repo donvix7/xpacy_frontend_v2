@@ -18,7 +18,7 @@ export default async function Page(){
                     </div>
                     <div className="space-y-11 px-4 md:px-4">
                         <div className="space-y-2 text-center">
-                            <h1 className="text-4xl text-primary font-bold">Sign Up</h1>
+                            <p className="text-4xl text-primary font-bold">Sign Up</p>
                             <p className="text-base text-black font-mono">Enter your email address and password to sign up.</p>
                         </div>
 

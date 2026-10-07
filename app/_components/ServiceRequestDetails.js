@@ -52,7 +52,7 @@ export default function ServiceRequestDetails({ service }) {
         <div className="flex flex-col gap-10 pb-20 max-w-[800px] mx-auto">
             {/* Header Title and Dots */}
             <div className="flex items-center justify-between">
-                <h1 className="text-[2.5rem] font-bold text-primary-900 font-mono tracking-tight">Service Request Details</h1>
+                <p className="text-[2.5rem] font-bold text-primary-900 font-mono tracking-tight">Service Request Details</p>
                 <button className="text-2xl text-gray-400 hover:text-gray-600 transition-colors">
                     <HiOutlineDotsVertical />
                 </button>
@@ -130,7 +130,7 @@ export default function ServiceRequestDetails({ service }) {
             {/* Service Provider Details OR Assign Button */}
             {serviceProvider || assigned_provider ? (
                 <div className="flex flex-col gap-8">
-                    <h2 className="text-2xl font-bold text-primary-900 font-mono">Service provider details</h2>
+                    <p className="text-2xl font-bold text-primary-900 font-mono">Service provider details</p>
                     
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center">

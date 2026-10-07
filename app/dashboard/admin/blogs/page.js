@@ -52,7 +52,7 @@ const summaryCards = [
     return (
         <div className=" space-y-6 p-2">
             <div className="flex justify-between mb-6 items-center mb-2">
-                <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Blogs Management</h1>
+                <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Blogs Management</p>
                 <Link 
                     href="/dashboard/admin/blogs/create" 
                     className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium text-sm"

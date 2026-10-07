@@ -74,7 +74,7 @@ export default async function Page() {
 
     return (
         <div className="space-y-6 p-2">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Inspections</h1>
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Inspections</p>
             <SummaryCards cards={summaryCards} title="Property Inspections Overview" />
 
             <DashboardGridItem title="Property Inspections">

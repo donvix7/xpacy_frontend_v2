@@ -88,9 +88,9 @@ export default function PaymentsTableList({ invoices }) {
       </div>
       <div className="flex justify-between">
         <label>Invoice Number:</label>
-      <h3 className="font-bold text-sm text-gray-900 truncate">
+      <p className="font-bold text-sm text-gray-900 truncate">
         {invoice.property?.property_name || invoice.invoiceNumber || "N/A"}
-      </h3>
+      </p>
       </div>
       <div className="flex justify-between">
         <label>Payer:</label>

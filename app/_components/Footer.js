@@ -15,10 +15,10 @@ export default function Footer() {
               alt="xpacy logo"
               className="w-[294px]"
             />
-            <h5 className="text-white text-md">
+            <p className="text-white text-md">
               Experience Ease,
               <br /> Find Your Dream Property
-            </h5>
+            </p>
           </div>
           <div className="flex flex-col gap-2 font-mono text-base text-white">
             <p>
@@ -48,7 +48,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="flex flex-col w-[130px] gap-4">
-          <h5 className="font-normal text-lg text-white uppercase">Company</h5>
+          <p className="font-normal text-lg text-white uppercase">Company</p>
           <div className=" flex flex-col space-y-6 font-mono text-base font-bold text-white">
             <Link href={"#"}>Home</Link>
             <Link href={"#"}>Buy</Link>
@@ -58,7 +58,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="flex flex-col w-[152px] gap-4">
-          <h5 className="font-normal text-lg text-white uppercase">Help</h5>
+          <p className="font-normal text-lg text-white uppercase">Help</p>
           <div className=" flex flex-col space-y-6 font-mono text-base font-bold text-white">
             <Link href={"#"}>Company Support</Link>
             <Link href={"#"}>Terms & Conditions</Link>
@@ -66,7 +66,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="flex flex-col md:w-[302px] w-full gap-4 col-span-full">
-          <h5 className="font-normal text-lg text-white uppercase">Newsletter</h5>
+          <p className="font-normal text-lg text-white uppercase">Newsletter</p>
           
            <SubscribeForm/>
           

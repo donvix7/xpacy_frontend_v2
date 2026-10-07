@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, useMemo } from "react"
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import { createBooking } from "../_lib/action";
-import { getProperty } from "../_lib/data-services";
+import { getPropertyForInspection } from "../_lib/form-data-actions";
 import { useRouter } from "next/navigation";
 import CustomCheckbox from "./CustomCheckbox";
 import Link from "next/link";
@@ -31,7 +31,7 @@ function BookDayPicker({ onClose, property_id, property_status }) {
         async function fetchBookedDates() {
             try {
                 setIsLoadingDates(true);
-                const property = await getProperty(property_id);
+                const property = await getPropertyForInspection(property_id);
                 
                 if (property?.bookings?.length > 0) {
                     const allBookedDays = property.bookings.flatMap(booking => {
@@ -119,7 +119,7 @@ function BookDayPicker({ onClose, property_id, property_status }) {
 
     return (
         <div className="flex flex-col p-6 md:w-[450px] w-[350px] max-h-[600px] gap-6 font-mono ">
-            <h3 className="text-primary md:text-xl text-md font-sans text-center font-bold lg:mb-4">{isInspection ? "Select inspection date" : "Select booking dates"}</h3>
+            <p className="text-primary md:text-xl text-md font-sans text-center font-bold lg:mb-4">{isInspection ? "Select inspection date" : "Select booking dates"}</p>
             <form className="flex flex-col gap-6 overflow-y-auto" onSubmit={handleSubmit}>
                 <div className="w-full flex justify-center min-h-[300px] items-center">
                     {isLoadingDates ? (

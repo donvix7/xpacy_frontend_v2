@@ -25,7 +25,7 @@ export default async function Page({ searchParams }) {
                     </div>
                     <div className="space-y-11">
                         <div className="space-y-2 text-center">
-                            <h1 className="text-4xl text-primary font-bold">Accept Your Invitation</h1>
+                            <p className="text-4xl text-primary font-bold">Accept Your Invitation</p>
                             <p className="text-base text-black font-mono">
                                 {token
                                     ? "Set your password to activate your property owner account."

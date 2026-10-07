@@ -28,7 +28,7 @@ export default async function AssignServiceRequestsPage() {
             {/* Content Area */}
             <main className="flex-1 max-w-[70vw] mx-auto w-full py-12 px-6 flex flex-col gap-10">
                 <header className="flex flex-col items-center gap-4">
-                    <h1 className="text-[2.5rem] font-bold text-primary-900 font-mono tracking-tight">Assign Service Requests</h1>
+                    <p className="text-[2.5rem] font-bold text-primary-900 font-mono tracking-tight">Assign Service Requests</p>
                 </header>
 
                 <AssignServiceTable services={services} />

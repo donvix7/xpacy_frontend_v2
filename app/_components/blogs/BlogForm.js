@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { Camera, Save, Trash2, X, AlertCircle } from "lucide-react";
 import SpinnerMini from "../SpinnerMini";
 import { createBlog, updateBlog, deleteBlog } from "../../_lib/action";
-import { getBlogCategories } from "../../_lib/data-services";
+import { getBlogCategoriesForForm } from "../../_lib/form-data-actions";
 import { compressImages } from "../../_lib/image-compression";
 
 export default function BlogForm({ initialData = null, isEditMode = false }) {
@@ -32,7 +32,7 @@ export default function BlogForm({ initialData = null, isEditMode = false }) {
     useEffect(() => {
         const loadCategories = async () => {
             try {
-                const data = await getBlogCategories();
+                const data = await getBlogCategoriesForForm();
                 setCategories(data || []);
             } catch (error) {
                 console.error("Failed to fetch blog categories:", error);
@@ -184,9 +184,9 @@ export default function BlogForm({ initialData = null, isEditMode = false }) {
                 <div className="p-8 space-y-8">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-gray-50 pb-6">
-                        <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+                        <p className="text-2xl font-black text-gray-900 tracking-tight">
                             {isEditMode ? "Update Story" : "New Story"}
-                        </h2>
+                        </p>
                         <div className="flex items-center gap-6">
                             <div className="flex items-center gap-2">
                                 <label className="flex items-center gap-2.5 cursor-pointer group">

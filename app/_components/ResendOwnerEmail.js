@@ -38,7 +38,7 @@ export default function ResendOwnerEmail() {
     return (
         <div className="mt-6 p-4 border border-primary-100 rounded-lg bg-primary-50">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-bold text-gray-800">Resend Registration Email</h3>
+                <p className="text-sm font-bold text-gray-800">Resend Registration Email</p>
                 <button onClick={() => setIsOpen(false)} className="text-gray-500 text-xs hover:text-gray-700">Cancel</button>
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">

@@ -9,7 +9,7 @@ export default function AdminServicesTabs({ services, serviceProviders }) {
     return (
         <div className="flex min-w-0 flex-col items-center gap-6 sm:gap-10">
             <header className="flex w-full flex-col items-center gap-4 sm:gap-6">
-                <h1 className="text-center text-2xl font-bold tracking-tight text-primary-900 sm:text-[2.5rem]">Manage Service Requests</h1>
+                <p className="text-center text-2xl font-bold tracking-tight text-primary-900 sm:text-[2.5rem]">Manage Service Requests</p>
                 
                 {/* Custom Tab Switcher */}
                 <div className="grid w-full max-w-xl grid-cols-2 rounded-lg border border-gray-200 bg-white p-1.5 shadow-sm">

@@ -103,7 +103,7 @@ export default function BookingsTableList({ bookings }) {
                     <Image src={`https://app.xpacy.com/src/upload/properties/${booking?.property.images[0]}`} alt="property" className="object-cover rounded-md" unoptimized fill />
                 </div>
                 <div className="flex flex-col gap-1">
-                    <h3 className="font-bold text-sm text-gray-900 line-clamp-2">{booking?.property?.property_name}</h3>
+                    <p className="font-bold text-sm text-gray-900 line-clamp-2">{booking?.property?.property_name}</p>
                     <p className="text-xs text-gray-500">{booking?.property?.city}, {booking?.property?.state}</p>
                 </div>
             </div>

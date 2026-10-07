@@ -56,7 +56,7 @@ export default function Invoice({
         </div>
 
         <div className="flex flex-col gap-8">
-          <h1 className="text-[64px] text-primary font-bold">INVOICE</h1>
+          <p className="text-[64px] text-primary font-bold">INVOICE</p>
           <div className="flex flex-col items-end gap-6 font-mono">
             <Field label="Invoice Number" value={invoice?.invoiceNumber || invoice?.invoice_number || ""} />
             <Field label="Issued Date" value={invoice?.issuedDate || new Date()} type="date" isEdit={isEdit} onChange={v => update("issuedDate", v)} />
@@ -69,7 +69,7 @@ export default function Invoice({
       {/* Recipient */}
       <section className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 lg:gap-0">
         <div className="flex flex-col gap-6">
-          <h2 className="text-primary">Recipient&apos;s Details</h2>
+          <p className="text-primary">Recipient&apos;s Details</p>
           <div className="space-y-2 font-mono">
             <EditableText value={recipient?.firstname || recipient?.first_name || ""} isEdit={isEdit} onChange={v => update("user.firstname", v)} placeholder={"Enter Recipent's first name"} />
             <EditableText value={recipient?.lastname || recipient?.last_name || ""} isEdit={isEdit} onChange={v => update("user.lastname", v)} placeholder={"Enter Recipent's last name"} />

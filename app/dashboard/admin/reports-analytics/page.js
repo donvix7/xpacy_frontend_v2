@@ -9,10 +9,11 @@ import ServiceStatusChart from "@/app/_components/ServiceStatusChart";
 import BookingsStatusChart from "@/app/_components/BookingsStatusChart";
 import BookingsTrendChart from "@/app/_components/BookingsTrendChart";
 import InvoiceStatusChart from "@/app/_components/InvoiceStatusChart";
-import { getAdminProperties, getAdminServices, getAllAdmin, getAllUsers, getPropertyOwner, getInvoices, getAdminBooking } from "@/app/_lib/data-services";
+import { getAdminProperties, getAdminServices, getAllAdmin, getAllUsers, getPropertyOwner, getAllInvoices, getAdminBooking } from "@/app/_lib/data-services";
+import { toReportArray } from "@/app/_lib/report-utils";
 import { cookies } from "next/headers";
 
-const chartBox = "bg-white p-6 rounded-lg border border-primary-100 shadow-sm flex items-center justify-center min-h-[350px]";
+const chartBox = "bg-white p-3 sm:p-6 rounded-lg border border-primary-100 shadow-sm flex items-center justify-center min-h-[320px] min-w-0";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -27,31 +28,35 @@ export default async function Page() {
         invoices,
         bookingsData,
     ] = await Promise.all([
-        getAdminProperties(token),
+        getAdminProperties(token, { limit: 10000 }),
         getAdminServices(token),
         getPropertyOwner(token),
         getAllAdmin(token),
-        getAllUsers(token),
-        getInvoices(token),
+        getAllUsers(token, 10000),
+        getAllInvoices(undefined, token),
         getAdminBooking(token),
     ]);
 
-    const properties = propertiesData?.properties || propertiesData || [];
-    const services = Array.isArray(servicesData) ? servicesData : [];
-    const bookings = Array.isArray(bookingsData) ? bookingsData : [];
-    const payments = Array.isArray(invoices) ? invoices : [];
+    const properties = toReportArray(propertiesData);
+    const services = toReportArray(servicesData);
+    const bookings = toReportArray(bookingsData);
+    const payments = toReportArray(invoices);
+    const userRecords = toReportArray(users);
+    const ownerRecords = toReportArray(propertyOwners);
+    const adminRecords = toReportArray(admins);
+    const getRole = (user) => String(user.role || user.user_type || "").trim().toLowerCase().replace(/[_\s]+/g, "-");
 
     const userStats = {
-        totalUsers: users?.length || 0,
-        propertyOwners: propertyOwners?.length || 0,
-        residents: (users || []).filter(u => u.role === 'resident' || !u.role).length,
-        serviceProviders: (users || []).filter(u => u.role === 'service-provider').length,
-        admins: admins?.length || 0
+        propertyOwners: ownerRecords.length,
+        residents: userRecords.filter(u => ["resident", "tenant", "user"].includes(getRole(u))).length,
+        serviceProviders: userRecords.filter(u => ["service-provider", "provider", "vendor"].includes(getRole(u))).length,
+        admins: adminRecords.length,
+        otherUsers: userRecords.filter(u => !["resident", "tenant", "user", "service-provider", "provider", "vendor", "owner", "property-owner", "admin", "administrator"].includes(getRole(u))).length,
     };
 
     return (
         <div className="p-2">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Reports & Analytics</h1>
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Reports & Analytics</p>
             <div className="flex flex-col gap-10">
               
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

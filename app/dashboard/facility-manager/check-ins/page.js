@@ -62,7 +62,7 @@ export default async function Page() {
 
     return (
         <div className="space-y-6 p-2">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Guest Check-in & Check-out</h1>
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Guest Check-in & Check-out</p>
 
             <SummaryCards cards={summaryCards} title="Check-in Overview" />
 
@@ -70,6 +70,7 @@ export default async function Page() {
                 {myBookings.length === 0 ? (
                     <EmptyState message="No guest stays found. Bookings will appear here for check-in and check-out management." />
                 ) : (
+                    <>
                     <DashboardMobileCards items={myBookings.slice(0, 20).map((b, i) => ({
                         key: b.id || b._id || i,
                         title: b.guest_name || b.customer_name || b.user_name || b.client_name || `Guest ${i + 1}`,
@@ -104,6 +105,7 @@ export default async function Page() {
                             </tbody>
                         </table>
                     </div>
+                    </>
                 )}
             </DashboardGridItem>
         </div>

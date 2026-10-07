@@ -53,7 +53,7 @@ const FacilityManagementService = () => {
   return (
     <section className="flex flex-col pt-12 lg:pt-0 lg:py-[120px] gap-16 ">
       <div className="flex flex-col gap-4">
-        <h2 className="text-center lg:text-2xl text-lg text-primary font-bold ">Our Facility Management Services</h2>
+        <p className="text-center lg:text-2xl text-lg text-primary font-bold ">Our Facility Management Services</p>
         <p className="lg:text-lg text-base text-center">Comprehensive Care for Your Property, Tailored to Your Needs.</p>
       </div>
       <div className="grid lg:grid-cols-3 grid-cols-1 grid-rows-[auto] gap-x-6 lg:gap-y-12">

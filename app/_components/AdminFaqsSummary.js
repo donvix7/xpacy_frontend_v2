@@ -9,7 +9,7 @@ export default function AdminFaqsSummary({ faqs }) {
     return (
         <div className="p-6 flex flex-col gap-4 border border-primary-200 rounded-lg bg-white mb-6">
             <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800">FAQs Summary</h3>
+                <p className="text-lg font-bold text-gray-800">FAQs Summary</p>
             </div>
 
             <div className="flex flex-col md:flex-row gap-6">

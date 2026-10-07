@@ -198,9 +198,9 @@ const AddNewLeaseForm = ({
     return (
         <div className="flex flex-col gap-12 w-[796px] mx-auto pb-12">
             <header className="flex flex-col items-center justify-center gap-4">
-                <h2 className="text-3xl font-bold text-primary">
+                <p className="text-3xl font-bold text-primary">
                     {isEditMode ? "Edit Lease" : "Create New Lease"}
-                </h2>
+                </p>
                 {!isEditMode && (
                     <p className="font-mono">
                         Fill in the lease details below. You'll be able to
@@ -215,7 +215,7 @@ const AddNewLeaseForm = ({
             >
                 {/* ---------- Parties ---------- */}
                 <section className="flex flex-col gap-6">
-                    <h3 className="text-lg">Lease Parties</h3>
+                    <p className="text-lg">Lease Parties</p>
                     <div className="flex flex-col gap-6">
                         <FormInput label="Tenant" id="tenantProfileId">
                             <select
@@ -278,7 +278,7 @@ const AddNewLeaseForm = ({
 
                 {/* ---------- Terms ---------- */}
                 <section className="flex flex-col gap-6">
-                    <h3 className="text-lg">Lease Terms</h3>
+                    <p className="text-lg">Lease Terms</p>
                     <div className="flex flex-col gap-6">
                         <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
                             <FormInput label="Start Date" id="startDate">
@@ -436,7 +436,7 @@ const AddNewLeaseForm = ({
 
                 {/* ---------- Renewal & Terms ---------- */}
                 <section className="flex flex-col gap-6">
-                    <h3 className="text-lg">Renewal & Terms</h3>
+                    <p className="text-lg">Renewal & Terms</p>
                     <div className="flex flex-col gap-6">
                         <FormInput label="Renewal Date" id="renewalDate">
                             <input
@@ -504,11 +504,11 @@ const AddNewLeaseForm = ({
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-primary-100">
                             <div className="flex flex-col gap-1">
-                                <h3 className="text-xl font-bold text-primary">
+                                <p className="text-xl font-bold text-primary">
                                     {isEditMode
                                         ? "Review Lease Changes"
                                         : "Review New Lease"}
-                                </h3>
+                                </p>
                                 <p className="text-xs font-mono text-gray-500">
                                     Please confirm the details below before
                                     submitting.

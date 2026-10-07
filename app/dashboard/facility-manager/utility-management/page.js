@@ -54,7 +54,7 @@ const summaryCards = [
 
     return (
         <div className="space-y-6 p-2">
-            <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Utility Management</h1>
+            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Utility Management</p>
             <SummaryCards cards={summaryCards} title="Utility Overview" />
 
             <DashboardGridItem title="Utility Overview">
