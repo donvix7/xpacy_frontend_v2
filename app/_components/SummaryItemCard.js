@@ -9,7 +9,7 @@ export default function SummaryItemCard({
 }) {
     const visual = getSummaryVisual(label);
     return (
-        <article className={`flex min-w-0 items-start justify-between gap-3 rounded-xl border border-primary-200 bg-white p-4 shadow-sm transition-shadow sm:p-5 ${className}`}>
+        <article className={`flex min-w-0 items-start justify-between gap-3 rounded-xl border border-primary-200 bg-white p-4 sm:p-5 ${className}`}>
             <div className="min-w-0 h-full flex flex-col justify-between">
                 <p className=" text-xs text-gray-600 sm:text-sm">{label}</p>
                 <p className="mt-1 text-xl font-bold text-gray-900 sm:text-2xl">{typeof value === "number" ? value.toLocaleString() : value}</p>

@@ -12,11 +12,11 @@ export default async function Page() {
     const serviceProviders = await getAdminServiceProviders(token) || [];
 
     return (
-        <div className="space-y-6 p-2">
+        <div className="space-y-6 p-4">
 
             <ServicesOverviewWrapper services={services} serviceProviders={serviceProviders}/>
 
-            <DashboardGridItem title={"Service Management"}>
+            <DashboardGridItem >
                 <AdminServicesTabs services={services} serviceProviders={serviceProviders} />
             </DashboardGridItem>
         </div>

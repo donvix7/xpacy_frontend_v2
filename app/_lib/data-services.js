@@ -1072,7 +1072,8 @@ export async function getPropertyById(id) {
       cache: "no-store",
     });
     console.warn("Unable to fetch property by ID")
-    const { data } = await response.json();
+    const data = await response.json();
+    console.log(data)
     return data || null;
   } catch (err) {
     console.warn(err);
@@ -1080,11 +1081,11 @@ export async function getPropertyById(id) {
   }
 }
 
-export async function getMyProperties() {
+export async function getMyProperties(limit = 20) {
   const token = await getRawToken();
   try {
     const response = await safeFetch(
-      `${SERVICE_URL}/me/owned-properties?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      `${SERVICE_URL}/me/owned-properties?page=1&limit=${encodeURIComponent(limit)}&sortBy=createdAt&sortOrder=desc`,
       {
         method: "GET",
         headers: {
@@ -1101,11 +1102,11 @@ export async function getMyProperties() {
   }
 }
 
-export async function getManagedProperties() {
+export async function getManagedProperties(limit = 20) {
   const token = await getRawToken();
   try {
     const response = await safeFetch(
-      `${SERVICE_URL}/me/managed-properties?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      `${SERVICE_URL}/me/managed-properties?page=1&limit=${encodeURIComponent(limit)}&sortBy=createdAt&sortOrder=desc`,
       {
         method: "GET",
         headers: {
@@ -1246,30 +1247,14 @@ export async function getAdminProfile(token) {
   }
 }
 
-export async function getAdminProperties(token, searchParams = {}) {
-  const raw = await getRawToken(token);
+export async function getAdminProperties() {
+  const tokenResult = await getRawToken();
+  const raw = tokenResult?.data || tokenResult;
   if (!raw) return { properties: [], pagination: {} };
-
-  let paramsObj = {};
-  if (typeof searchParams === "string" || typeof searchParams === "number") {
-    paramsObj.page = searchParams;
-  } else {
-    paramsObj = searchParams || {};
-  }
-
-  const params = new URLSearchParams({
-    page: paramsObj.page || 1,
-    ...(paramsObj.limit && { limit: paramsObj.limit }),
-    ...(paramsObj.location && { location: paramsObj.location }),
-    ...(paramsObj.status && { status: paramsObj.status }),
-    ...(paramsObj.type && { type: paramsObj.type }),
-    ...(paramsObj.minPrice && { minPrice: paramsObj.minPrice }),
-    ...(paramsObj.maxPrice && { maxPrice: paramsObj.maxPrice }),
-  });
 
   try {
     const response = await safeFetch(
-      `${url}/admin/fetch-all-propreties?${params.toString()}`,
+      `${url}/admin/fetch-all-propreties`,
       {
         method: "GET",
         headers: {

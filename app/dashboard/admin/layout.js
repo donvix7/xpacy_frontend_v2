@@ -10,10 +10,10 @@ export default function Layout({children}){
                 <SidebarNav role={"admin"}/>
                 <MobileNav/>
             </div>
-            <main className="min-w-0 overflow-y-auto lg:row-[2/3] lg:col-[2/-2]">
+            <main className="min-w-0  h-screen lg:row-[2/3] lg:col-[2/-2]">
             <SidebarHeader role={"admin"}/>
 
-                <div>
+                <div className="relative z-0 h-screen overflow-y-auto pb-20">
                     {children}
                 </div>
             </main>

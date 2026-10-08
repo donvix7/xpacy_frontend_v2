@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { Building2, Plus, Users } from "lucide-react";
+import { BadgeCheck, Building2, Plus, Users, UsersRound } from "lucide-react";
 import { getAllOrganization } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import SummaryCards from "@/app/_components/SummaryCards";
+import AdminOrganizationsList from "@/app/_components/AdminOrganizationsList";
 
 const getOrganizationList = (payload) => {
     if (Array.isArray(payload)) return payload;
@@ -12,6 +14,16 @@ const getOrganizationList = (payload) => {
 
 export default async function Page() {
     const organizations = getOrganizationList(await getAllOrganization());
+    const memberCounts = organizations
+        .map((organization) => organization.memberCount ?? organization.membersCount ?? organization._count?.memberships ?? organization.members?.length)
+        .filter((count) => count !== undefined && count !== null && Number.isFinite(Number(count)))
+        .map(Number);
+    const summaryCards = [
+        { label: "Total Organizations", value: organizations.length, color: "bg-primary-100", icon: <Building2 className="h-5 w-5 text-primary" /> },
+        { label: "Active Organizations", value: organizations.filter((organization) => String(organization.status || "").toLowerCase() === "active").length, color: "bg-emerald-100", icon: <BadgeCheck className="h-5 w-5 text-emerald-600" /> },
+        { label: "Organizations with Members", value: organizations.filter((organization) => Number(organization.memberCount ?? organization.membersCount ?? organization._count?.memberships ?? organization.members?.length) > 0).length, color: "bg-blue-100", icon: <UsersRound className="h-5 w-5 text-blue-600" /> },
+        { label: "Total Members", value: memberCounts.reduce((total, count) => total + count, 0), color: "bg-purple-100", icon: <Users className="h-5 w-5 text-purple-600" /> },
+    ];
 
     return (
         <div className="space-y-6 p-2">
@@ -25,37 +37,10 @@ export default async function Page() {
                 </Link>
             </div>
 
-            <DashboardGridItem title={`Organizations (${organizations.length})`}>
-                {organizations.length ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[640px] text-left text-sm">
-                            <thead className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-500">
-                                <tr><th className="px-4 py-3">Organization</th><th className="px-4 py-3">Location</th><th className="px-4 py-3">Email</th><th className="px-4 py-3">Members</th><th className="px-4 py-3"> </th></tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {organizations.map((organization) => {
-                                    const id = organization.id || organization._id;
-                                    return (
-                                        <tr key={id || organization.name} className="hover:bg-gray-50">
-                                            <td className="px-4 py-4 font-semibold text-gray-900">{organization.name || "Unnamed organization"}<div className="mt-1 text-xs font-normal text-gray-500">{organization.slug || id || ""}</div></td>
-                                            <td className="px-4 py-4 text-gray-600">{[organization.city, organization.country].filter(Boolean).join(", ") || "—"}</td>
-                                            <td className="px-4 py-4 text-gray-600">{organization.email || "—"}</td>
-                                            <td className="px-4 py-4 text-gray-600">{organization.memberCount ?? organization.membersCount ?? organization.members?.length ?? "—"}</td>
-                                            <td className="px-4 py-4 text-right"><Link className="font-semibold text-primary hover:underline" href={`/dashboard/admin/organizations/${id}`}>View</Link></td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center py-12 text-center">
-                        <Building2 className="mb-3 h-10 w-10 text-gray-300" />
-                        <p className="font-semibold text-gray-800">No organizations yet</p>
-                        <p className="mt-1 text-sm text-gray-500">Create an organization to get started.</p>
-                        <Link href="/admin/add-new-organization" className="mt-4 flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white"><Plus className="h-4 w-4" />Create organization</Link>
-                    </div>
-                )}
+            <SummaryCards cards={summaryCards} title="Organization Summary" />
+
+            <DashboardGridItem title={`Organizations List (${organizations.length})`}>
+                <AdminOrganizationsList organizations={organizations} />
             </DashboardGridItem>
         </div>
     );

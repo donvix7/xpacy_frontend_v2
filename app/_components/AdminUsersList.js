@@ -100,10 +100,8 @@ export default function AdminUsersList({ users = [], title = "All Users List", v
                                 fill
                             />
                         </div>
-                        <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                                    <UserOptionsMenu id={user._id || user.id} role={user.role} />
-                            </div>
+                        <div className="min-w-0 self-end">
+                            <UserOptionsMenu id={user._id || user.id} role={user.role} />
                         </div>
                     </div>
                     <div className="flex flex-col gap-y-3 w-full">

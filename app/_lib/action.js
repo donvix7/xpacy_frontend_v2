@@ -54,7 +54,7 @@ export const handleSearch = async (formData) => {
   redirect(`/search?purpose=${purpose}&type=${type}&state=${location}&minBedrooms=${minBedrooms}&minPrice=${minPrice}&maxPrice=${maxPrice}`)
 }
 
-export async function handleUserLogin(userData, requestedRedirectUrl) {
+export async function handleUserLogin(userData) {
   const response = await fetch(`https://services.xpacy.com/api/v1/auth/login`, {
     method: "POST",
     headers: {
@@ -63,6 +63,7 @@ export async function handleUserLogin(userData, requestedRedirectUrl) {
     body: JSON.stringify({ ...userData }),
   });
   const data = await response.json();
+  console.log(data, "data")
   if (!response.ok || data?.success === false) {
     return { success: false, message: data?.message || "Unable to log in. Check your details and try again." };
   }
@@ -113,8 +114,10 @@ export async function handleUserLogin(userData, requestedRedirectUrl) {
     requestedRedirectUrl.startsWith("/") &&
     !requestedRedirectUrl.startsWith("//") &&
     role === "user"
-    ? requestedRedirectUrl
-    : role === "admin" || role === "SUPER_ADMIN" ? "/dashboard/admin" : roleDestination;
+    ?  "/dashboard/user" :
+    role === "FACILITY_MANAGER" || role === "PROPERTY_MANAGER" || role === "PROPERTY_OWNER"
+    ? "/dashboard/propertymanager" :
+    role === "admin" || role === "SUPER_ADMIN" ? "/dashboard/admin" : roleDestination;
 
   const proceedParams = new URLSearchParams({ role });
   if (role === "user" && returnTo !== roleDestination) {

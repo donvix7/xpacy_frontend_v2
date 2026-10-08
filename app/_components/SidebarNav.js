@@ -424,7 +424,7 @@ export default function SidebarNav({ role = "user" }) {
 
     const pathname = usePathname();
     return (
-        <ul className="flex flex-col gap-4 h-full border-red-500 ">
+        <ul className="flex flex-col gap-4 h-full border-red-500 z-10000">
             {navList.map((list, index) => (
                 <li key={index} className={`${pathname === list.link && "bg-primary-700"} px-4 py-2 rounded-lg hover:bg-primary-700 group transition-all duration-300`}>
                     <Link href={list.link} className="flex gap-4 items-center ">

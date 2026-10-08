@@ -23,6 +23,6 @@ const statusBg = {
 
 export default function StatusChips({status}) {
     return (  
-            <span className={`${statusBg[status.toLowerCase()] || ""} px-4 py-1 flex items-center justify-center rounded-full  text-sm font-bold font-mono`}>{status}</span>
+            <span className={`${statusBg[status.toLowerCase()] || ""} px-4 py-1 flex items-center justify-center rounded-full  text-xs font-bold font-mono capitalize`}>{status}</span>
     )
 }

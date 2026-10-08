@@ -40,7 +40,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
 
     startTransition(async () => {
       try {
-        const response = await handleUserLogin(data, requestedRedirectUrl);
+        const response = await handleUserLogin(data);
         if (response.success) {
           toast.success(response.message);
           console.log(response)

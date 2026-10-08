@@ -7,17 +7,17 @@ export default function PropertyOptionsMenu({ id }) {
     const actions = [
         {
             label: "View property details",
-            href: `/dashboard/property-owner/properties/${id}`,
+            href: `/dashboard/user/my-properties/${id}`,
             icon: <FaEye className="text-gray-400" />,
         },
         {
             label: "Submit service request",
-            href: `/dashboard/property-owner/properties/#`, 
+            href: `/dashboard/user/properties/${id}/service-requests`, 
             icon: <FaTools className="text-gray-400" />,
         },
         {
             label: "Property valuation",
-            href: `/dashboard/property-owner/properties/#`, 
+            href: `/dashboard/user/properties/${id}/valuation`, 
             icon: <FaChartLine className="text-gray-400" />,
         },
     ];
