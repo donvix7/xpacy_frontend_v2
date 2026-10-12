@@ -138,7 +138,7 @@ export default function ProceedSelection({ organizations = [], role = "user", re
                             <button type="button" disabled={isSubmitting} onClick={() => setShowConfirmation(false)} className="rounded-lg border border-gray-300 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
                                 Cancel
                             </button>
-                            <button type="button" disabled={isSubmitting} onClick={() => void continueToDashboard()} className="inline-flex items-center text-sm px-4 w-42  justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
+                            <button type="button" disabled={isSubmitting} onClick={() => void continueToDashboard()} className="inline-flex items-center text-sm px-4 sm:w-42  justify-center gap-2 rounded-lg bg-primary w-full px-4 py-2.5 font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
                                 {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
                                 Continue 
                             </button>
