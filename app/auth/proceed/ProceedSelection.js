@@ -126,7 +126,7 @@ export default function ProceedSelection({ organizations = [], role = "user", re
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <p id="proceed-confirm-title" className="text-lg font-bold text-gray-900">Confirm your workspace</p>
-                                <p className="mt-2 text-xs px-4 leading-6 text-gray-600">
+                                <p className="mt-2 text-sm px-4 leading-6 text-gray-600">
                                     Continue to <span className="font-semibold text-gray-900">{selectedOrganization?.name}</span> as {roleLabel}?
                                 </p>
                             </div>
