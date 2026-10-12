@@ -53,7 +53,7 @@ export default function ProceedSelection({ organizations = [], role = "user", re
                         <Building2 aria-hidden="true" className="h-6 w-6" />
                     </span>
                     <div>
-                        <p className="text-2xl font-bold text-gray-900">Choose where to continue</p>
+                        <p className="text-lg font-bold text-gray-900">Choose where to continue</p>
                         <p className="mt-1 text-sm leading-6 text-gray-600">
                             Select an organization to open your {roleLabel.toLowerCase()} workspace.
                         </p>
@@ -82,7 +82,7 @@ export default function ProceedSelection({ organizations = [], role = "user", re
                                         {selected ? <Check className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <span className="block break-words font-semibold text-gray-900">{organization.name}</span>
+                                        <span className="block break-words font-semibold text-sm text-gray-900">{organization.name}</span>
                                         {location && (
                                             <span className="mt-1 flex items-center gap-1 text-sm text-gray-500">
                                                 <MapPin aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
