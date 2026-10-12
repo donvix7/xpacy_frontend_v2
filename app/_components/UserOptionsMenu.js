@@ -9,13 +9,14 @@ import { User, Wrench } from "lucide-react";
 export default function UserOptionsMenu({ id, role }){
     const isOwner = ['property-owner', 'admin', 'super-admin', 'SUPER_ADMIN'].includes(role);
     const isProvider = role === 'provider' || role === 'service-provider';
+    const isTenant = role === 'tenant' || role === 'TENANT';    
 
     const actions = [
         {
             label: "View details",
             href: isProvider 
                 ? `/admin/provider-details/${id}` 
-                : (isOwner ? `/admin/owner-details/${id}` : `/dashboard/admin/users/${id}`),
+                : (isOwner ? `/admin/owner-details/${id}` : isTenant ? `/dashboard/admin/tenants/${id}` : `/dashboard/admin/users/${id}`),
             icon: <VscNote className="text-gray-400" />,
         },
 

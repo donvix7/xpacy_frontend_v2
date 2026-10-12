@@ -12,7 +12,6 @@ export default async function Page() {
     const token = cookieStore.get("token")
     const [profile, cities] = await Promise.all([getUserProfile(), getCities()])
 
-    console.log(profile)
     return (
         <div className="px-6 pt-6 lg:pb-[109px] pb-12">
             <MobileDashboardHeader/>

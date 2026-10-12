@@ -84,6 +84,21 @@ const AddNewOwnerForm = ({
         });
     };
 
+    // Blocks the Enter key from triggering an implicit form submission
+    // on any input field (textarea is unaffected, so Enter still = newline).
+    const blockEnter = (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+        }
+    };
+
+    // Only actually submit when we're on the final step.
+    const handleFormSubmit = (e) => {
+        e.preventDefault();
+        if (activeStep === progressBarSteps.length) {
+            handleSubmit(onSubmit)(e);
+        }
+    };
 
     const pathname = usePathname();
 
@@ -108,7 +123,7 @@ const AddNewOwnerForm = ({
 
             <form
                 className="p-6 flex flex-col gap-8"
-                onSubmit={handleSubmit(onSubmit)}
+                onSubmit={handleFormSubmit}
             >
                 {/* ---------- STEP 1: Personal Info ---------- */}
                 {activeStep === 1 && (
@@ -118,6 +133,7 @@ const AddNewOwnerForm = ({
                             <div className="flex md:items-center items-start gap-6 flex-col">
                                 <FormInput label="First Name" id="firstName">
                                     <input
+                                        onKeyDown={blockEnter}
                                         disabled={isReadOnly}
                                         {...register("firstName", {
                                             required: "First name is required",
@@ -140,6 +156,7 @@ const AddNewOwnerForm = ({
 
                                 <FormInput label="Last Name" id="lastName">
                                     <input
+                                        onKeyDown={blockEnter}
                                         disabled={isReadOnly}
                                         {...register("lastName", {
                                             required: "Last name is required",
@@ -171,6 +188,7 @@ const AddNewOwnerForm = ({
                         <div className="flex flex-col gap-6">
                             <FormInput label="Email Address" id="email">
                                 <input
+                                    onKeyDown={blockEnter}
                                     disabled={isReadOnly}
                                     {...register("email", {
                                         required: "Email is required",
@@ -198,6 +216,7 @@ const AddNewOwnerForm = ({
 
                             <FormInput label="Phone Number" id="phone">
                                 <input
+                                    onKeyDown={blockEnter}
                                     disabled={isReadOnly}
                                     {...register("phone", {
                                         required: "Phone number is required",
@@ -220,6 +239,7 @@ const AddNewOwnerForm = ({
 
                             <FormInput label="Address" id="address">
                                 <input
+                                    onKeyDown={blockEnter}
                                     disabled={isReadOnly}
                                     {...register("address", {
                                         required: "Address is required",
@@ -250,6 +270,7 @@ const AddNewOwnerForm = ({
                         <div className="flex flex-col gap-6">
                             <FormInput label="Company Name" id="companyName">
                                 <input
+                                    onKeyDown={blockEnter}
                                     disabled={isReadOnly}
                                     {...register("companyName")}
                                     type="text"

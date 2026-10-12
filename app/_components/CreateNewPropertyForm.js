@@ -50,6 +50,7 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
     const [selectedOwners, setSelectedOwners] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [activeStep, setActiveStep] = useState(1);
+
     const selectedOwnerOptions = owners.filter((owner) =>
         selectedOwners.includes(String(owner.id || owner._id))
     );
@@ -65,7 +66,8 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
         if (step === 2) {
             if (!form.name.trim()) return "Property name is required.";
             if (!form.propertyType) return "Property type is required.";
-            if (!form.organizationId) return "Select an organization during login proceed before creating a property.";
+            if (!form.organizationId)
+                return "Select an organization during login proceed before creating a property.";
         }
         if (step === 3) {
             if (!form.address.trim()) return "Address is required.";
@@ -87,7 +89,12 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
 
     async function handleSubmit(event) {
         event.preventDefault();
-        const error = [1, 2, 3].map(validateStep).find(Boolean);
+
+        // Prioritize the current step, then check the rest.
+        const error =
+            validateStep(activeStep) ||
+            [1, 2, 3].map(validateStep).find(Boolean);
+
         if (error) {
             toast.error(error);
             return;
@@ -108,7 +115,8 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
             totalFloors: Number(form.totalFloors) || 0,
             totalUnits: Number(form.totalUnits) || 0,
             organizationId: form.organizationId.trim(),
-            owners: selectedOwners,
+            // ✅ Fixed: use the state variable, and shape each owner as an object.
+            owners: selectedOwners.map((id) => ({ id })),
         };
 
         setIsSubmitting(true);
@@ -116,7 +124,9 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
             const result = await addProperty(payload);
             if (result?.success === false || result?.error) {
                 toast.error(
-                    result.message || result.error || "Could not create the property."
+                    result.message ||
+                        result.error ||
+                        "Could not create the property."
                 );
                 return;
             }
@@ -165,17 +175,24 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
                                 options={owners}
                                 value={selectedOwnerOptions}
                                 onChange={(_, selected) =>
-                                    setSelectedOwners(selected.map((owner) => String(owner.id || owner._id)))
+                                    setSelectedOwners(
+                                        selected.map((owner) =>
+                                            String(owner.id || owner._id)
+                                        )
+                                    )
                                 }
                                 getOptionLabel={(owner) => {
                                     const name = [
                                         owner.first_name || owner.firstname,
                                         owner.last_name || owner.lastname,
-                                    ].filter(Boolean).join(" ");
+                                    ]
+                                        .filter(Boolean)
+                                        .join(" ");
                                     return name || owner.email || "Unnamed owner";
                                 }}
                                 isOptionEqualToValue={(option, value) =>
-                                    String(option.id || option._id) === String(value.id || value._id)
+                                    String(option.id || option._id) ===
+                                    String(value.id || value._id)
                                 }
                                 renderInput={(autocompleteParams) => (
                                     <TextField
@@ -185,9 +202,16 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
                                 )}
                                 sx={{
                                     width: "100%",
-                                    "& .MuiOutlinedInput-root": { borderRadius: "8px", fontFamily: "inherit" },
-                                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "#DADADA" },
-                                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#DADADA" },
+                                    "& .MuiOutlinedInput-root": {
+                                        borderRadius: "8px",
+                                        fontFamily: "inherit",
+                                    },
+                                    "& .MuiOutlinedInput-notchedOutline": {
+                                        borderColor: "#DADADA",
+                                    },
+                                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                                        borderColor: "#DADADA",
+                                    },
                                 }}
                             />
                             <p className="mt-1 text-xs text-gray-500">
@@ -235,7 +259,12 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
                                 placeholder="No organization selected"
                                 readOnly
                             />
-                            {!form.organizationId && <p className="text-xs text-amber-700">Choose an organization during login proceed to create a property.</p>}
+                            {!form.organizationId && (
+                                <p className="text-xs text-amber-700">
+                                    Choose an organization during login proceed
+                                    to create a property.
+                                </p>
+                            )}
                         </Field>
                         <Field label="Year built" htmlFor="yearBuilt">
                             <input

@@ -16,7 +16,6 @@ export default async function Page(){
             getAllAdmin(),
             getAllUsers()
         ]);
-        console.log(regularUsers)
 
         // Normalize data structure if needed
         const ownersList = (owners || []).map(u => ({ ...u, role: 'property-owner' }));

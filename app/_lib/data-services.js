@@ -572,12 +572,12 @@ export async function getPaymentsForInvoice(invoiceId) {
  * Leases, tenants, units, buildings, owners (management)
  * ---------------------------------------------------------------- */
 
-export async function getLeases() {
+export async function getLeases({propertyId}) {
   const token = await getRawToken();
   if (!token) return [];
   try {
     const response = await safeFetch(
-      `${SERVICE_URL}/me/leases?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      `${SERVICE_URL}/properties/${propertyId}/leases`,
       {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
@@ -613,14 +613,38 @@ export async function getAllLeases() {
 export async function getLeaseById(id) {
   const token = await getRawToken();
   try {
-    const response = await safeFetch(`${SERVICE_URL}/leases/${id}`, {
+    const response = await safeFetch(`${SERVICE_URL}/properties/${id}/leases`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    const { data } = await response.json();
-    return data || null;
+
+    if (!response.ok) {
+      console.warn(`Failed to fetch lease by ID: ${response.status}`);
+      return null;
+    }
+    const { data } = await safeJson(response);
+    return data;
   } catch (err) {
-    console.warn(err);
+    console.warn("Error in getLeaseById:", err);
+    return null;
+  }
+}
+
+export async function getSingleLease(leaseId) {
+  const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/leases/${leaseId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+    const result = await safeJson(response);
+    return result?.data || result?.lease || result || null;
+  } catch (err) {
+    console.warn("Error in getSingleLease:", err);
     return null;
   }
 }
@@ -658,7 +682,8 @@ export async function getTenantById(id) {
       },
       cache: "no-store",
     });
-    const { data } = await response.json();
+    const data = await response.json();
+    
     return data || null;
   } catch (err) {
     console.warn(err);
@@ -691,7 +716,8 @@ export async function getAllUnits(propertyId) {
 export async function getUnitById(id) {
   const token = await getRawToken();
   try {
-    const response = await safeFetch(`${SERVICE_URL}/units/${id}`, {
+    const response = await safeFetch(`${SERVICE_URL}/units/${id}`,
+    {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -699,10 +725,12 @@ export async function getUnitById(id) {
       },
       cache: "no-store",
     });
-    const { data } = await response.json();
+    if (!response.ok) return null;
+    const  data  = await safeJson(response);
+    console.log("data",data)
     return data || null;
-  } catch (err) {
-    console.warn(err);
+  } catch (error) {
+    console.warn("Error fetching unit:", error);
     return null;
   }
 }
@@ -722,6 +750,7 @@ export async function getAllBuildings(propertyId) {
       }
     );
     const { data } = await response.json();
+    
     return data || [];
   } catch (err) {
     console.warn(err);
@@ -732,7 +761,7 @@ export async function getAllBuildings(propertyId) {
 export async function getBuildingById(propertyId, id) {
   const token = await getRawToken();
   try {
-    const response = await safeFetch(`${SERVICE_URL}/buildings/${id}`, {
+    const response = await safeFetch(`${SERVICE_URL}/buildings/${propertyId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -740,7 +769,8 @@ export async function getBuildingById(propertyId, id) {
       },
       cache: "no-store",
     });
-    const { data } = await response.json();
+    const  data  = await response.json();
+    
     return data || null;
   } catch (err) {
     console.warn(err);
@@ -807,7 +837,7 @@ export async function getAllMaintenanceRequest(propertyId) {
         cache: "no-store",
       }
     );
-    const { data } = await response.json();
+    const data = await response.json();
     return data || [];
   } catch (err) {
     console.warn(err);
@@ -940,6 +970,7 @@ export async function getAllOrganization() {
       }
     );
     const { data } = await response.json();
+    
     return data || [];
   } catch (err) {
     console.warn(err);
@@ -1026,7 +1057,6 @@ export async function getUserById(id) {
       cache: "no-store",
     });
     const data = await response.json();
-    console.log(data)
     return data || null;
   } catch (err) {
     console.warn(err);
@@ -1052,7 +1082,8 @@ export async function getOrganizationProperties(organizationId) {
         cache: "no-store",
       }
     );
-    const { data } = await response.json();
+    const {data} = await response.json();
+    console.log(response)
     return data || [];
   } catch (err) {
     console.warn(err);
@@ -1073,7 +1104,6 @@ export async function getPropertyById(id) {
     });
     console.warn("Unable to fetch property by ID")
     const data = await response.json();
-    console.log(data)
     return data || null;
   } catch (err) {
     console.warn(err);
@@ -1329,7 +1359,7 @@ export async function getPropertyOwner(token) {
   if (!raw) return [];
   try {
     const response = await safeFetch(
-      `${url}/admin/property-owner/fetch-propertowners`,
+      `${SERVICE_URL}/owners?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
       {
         method: "GET",
         headers: {
@@ -1344,6 +1374,7 @@ export async function getPropertyOwner(token) {
       return [];
     }
     const { data } = await response.json();
+    
     return data || [];
   } catch (error) {
     console.warn("Error fetching property owner (catch):", error);
@@ -1412,11 +1443,11 @@ export async function getAllAdmin(token) {
   }
 }
 
-export async function getAdminBooking(token) {
+export async function getAdminBooking(propertyId, token) {
   const raw = await getRawToken(token);
   if (!raw) return [];
   try {
-    const response = await safeFetch(`${url}/admin/fetch-bookings`, {
+    const response = await safeFetch(`${SERVICE_URL}/properties/${propertyId}/bookings?page=1&limit=20&sortBy=createdAt&sortOrder=desc`, {
       next: { tags: ["admin-bookings"] },
       method: "GET",
       headers: {
@@ -1424,12 +1455,13 @@ export async function getAdminBooking(token) {
         "Content-type": "application/json",
       },
     });
+    //console.log(response)
     if (!response.ok) {
       logUnexpectedResponse("Unable to fetch admin bookings", response);
       return [];
     }
-    const json = await response.json();
-    return toArray(json);
+    const { data } = await response.json();
+    return data;
   } catch (error) {
     console.warn("Error fetching admin bookings:", error);
     return [];
@@ -1726,3 +1758,51 @@ export async function debugFetch(urlStr) {
     return null;
   }
 }
+
+
+/*
+Listings
+
+
+*/
+export async function getListingById(id) {
+  const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/properties/${id}/listings?page=1&limit=20&sortBy=createdAt&sortOrder=desc`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const {data} = await safeJson(response);
+    return data;
+  } catch (error) {
+    console.warn("Error fetching listing:", error);
+    return null;
+  }
+}
+  
+export async function getSingleListing(id) {
+  const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/listings/${id}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const { data } = await safeJson(response);
+    return data || null;
+  } catch (error) {
+    console.warn("Error fetching listing:", error);
+    return null;
+  }
+}
+

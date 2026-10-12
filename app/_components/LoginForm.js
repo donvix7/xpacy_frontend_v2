@@ -43,7 +43,6 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
         const response = await handleUserLogin(data);
         if (response.success) {
           toast.success(response.message);
-          console.log(response)
           if (response.redirectTo) {
             router.push(response.redirectTo);
           }

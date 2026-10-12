@@ -24,7 +24,9 @@ export default function AssignServiceTable({ services = [] }) {
 
     const handleAssignServiceProvider = async (serviceId) => {
         try {
-            console.log(serviceId, providerID)
+            if (!confirm(`Assign service ${serviceId} to provider ${providerID}`))
+                return;
+            
         } catch (error) {
             console.error(error);
         }

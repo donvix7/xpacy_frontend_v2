@@ -13,11 +13,13 @@ import {
     LayoutGrid,
     FileText,
     CalendarCheck,
+    List,
 } from "lucide-react";
 import { getProperty, getPropertyById } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
+import SummaryItemCard from "@/app/_components/SummaryItemCard";
 
 const detailConfig = [
     { key: "address", label: "Address", icon: Home },
@@ -51,19 +53,19 @@ function managerName(manager) {
     );
 }
 
-function StatCard({ icon: Icon, label, value, href }) {
+function StatCard({ icon, label, value, href, className = "", bgColor }) {
     const inner = (
-        <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 transition ">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                <Icon className="h-5 w-5 text-primary" />
+        <article className={`flex min-w-0 items-start justify-between gap-3 rounded-xl border border-primary-200 bg-white p-4 sm:p-5 ${className}`}>
+            <div className="min-w-0 h-full flex flex-col justify-between">
+                <p className=" text-xs text-gray-600 sm:text-sm">{label}</p>
+                <p className="mt-1 text-xl font-bold text-gray-900 sm:text-2xl">{typeof value === "number" ? value.toLocaleString() : value}</p>
             </div>
-            <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {label}
-                </p>
-                <p className="mt-0.5 text-lg font-bold text-gray-900">{value}</p>
-            </div>
-        </div>
+            {icon && (
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl sm:h-11 sm:w-11 ${bgColor}`}>
+                    {icon}
+                </span>
+            )}
+        </article>
     );
     return href ? <Link href={href}>{inner}</Link> : inner;
 }
@@ -71,7 +73,6 @@ function StatCard({ icon: Icon, label, value, href }) {
 export async function generateMetadata({ params }) {
     const pageParams = await params;
     const property = await getPropertyById(pageParams.id);
-    console.log("property",property)
 
     return {
         title: property?.name || "Property",
@@ -146,49 +147,63 @@ export default async function Page({ params }) {
             </DashboardGridItem>
 
             <DashboardGridItem title="Overview">
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     {[
                         {
-                            icon: Building2,
-                            label: "Units",
+                            icon: <Building2 className="h-5 w-5 text-primary" />,
+                            title: "Units",
                             value: counts.units ?? 0,
                             href: `/dashboard/properties/${property.id}`,
+                            color: "bg-blue-50 border-blue-100",
+                            bgColor:"bg-blue-50"
+
                         },
                         {
-                            icon: Building2,
-                            label: "Buildings",
+                            icon: <LayoutGrid className="h-5 w-5 text-primary" />,
+                            title: "Buildings",
                             value: counts.buildings ?? 0,
-                            href: `/dashboard/properties/${property.id}`,
+                            href: `/dashboard/user/my-properties/${property.id}/buildings`,
+                            color: "bg-blue-50 border-green-100",
+                            bgColor:"bg-green-50"
                         },
                         {
-                            icon: Building2,
-                            label: "Listings",
+                            icon: <FileText className="h-5 w-5 text-primary" />,
+                            title: "Listings",
                             value: counts.listings ?? 0,
-                            href: `/dashboard/properties/${property.id}`,
+                            href: `/dashboard/user/my-properties/${property.id}/listings`,
+                            color: "bg-blue-50 border-amber-100",
+                            bgColor:"bg-amber-50"
+
                         },
                         {
-                            icon: Building2,
-                            label: "Leases",
+                            icon: <FileText className="h-5 w-5 text-primary" />,
+                            title: "Leases",
                             value: counts.leases ?? 0,
-                            href: `/dashboard/properties/${property.id}`,
+                            href: `/dashboard/user/my-properties/${property.id}/leases`,
+                            color: "bg-blue-50 border-blue-100",
+                            bgColor:"bg-blue-50"
+                            
                         },
                         {
-                            icon: Building2,
-                            label: "Bookings",
+                            icon: <CalendarCheck className="h-5 w-5 text-primary" />,
+                            title: "Bookings",
                             value: counts.bookings ?? 0,
                             href: `/dashboard/properties/${property.id}`,
+                            color: "bg-blue-50 border-blue-100",
+                            bgColor:"bg-blue-50"
+
                         },
 
                     ].map((item, index) => (
                         <StatCard
                             key={index}
                             icon={item.icon}
-                            label={item.label}
+                            label={item.title}
                             value={item.value}
                             href={item.href}
                         />
                     ))}
-                </div>
+                    </div>
             </DashboardGridItem>
 
             <DashboardGridItem title="Property Details">
@@ -325,11 +340,18 @@ export default async function Page({ params }) {
                                     href={`/dashboard/admin/users/${manager.userId}`}
                                     className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <Users className="h-4 w-4 shrink-0 text-primary" />
-                                        <h3 className="text-sm font-medium text-gray-900">
-                                            {managerName(manager)}
-                                        </h3>
+                                    <div className="flex items-center justify-between">
+                                        <div className="w-full flex items-center gap-2">
+                                            <Users className="h-4 w-4 shrink-0 text-primary" />
+                                            <h3 className="text-sm font-medium text-gray-900">
+                                                {managerName(manager)}
+                                            </h3>
+                                        </div>
+                                        <div className="mt-3">
+                                            <StatusChips
+                                                status={manager.status || "active"}
+                                            />
+                                        </div>
                                     </div>
                                     <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-500">
                                         <span className="capitalize">
@@ -337,11 +359,7 @@ export default async function Page({ params }) {
                                                 "—"}
                                         </span>
                                     </p>
-                                    <div className="mt-3">
-                                        <StatusChips
-                                            status={manager.status || "active"}
-                                        />
-                                    </div>
+
                                 </Link>
                             ))}
                         </div>
@@ -467,11 +485,16 @@ export default async function Page({ params }) {
                                         key={id}
                                         className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
                                     >
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 justify-between">
+                                            <div className="flex items-center gap-2">
                                             <Users className="h-4 w-4 shrink-0 text-primary" />
                                             <h3 className="text-sm font-medium text-gray-900">
                                                 {name}
                                             </h3>
+                                            </div>
+                                         <div className="mt-3">
+                                            <StatusChips status={status} />
+                                        </div>
                                         </div>
                                         <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-500">
                                             <span className="capitalize">{role}</span>
@@ -481,9 +504,7 @@ export default async function Page({ params }) {
                                                 {email}
                                             </p>
                                         )}
-                                        <div className="mt-3">
-                                            <StatusChips status={status} />
-                                        </div>
+                                       
                                     </div>
                                 );
                             })}

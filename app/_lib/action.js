@@ -204,6 +204,7 @@ export async function handlePropertyOwnerSignup(userData, referralCode) {
 
 // ...existing imports...
 import { headers } from "next/headers"
+import { SERVICES_URL } from "./constants";
 
 // ...
 
@@ -1491,19 +1492,20 @@ export async function deleteDocument(id){
 
 
 export async function addProperty(propertyData){
+  console.log(propertyData)
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties
-
-`, {
+  const response = await safeFetch(`${SERVICES_URL}/properties`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${token?.value}`,
+      Authorization: `Bearer ${token?.value}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(propertyData)
   });
+  console.log(response)
   return response.json(); 
+
 }
 
 export async function addOwner(payload){
@@ -1687,7 +1689,8 @@ export async function createTenant(data){
     },
     body: JSON.stringify(data)
   });
-  return response.json(); 
+  const json = await response.json();
+  return json; 
 } 
 
 export async function updateTenant(id,data){
@@ -1873,8 +1876,8 @@ export async function updateUnit(id,data){
   "securityDeposit": Number(data.securityDeposit),
   "description": data.description
 }
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/units/${id}
-`,{
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/units/${id}`,
+  {
   method: "PATCH",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -1888,7 +1891,7 @@ export async function updateUnit(id,data){
 export async function deleteUnit(id){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/units/${id}`,
+  const response = await safeFetch(`${SERVICES_URL}/units/${id}`,
   {
   method: "DELETE",
     headers: {
@@ -1905,13 +1908,12 @@ export async function createBuilding(data,propertyId){
   
   const payload = {
   "name": data.name,
-  "description": data.description,
+  "description": data.description, 
   "totalFloors": Number(data.totalFloors)
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/buildings
-`,{
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/buildings`,{
   method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -1931,8 +1933,8 @@ export async function updateBuilding(id,data){
   "description": data.description,
   "totalFloors": Number(data.totalFloors)
 }
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/buildings/${id}
-`,{
+  const response = await safeFetch(`${SERVICES_URL}/buildings/${id}`,
+  {
   method: "PATCH",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
@@ -1972,8 +1974,7 @@ export async function createPropertyOwner(data){
 }
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners
-`,
+  const response = await safeFetch(`${SERVICES_URL}/owners`,
   {
   method: "POST",
     headers: {
@@ -1999,7 +2000,7 @@ export async function updatePropertyOwner(id,data){
   
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners/2`,
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners/${id}`,
   {
   method: "PATCH",
     headers: {

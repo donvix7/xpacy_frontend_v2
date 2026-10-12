@@ -6,7 +6,6 @@ import { cookies } from "next/headers";
 export default async function Page({ params }) {
         const {id} = await params
 
-        console.log("id:", id)
         const cookieStore = await cookies();
         const token = cookieStore.get("token");
      

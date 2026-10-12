@@ -126,7 +126,7 @@ export default function ProceedSelection({ organizations = [], role = "user", re
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <p id="proceed-confirm-title" className="text-lg font-bold text-gray-900">Confirm your workspace</p>
-                                <p className="mt-2 text-sm leading-6 text-gray-600">
+                                <p className="mt-2 text-xs px-4 leading-6 text-gray-600">
                                     Continue to <span className="font-semibold text-gray-900">{selectedOrganization?.name}</span> as {roleLabel}?
                                 </p>
                             </div>
@@ -135,12 +135,12 @@ export default function ProceedSelection({ organizations = [], role = "user", re
                             </button>
                         </div>
                         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                            <button type="button" disabled={isSubmitting} onClick={() => setShowConfirmation(false)} className="rounded-lg border border-gray-300 px-4 py-2.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+                            <button type="button" disabled={isSubmitting} onClick={() => setShowConfirmation(false)} className="rounded-lg border border-gray-300 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
                                 Cancel
                             </button>
-                            <button type="button" disabled={isSubmitting} onClick={() => void continueToDashboard()} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
+                            <button type="button" disabled={isSubmitting} onClick={() => void continueToDashboard()} className="inline-flex items-center text-sm px-4 w-42  justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
                                 {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-                                Continue to workspace
+                                Continue 
                             </button>
                         </div>
                     </div>

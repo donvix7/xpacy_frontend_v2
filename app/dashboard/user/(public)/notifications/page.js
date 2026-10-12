@@ -9,16 +9,15 @@ import MobileNotificationItem from "@/app/_components/MobileNotificationItem";
 import NotificationList from "@/app/_components/NotificationList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import AdminNotificationsSummary from "@/app/_components/AdminNotificationsSummary";
-import { markAllAsRead } from "@/app/_lib/action";
+import { markAllAsRead, markNotificationRead } from "@/app/_lib/action";
 export default async function Page() {
             const notifications = await getUserNotifications();
-            console.log(notifications)
            
 
     return (
         <div className="p-2 flex flex-col gap-4">
             <MobileDashboardHeader showMenu={false}/>
-             <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Notifications</p>
+             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Notifications</h1>
             <DashboardGridItem title="Summary">
             <AdminNotificationsSummary notifications={notifications} />
             </DashboardGridItem>
@@ -41,7 +40,9 @@ export default async function Page() {
             {/* small screen only */}
             <div className="flex lg:hidden items-center justify-between font-mono">
                 {/* Mark as read */}
-                <button className="flex items-center gap-2 font-mono text-secondary font-bold">
+                <button
+                onClick={() => markNotificationRead()}
+                 className="flex items-center gap-2 font-mono text-secondary font-bold">
                     <span className="text-2xl"><IoCheckmarkDoneSharp/></span>
                     <span>Mark as read</span>
                 </button>

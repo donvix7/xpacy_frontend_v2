@@ -8,7 +8,6 @@ import toast from "react-hot-toast";
 
 
 export default function ProfileForm({ user, profile, updateAction }) {
-    console.log(user)
     const [pending, startTransition] = useTransition();
     const { register, handleSubmit, formState: { errors } } = useForm({
         defaultValues: {

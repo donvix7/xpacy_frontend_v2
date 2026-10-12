@@ -11,7 +11,7 @@ import { LuBell, LuLayoutDashboard, LuMessageCircleQuestion, LuMessageSquare, Lu
 import { IoCalendarOutline } from "react-icons/io5";
 import { RiHome2Line, RiSearchLine, RiSettings3Line, RiPulseLine } from "react-icons/ri";
 import { Archive, Calendar1, MessageSquare, Settings, User } from "lucide-react";
-import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaWrench } from "react-icons/fa6";
+import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaUsers, FaWrench } from "react-icons/fa6";
 import { TbBuilding, TbBuildingCommunity, TbFileText, TbHelp, TbReportAnalytics, TbSettings, TbUsers } from "react-icons/tb";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import { BsTools } from "react-icons/bs";
@@ -46,6 +46,7 @@ export default function SidebarNav({ role = "user" }) {
             link: "/dashboard/user/saved-properties",
             icon: <FaRegHeart />
         },
+         
 
         {
             text: "Bookings",
@@ -110,6 +111,11 @@ export default function SidebarNav({ role = "user" }) {
             link: "/dashboard/admin/users",
             icon: <User />
         },
+          {
+            text: "Tenants",
+            link: "/dashboard/admin/tenants",
+            icon: <FaUsers />
+        },
         {
             text: "Organizations",
             link: "/dashboard/admin/organizations",
@@ -119,6 +125,11 @@ export default function SidebarNav({ role = "user" }) {
             text: "Blogs",
             link: "/dashboard/admin/blogs",
             icon: <MessageSquare />
+        },
+        {
+            text: "Maintenance",
+            link: "/dashboard/admin/maintenance",
+            icon: <BsTools />
         },
         {
             text: "Bookings",

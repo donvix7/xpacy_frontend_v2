@@ -11,7 +11,6 @@ export default async function Page({ params }) {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")
     const property = await getPropertyById(param.propertyId)
-    console.log(property)
     const [propertyOwner, allCities, allBookings] = await Promise.all([
         getPropertyOwnerById(property?.property_owner_id),
         getCities(),

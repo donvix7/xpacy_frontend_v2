@@ -79,7 +79,7 @@ export default function AdminUsersList({ users = [], title = "All Users List", v
 
             <td className="p-4 relative text-center">
                 <div className="flex justify-center">
-                    <UserOptionsMenu id={user._id || user.id} role={user.user_role} /> 
+                    <UserOptionsMenu id={user._id || user.id} role="tenant" /> 
                 </div>
             </td>
         </tr>

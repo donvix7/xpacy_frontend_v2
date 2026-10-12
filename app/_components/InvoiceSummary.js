@@ -11,7 +11,6 @@ export default async function InvoiceSummary() {
     const [invoice] = await Promise.all([
         getAllInvoices()
     ])
-    console.log(invoice)
 
     const totalPayments = invoice?.total_paid || 0;
     const totalServices = invoice?.totals_by_reasons?.services || 0;
