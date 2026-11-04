@@ -1832,20 +1832,21 @@ Listings
 
 */
 export async function getListingById(id, passedToken) {
+  if (!id) return [];
   const token = await getRawToken(passedToken);
   try {
     const response = await safeFetch(`${SERVICE_URL}/properties/${id}/listings?page=1&limit=20&sortBy=createdAt&sortOrder=desc`, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       cache: "no-store",
     });
     if (!response.ok) return null;
-    const {data} = await safeJson(response);
-    console.log("data",data)
-    return data;
+    const payload = await safeJson(response);
+    return payload?.data ?? payload?.listings ?? payload ?? [];
   } catch (error) {
     console.warn("Error fetching listing:", error);
     return null;

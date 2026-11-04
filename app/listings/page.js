@@ -1,5 +1,11 @@
 import { cookies } from "next/headers";
-import { filterPropertiesByOrganization, getOrganizationProperties, getProperties, getListingById, getPublicOrganizationById } from "@/app/_lib/data-services";
+import {
+  filterPropertiesByOrganization,
+  getOrganizationProperties,
+  getProperties,
+  getListingById,
+  getPublicOrganizationById,
+} from "@/app/_lib/data-services";
 import AdminListingsClient from "./AdminListingsClient";
 import AppHeader from "../_components/AppHeader";
 import { isValidOrganizationId } from "../_lib/public-navigation";
@@ -9,7 +15,6 @@ export const metadata = {
   title: "Organization Property Listings",
   description: "Browse published property listings from this organization.",
 };
-
 export default async function AdminListingsPage({ searchParams }) {
   const params = await searchParams;
   const organizationId = typeof params?.organizationId === "string" ? params.organizationId.trim() : "";
@@ -21,23 +26,28 @@ export default async function AdminListingsPage({ searchParams }) {
     try {
       const cookieStore = await cookies();
       const token = cookieStore.get("token")?.value;
-      const [scopedProperties, [publicProperties]] = await Promise.all([
-        getOrganizationProperties(organizationId),
+      const [[publicProperties], scopedProperties] = await Promise.all([
         getProperties({ organizationId, limit: 100 }),
+        getOrganizationProperties(organizationId),
       ]);
       const organizationProperties = filterPropertiesByOrganization(
-        scopedProperties.length ? scopedProperties : publicProperties,
+        [...publicProperties, ...scopedProperties],
         organizationId
-      );
+      )
+        .filter((property, index, properties) => {
+          const propertyId = property.id || property._id || property.propertyId;
+          return propertyId && properties.findIndex((candidate) =>
+            (candidate.id || candidate._id || candidate.propertyId) === propertyId
+          ) === index;
+        });
       const listingsByProperty = await Promise.all(organizationProperties.map(async (property) => {
         const propertyId = property.id || property._id || property.propertyId;
         if (!propertyId) return [];
-        const propertyListings = await getListingById(propertyId, token);
-        console.log(propertyListings);
-        const propertyListingArray = Array.isArray(propertyListings)
-          ? propertyListings
-          : Array.isArray(propertyListings?.data)
-            ? propertyListings.data
+        const fetchedListings = await getListingById(propertyId, token);
+        const propertyListingArray = Array.isArray(fetchedListings)
+          ? fetchedListings
+          : fetchedListings && typeof fetchedListings === "object"
+            ? [fetchedListings]
             : [];
         return propertyListingArray.map((listing) => ({
           ...listing,

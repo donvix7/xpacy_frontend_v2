@@ -17,8 +17,25 @@ import image2 from "@/public/image2.png";
 import image3 from "@/public/image3.png";
 import image4 from "@/public/listproperty-image.png";
 import HomeCarousel from "./_components/HomeCarousel";
+import OrganizationLandingPage from "./_components/OrganizationLandingPage";
+import { filterPropertiesByOrganization, getProperties, getPublicOrganizationById } from "./_lib/data-services";
+import { isValidOrganizationId } from "./_lib/public-navigation";
+import { notFound } from "next/navigation";
 
-export default async function Home() {
+export default async function Home({ searchParams }) {
+  const params = await searchParams;
+  const organizationId = typeof params?.organizationId === "string" ? params.organizationId.trim() : "";
+
+  if (isValidOrganizationId(organizationId)) {
+    const [organization, [fetchedProperties]] = await Promise.all([
+      getPublicOrganizationById(organizationId),
+      getProperties({ organizationId, limit: 100 }),
+    ]);
+    if (!organization) notFound();
+    const properties = filterPropertiesByOrganization(fetchedProperties, organizationId);
+    return <OrganizationLandingPage organization={organization} organizationId={organizationId} properties={properties} />;
+  }
+
   const [blogsResult, bannersResult] = await Promise.allSettled([
     getBlogs(),
     getBanners(),

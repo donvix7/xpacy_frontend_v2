@@ -2,6 +2,7 @@ import Image from "next/image";
 import Footer from "./_components/Footer";
 import Navigation from "./_components/Navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 export default function Loading() {
     return (
         <div className="min-h-screen">
@@ -9,8 +10,9 @@ export default function Loading() {
                 <div >
                     <Image src={"/logo.png"} width={"156"} height={"32"} alt={"Xpacy Logo"} />
                 </div>
-                <Navigation>
-                    <div className=" hidden md:flex items-center space-x-5">
+                <Suspense fallback={<div className="hidden h-10 w-24 md:block" />}>
+                    <Navigation>
+                        <div className=" hidden md:flex items-center space-x-5">
                         <Link
                             href="/auth/log-in"
                             className={`bg-white text-primary border border-primary cursor-pointer  px-5 py-3 font-semibold flex space-x-2.5 font-mono items-center justify-center rounded-md hover:shadow-md`}
@@ -23,8 +25,9 @@ export default function Loading() {
                         >
                             Sign up
                         </Link>
-                    </div>
-                </Navigation>
+                        </div>
+                    </Navigation>
+                </Suspense>
             </header>
             <div className="spinner"></div>
             <Footer />

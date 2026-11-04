@@ -11,16 +11,16 @@ export default async function AppHeader() {
   return (
     <header className="flex items-center justify-between px-[7%] py-6 sticky top-0 z-50 bg-white border-b border-gray-200 shadow-lg ">
       <Logo />
-      <Navigation>
-        <Suspense fallback={<SpinnerMini />}>
+      <Suspense fallback={<SpinnerMini />}>
+        <Navigation>
           <HeaderCta />
-        </Suspense>
-      </Navigation>
-      <MobileNav>
-        <Suspense fallback={<SpinnerMini />}>
+        </Navigation>
+      </Suspense>
+      <Suspense fallback={<SpinnerMini />}>
+        <MobileNav>
           <MobileHeaderCta />
-        </Suspense>
-      </MobileNav>
+        </MobileNav>
+      </Suspense>
     </header >
   );
 }
