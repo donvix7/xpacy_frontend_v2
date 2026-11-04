@@ -118,7 +118,18 @@ export async function getProperties(search = {}) {
   const apiUrl = `${url}/property/fetch-properties?${new URLSearchParams(search)}`;
   try {
     const response = await safeFetch(apiUrl);
-    const { properties, pagination } = await response.json();
+    if (!response.ok) return [[], {}];
+    const payload = await response.json();
+    const properties = Array.isArray(payload?.properties)
+      ? payload.properties
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.data?.properties)
+          ? payload.data.properties
+          : Array.isArray(payload?.data?.data)
+            ? payload.data.data
+            : [];
+    const pagination = payload?.pagination || payload?.meta || payload?.data?.pagination || payload?.data?.meta || {};
     return [properties, pagination];
   } catch (error) {
     console.warn("Error fetching properties:", error);
@@ -996,6 +1007,42 @@ export async function getOrganizationById(id) {
   }
 }
 
+export async function getPublicOrganizationById(id) {
+  if (!id) return null;
+  try {
+    const token = await getRawToken();
+    const response = await safeFetch(`${SERVICE_URL}/organizations/${encodeURIComponent(id)}`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    return payload?.organization || payload?.data?.organization || payload?.data || payload || null;
+  } catch (error) {
+    console.warn("Error fetching public organization:", error);
+    return null;
+  }
+}
+
+export function getOrganizationIdFromProperty(property) {
+  const value = property?.organizationId || property?.organization_id || property?.organization?.id || property?.organization?._id;
+  return String(value?.id || value?._id || value || "");
+}
+
+export function filterPropertiesByOrganization(properties, organizationId) {
+  if (!Array.isArray(properties) || !organizationId) return [];
+  return properties.filter((property) => {
+    const propertyOrganizationId = getOrganizationIdFromProperty(property);
+    // These results were requested from an organization-scoped endpoint; retain
+    // records that omit the relation field, but reject explicitly mismatched IDs.
+    return !propertyOrganizationId || propertyOrganizationId === String(organizationId);
+  });
+}
+
 export async function getOrganizationMembers(id) {
   const token = await getRawToken();
   try {
@@ -1070,21 +1117,42 @@ export async function getUserById(id) {
  * ---------------------------------------------------------------- */
 
 export async function getOrganizationProperties(organizationId) {
+  if (!organizationId) return [];
   const token = await getRawToken();
   try {
-    const response = await safeFetch(
-      `${SERVICE_URL}/properties?organizationId=${organizationId}&page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      }
-    );
-    const {data} = await response.json();
-    return data || [];
+    const properties = [];
+    let totalPages = 1;
+    for (let page = 1; page <= totalPages; page += 1) {
+      const response = await safeFetch(
+        `${SERVICE_URL}/properties?organizationId=${encodeURIComponent(organizationId)}&page=${page}&limit=20&sortBy=createdAt&sortOrder=desc`,
+        {
+          method: "GET",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          cache: "no-store",
+        }
+      );
+      if (!response.ok) break;
+      const payload = await response.json();
+      const pageProperties = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.properties)
+            ? payload.properties
+            : Array.isArray(payload?.data?.properties)
+              ? payload.data.properties
+              : Array.isArray(payload?.data?.data)
+                ? payload.data.data
+              : [];
+      properties.push(...pageProperties);
+      const meta = payload?.meta || payload?.pagination || payload?.data?.meta || payload?.data?.pagination;
+      totalPages = Math.max(page, Number(meta?.totalPages) || 1);
+    }
+    return properties;
   } catch (err) {
     console.warn(err);
     return [];
@@ -1763,8 +1831,8 @@ Listings
 
 
 */
-export async function getListingById(id) {
-  const token = await getRawToken();
+export async function getListingById(id, passedToken) {
+  const token = await getRawToken(passedToken);
   try {
     const response = await safeFetch(`${SERVICE_URL}/properties/${id}/listings?page=1&limit=20&sortBy=createdAt&sortOrder=desc`, {
       method: "GET",
@@ -1776,10 +1844,54 @@ export async function getListingById(id) {
     });
     if (!response.ok) return null;
     const {data} = await safeJson(response);
+    console.log("data",data)
     return data;
   } catch (error) {
     console.warn("Error fetching listing:", error);
     return null;
+  }
+}
+
+export async function getPublicListingsForProperty(propertyId) {
+  if (!propertyId) return { listings: [], meta: null };
+  try {
+    const token = await getRawToken();
+    const headers = {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+    const fetchPage = async (page) => {
+      const response = await safeFetch(
+        `${SERVICE_URL}/properties/${encodeURIComponent(propertyId)}/listings?page=${page}&limit=20&sortBy=createdAt&sortOrder=desc`,
+        { method: "GET", headers, cache: "no-store" }
+      );
+      if (!response.ok) return null;
+      return safeJson(response);
+    };
+    const firstPage = await fetchPage(1);
+    if (!firstPage) return { listings: [], meta: null };
+    const extractListings = (payload) =>
+      Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.listings)
+          ? payload.listings
+          : Array.isArray(payload?.data?.listings)
+            ? payload.data.listings
+            : Array.isArray(payload?.data?.records)
+              ? payload.data.records
+              : [];
+    const listings = [...extractListings(firstPage)];
+    const meta = firstPage.meta || firstPage.pagination || firstPage.data?.meta || firstPage.data?.pagination || null;
+    const totalPages = Math.max(1, Number(meta?.totalPages) || 1);
+    for (let page = 2; page <= totalPages; page += 1) {
+      const payload = await fetchPage(page);
+      listings.push(...extractListings(payload));
+    }
+    return { listings, meta };
+  } catch (error) {
+    console.warn("Error fetching public property listings:", error);
+    return { listings: [], meta: null };
   }
 }
   

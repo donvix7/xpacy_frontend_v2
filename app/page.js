@@ -16,6 +16,7 @@ import image1 from "@/public/image1.png";
 import image2 from "@/public/image2.png";
 import image3 from "@/public/image3.png";
 import image4 from "@/public/listproperty-image.png";
+import HomeCarousel from "./_components/HomeCarousel";
 
 export default async function Home() {
   const [blogsResult, bannersResult] = await Promise.allSettled([

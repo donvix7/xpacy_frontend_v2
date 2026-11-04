@@ -7,12 +7,14 @@ import ReferralSidebarNav from "./ReferralSidebarNav";
 import SidebarLogo from "./SidebarLogo";
 import SidebarNav from "./SidebarNav";
 import { useCloseModal } from "../_hooks/useCloseModal";
-import { usePathname } from "next/navigation";
-import { isPublicNavigationLinkActive, publicNavigationLinks } from "@/app/_lib/public-navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { getPublicNavigationLinks, isPublicNavigationLinkActive } from "@/app/_lib/public-navigation";
 
 
 export default function MobileNav({ children, isSidebar = false, role = "user" }) {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const links = getPublicNavigationLinks(searchParams.get("organizationId"));
 
     return (
         <NavMenu>
@@ -26,7 +28,7 @@ export default function MobileNav({ children, isSidebar = false, role = "user" }
                             <MobileSideBarWindow role={role} />
                         ) :
                         (
-                            <MainAppWindow pathname={pathname}>
+                            <MainAppWindow pathname={pathname} links={links}>
                                 {children}
                             </MainAppWindow>
                         )
@@ -53,10 +55,10 @@ const MobileNavBtns = ({ isOpen, open }) => {
 }
 
 
-const MainAppWindow = ({ children, pathname }) => {
+const MainAppWindow = ({ children, pathname, links }) => {
     return (
         <ul className="border border-primary-200 rounded-lg font-mono lg:hidden">
-            {publicNavigationLinks.map(({ label, href }) => {
+            {links.map(({ label, href }) => {
                 const active = isPublicNavigationLinkActive(pathname, href);
                 return (
                     <li key={href} className={`border-b border-primary-100 py-2 ${active ? "font-semibold text-primary" : "text-gray-700"}`}>

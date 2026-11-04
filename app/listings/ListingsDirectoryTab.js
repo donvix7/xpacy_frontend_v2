@@ -5,9 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Search,
-  Filter,
-  Eye,
-  MessageSquare,
   Building2,
   ExternalLink,
   Zap,
@@ -17,111 +14,71 @@ import {
 import StatusChips from "@/app/_components/StatusChips";
 import { formatCurrency } from "@/app/_lib/utils";
 
-export default function ListingsDirectoryTab({ properties = [] }) {
+const displayField = (value) => {
+  if (value == null || value === "") return "—";
+  if (Array.isArray(value)) return value.length ? value.map(displayField).join(", ") : "—";
+  if (typeof value === "object") return Object.values(value).filter((part) => part != null && part !== "").map(displayField).join(", ") || "—";
+  return String(value);
+};
+
+const formatListingDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "UTC" }).format(date);
+};
+
+const formatListingPrice = (amount, currency = "NGN") => {
+  if (amount == null || amount === "") return "—";
+  if (currency === "NGN") return formatCurrency(amount);
+  try {
+    return new Intl.NumberFormat("en", { style: "currency", currency }).format(Number(amount));
+  } catch {
+    return `${currency} ${Number(amount).toLocaleString()}`;
+  }
+};
+
+export default function ListingsDirectoryTab({ listings = [], organizationId }) {
+  const organizationQuery = organizationId ? `organizationId=${encodeURIComponent(organizationId)}` : "";
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  // Transform raw properties into unified listing records
-  const allListings = useMemo(() => {
-    if (properties.length > 0) {
-      return properties.map((p, idx) => ({
-        id: p.id || p._id || `listing-${idx}`,
-        title: p.property_name || p.name || `Listing #${1000 + idx}`,
-        propertyName: p.property_name || p.name || "Main Property",
-        unit: p.unitNumber ? `Unit ${p.unitNumber}` : "Entire Building",
-        locality: [p.city, p.state].filter(Boolean).join(", ") || p.address || "Lagos, Nigeria",
-        category: p.category || (idx % 2 === 0 ? "For Rent" : "For Sale"),
-        type: p.propertyType || (idx % 3 === 0 ? "Flat" : idx % 3 === 1 ? "House" : "Duplex"),
-        price: p.property_price || p.price || (idx % 2 === 0 ? 3500000 : 85000000),
-        status: p.status || p.property_status || "active",
-        views: Number(p.views) || (idx === 0 ? 412 : idx === 1 ? 320 : 145),
-        enquiries: Math.round((Number(p.views) || 120) * 0.08) || (idx + 3) * 2,
-        isBoosted: idx % 3 === 0,
-        image: p.images?.[0] ? `https://app.xpacy.com/src/upload/properties/${p.images[0]}` : null,
-      }));
-    }
-
-    // Default rich sample listings if database has 0 items
-    return [
-      /*
-      {
-        id: "lst-101",
-        title: "Luxury 4-Bedroom Terrace Duplex",
-        propertyName: "Imperial Vista Court",
-        unit: "Unit B4",
-        locality: "Lekki Phase 1, Lagos",
-        category: "For Rent",
-        type: "Terraced Duplex",
-        price: 8500000,
-        status: "active",
-        views: 520,
-        enquiries: 34,
-        isBoosted: true,
-        image: null,
-      },
-      {
-        id: "lst-102",
-        title: "Modern 2-Bedroom Waterfront Apartment",
-        propertyName: "Oceanview Heights",
-        unit: "Penthouse 12",
-        locality: "Victoria Island, Lagos",
-        category: "For Rent",
-        type: "Flat",
-        price: 12000000,
-        status: "active",
-        views: 430,
-        enquiries: 28,
-        isBoosted: true,
-        image: null,
-      },
-      {
-        id: "lst-103",
-        title: "Executive 5-Bedroom Detached Mansion",
-        propertyName: "Crown Ridge Estate",
-        unit: "Plot 18",
-        locality: "Maitama, Abuja",
-        category: "For Sale",
-        type: "House",
-        price: 350000000,
-        status: "pending",
-        views: 290,
-        enquiries: 18,
-        isBoosted: false,
-        image: null,
-      },
-      {
-        id: "lst-104",
-        title: "Serviced 3-Bedroom Flat with BQ",
-        propertyName: "Heritage Court",
-        unit: "Flat 3A",
-        locality: "Ikeja GRA, Lagos",
-        category: "For Rent",
-        type: "Flat",
-        price: 6000000,
-        status: "rented",
-        views: 380,
-        enquiries: 22,
-        isBoosted: false,
-        image: null,
-      },
-      {
-        id: "lst-105",
-        title: "Commercial Grade A Office Floor",
-        propertyName: "Broad Street Financial Tower",
-        unit: "Wing B, 5th Floor",
-        locality: "Marina, Lagos Island",
-        category: "For Rent",
-        type: "Commercial",
-        price: 45000000,
-        status: "active",
-        views: 195,
-        enquiries: 12,
-        isBoosted: true,
-        image: null,
-      },*/
-    ];
-  }, [properties]);
+  const allListings = useMemo(() => listings.map((listing, idx) => {
+    const property = listing.property || {};
+    const rawType = String(listing.listingType || "").toUpperCase().replace(/[\s_-]/g, "");
+    const route = rawType === "RENT" ? "rent" : rawType.includes("SHORT") ? "shortlet" : "buy";
+    const propertySlug = property.property_slug || property.slug;
+    const location = listing.location;
+    const listingLocation = typeof location === "string"
+      ? location
+      : [location?.address, location?.city, location?.state, location?.country].filter(Boolean).join(", ");
+    return {
+      id: listing.id || listing._id || `listing-${idx}`,
+      propertyId: listing.propertyId,
+      unitId: listing.unitId || listing.unit?.id,
+      title: listing.title || `Listing ${idx + 1}`,
+      description: listing.description,
+      propertyName: property.property_name || property.name || property.title || "—",
+      unitNumber: listing.unit?.unitNumber,
+      unitType: listing.unit?.unitType,
+      locality: listingLocation || [property.address, property.city, property.state, property.country].filter(Boolean).join(", ") || null,
+      listingType: listing.listingType,
+      category: rawType.includes("SHORT") ? "Shortlet" : rawType === "SALE" || rawType === "BUY" ? "For Sale" : "For Rent",
+      price: listing.price,
+      currency: listing.currency || "NGN",
+      deposit: listing.deposit,
+      availability: listing.availability,
+      amenities: listing.amenities,
+      publishedAt: listing.publishedAt,
+      expiresAt: listing.expiresAt,
+      createdAt: listing.createdAt,
+      updatedAt: listing.updatedAt,
+      status: listing.status || "UNKNOWN",
+      isBoosted: Boolean(listing.isBoosted || listing.featured),
+      image: property.images?.[0] ? `https://app.xpacy.com/src/upload/properties/${property.images[0]}` : null,
+      detailsHref: propertySlug ? `/${route}/${propertySlug}?${organizationQuery}` : `/listings?${organizationQuery}`,
+    };
+  }), [listings, organizationQuery]);
 
   // Filtered listings
   const filteredListings = useMemo(() => {
@@ -129,12 +86,12 @@ export default function ListingsDirectoryTab({ properties = [] }) {
       const matchesSearch =
         searchQuery === "" ||
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.locality.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        displayField(item.locality).toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.propertyName.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesStatus =
         selectedStatus === "all" ||
-        item.status.toLowerCase() === selectedStatus.toLowerCase();
+        String(item.status).toLowerCase() === selectedStatus.toLowerCase();
 
       const matchesCategory =
         selectedCategory === "all" ||
@@ -169,10 +126,7 @@ export default function ListingsDirectoryTab({ properties = [] }) {
             className="text-xs font-semibold py-2 px-3 rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-primary"
           >
             <option value="all">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="rented">Rented</option>
-            <option value="draft">Draft</option>
+            <option value="published">Published</option>
           </select>
 
           {/* Category select */}
@@ -188,11 +142,11 @@ export default function ListingsDirectoryTab({ properties = [] }) {
           </select>
 
           <Link
-            href="/dashboard/admin/properties"
+            href={`/management?${organizationQuery}`}
             className="inline-flex items-center gap-1.5 bg-primary text-white text-xs font-bold py-2 px-3.5 rounded-lg hover:bg-primary-900 transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Manage Properties</span>
+            <span>Management</span>
           </Link>
         </div>
       </div>
@@ -206,8 +160,9 @@ export default function ListingsDirectoryTab({ properties = [] }) {
               <th className="p-4">Property / Unit</th>
               <th className="p-4">Location</th>
               <th className="p-4 text-center">Category</th>
-              <th className="p-4 text-right">Price / Rent</th>
-              <th className="p-4 text-center">Views / Enq.</th>
+              <th className="p-4 text-right">Price / Deposit</th>
+              <th className="p-4">Availability / Amenities</th>
+              <th className="p-4">Listing Dates</th>
               <th className="p-4 text-center">Status</th>
               <th className="p-4 text-right">Action</th>
             </tr>
@@ -215,7 +170,7 @@ export default function ListingsDirectoryTab({ properties = [] }) {
           <tbody className="divide-y divide-gray-100 font-medium">
             {filteredListings.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-10 text-center text-gray-400 text-sm">
+                <td colSpan={9} className="p-10 text-center text-gray-400 text-sm">
                   No listings found matching your search and filter criteria.
                 </td>
               </tr>
@@ -255,6 +210,7 @@ export default function ListingsDirectoryTab({ properties = [] }) {
                         <p className="font-bold text-gray-900 truncate" title={listing.title}>
                           {listing.title}
                         </p>
+                        <p className="max-w-[220px] truncate text-[11px] text-gray-500" title={displayField(listing.description)}>{displayField(listing.description)}</p>
                         <p className="text-[11px] text-gray-500 font-mono">
                           ID: {listing.id}
                         </p>
@@ -265,12 +221,12 @@ export default function ListingsDirectoryTab({ properties = [] }) {
                   {/* Property / Unit */}
                   <td className="p-4 text-gray-700">
                     <div>
-                      <span className="font-semibold block truncate">
-                        {listing.propertyName}
-                      </span>
-                      <span className="text-[11px] text-gray-400 block">
-                        {listing.unit}
-                      </span>
+                        <span className="font-semibold block truncate">
+                          {listing.propertyName}
+                        </span>
+                        <span className="text-[11px] text-gray-400 block">Unit {displayField(listing.unitNumber)} · {displayField(listing.unitType)}</span>
+                        <span className="text-[10px] text-gray-400 block">Property ID: {displayField(listing.propertyId)}</span>
+                        <span className="text-[10px] text-gray-400 block">Unit ID: {displayField(listing.unitId)}</span>
                     </div>
                   </td>
 
@@ -278,7 +234,7 @@ export default function ListingsDirectoryTab({ properties = [] }) {
                   <td className="p-4 text-gray-600">
                     <div className="flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="truncate max-w-[150px]">{listing.locality}</span>
+                      <span className="truncate max-w-[150px]">{displayField(listing.locality)}</span>
                     </div>
                   </td>
 
@@ -289,23 +245,23 @@ export default function ListingsDirectoryTab({ properties = [] }) {
                     </span>
                   </td>
 
-                  {/* Price */}
+                  {/* Price and deposit */}
                   <td className="p-4 text-right font-extrabold text-primary font-mono">
-                    {formatCurrency(listing.price)}
+                    <span>{formatListingPrice(listing.price, listing.currency)}</span>
+                    <span className="block text-[10px] font-medium text-gray-400">Currency: {displayField(listing.currency)}</span>
+                    <span className="block text-[11px] font-medium text-gray-500">Deposit: {formatListingPrice(listing.deposit, listing.currency)}</span>
                   </td>
 
-                  {/* Views & Enquiries */}
-                  <td className="p-4 text-center">
-                    <div className="inline-flex items-center gap-3 text-xs">
-                      <span className="flex items-center gap-1 text-gray-600 font-semibold" title="Total Views">
-                        <Eye className="w-3.5 h-3.5 text-blue-600" />
-                        {listing.views}
-                      </span>
-                      <span className="flex items-center gap-1 text-gray-600 font-semibold" title="Enquiries">
-                        <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
-                        {listing.enquiries}
-                      </span>
-                    </div>
+                  <td className="max-w-[180px] p-4 text-xs text-gray-600">
+                    <span className="block">Available: {displayField(listing.availability)}</span>
+                    <span className="mt-1 block">Amenities: {displayField(listing.amenities)}</span>
+                  </td>
+
+                  <td className="p-4 text-xs text-gray-600">
+                    <span className="block">Published: {formatListingDate(listing.publishedAt)}</span>
+                    <span className="mt-1 block">Expires: {formatListingDate(listing.expiresAt)}</span>
+                    <span className="mt-1 block">Created: {formatListingDate(listing.createdAt)}</span>
+                    <span className="mt-1 block">Updated: {formatListingDate(listing.updatedAt)}</span>
                   </td>
 
                   {/* Status */}
@@ -318,7 +274,7 @@ export default function ListingsDirectoryTab({ properties = [] }) {
                   {/* Action */}
                   <td className="p-4 text-right">
                     <Link
-                      href={`/dashboard/admin/properties`}
+                      href={listing.detailsHref}
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-50 text-primary text-xs font-bold hover:bg-primary-100 transition-colors"
                     >
                       <span>View</span>
@@ -365,7 +321,7 @@ export default function ListingsDirectoryTab({ properties = [] }) {
                     <h4 className="text-sm font-bold text-gray-900 truncate">
                       {listing.title}
                     </h4>
-                    <p className="text-xs text-gray-500 truncate">{listing.locality}</p>
+                    <p className="text-xs text-gray-500 truncate">{displayField(listing.locality)}</p>
                   </div>
                 </div>
                 <StatusChips status={listing.status} />
@@ -373,25 +329,33 @@ export default function ListingsDirectoryTab({ properties = [] }) {
 
               <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-100">
                 <div>
-                  <span className="text-gray-400 block text-[11px]">Price / Rent</span>
+                  <span className="text-gray-400 block text-[11px]">Price ({listing.currency})</span>
                   <span className="font-extrabold text-primary font-mono">
-                    {formatCurrency(listing.price)}
+                    {formatListingPrice(listing.price, listing.currency)}
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-gray-400 block text-[11px]">Views & Leads</span>
-                  <span className="font-bold text-gray-700">
-                    {listing.views} views • {listing.enquiries} enq.
-                  </span>
+                  <span className="text-gray-400 block text-[11px]">Deposit</span>
+                  <span className="font-bold text-gray-700">{formatListingPrice(listing.deposit, listing.currency)}</span>
                 </div>
               </div>
 
+              <dl className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 text-xs">
+                {[
+                  ["Listing ID", listing.id], ["Property ID", listing.propertyId], ["Unit ID", listing.unitId],
+                  ["Listing type", listing.listingType], ["Unit number", listing.unitNumber], ["Unit type", listing.unitType],
+                  ["Availability", listing.availability], ["Amenities", listing.amenities], ["Published", formatListingDate(listing.publishedAt)],
+                  ["Expires", formatListingDate(listing.expiresAt)], ["Created", formatListingDate(listing.createdAt)], ["Updated", formatListingDate(listing.updatedAt)],
+                ].map(([label, value]) => <div key={label}><dt className="text-gray-400">{label}</dt><dd className="mt-0.5 break-words font-medium text-gray-700">{displayField(value)}</dd></div>)}
+                <div className="col-span-2"><dt className="text-gray-400">Description</dt><dd className="mt-0.5 break-words font-medium text-gray-700">{displayField(listing.description)}</dd></div>
+              </dl>
+
               <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-gray-500">
-                  {listing.propertyName} • {listing.unit}
+                  {listing.propertyName} • Unit {displayField(listing.unitNumber)} ({displayField(listing.unitType)})
                 </span>
                 <Link
-                  href={`/dashboard/admin/properties`}
+                  href={listing.detailsHref}
                   className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
                 >
                   <span>Details</span>
@@ -405,4 +369,3 @@ export default function ListingsDirectoryTab({ properties = [] }) {
     </div>
   );
 }
-

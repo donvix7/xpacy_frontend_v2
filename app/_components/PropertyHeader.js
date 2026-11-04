@@ -1,7 +1,7 @@
 "use client"
 import { usePathname } from "next/navigation"
 import { MdKeyboardArrowRight } from "react-icons/md";
-export default function PropertyHeader({ pagination }) {
+export default function PropertyHeader({ pagination, organization }) {
     const pathname = usePathname();
     const headerTxt = pathname.split("/").at(1);
     return (
@@ -16,8 +16,8 @@ export default function PropertyHeader({ pagination }) {
                     <p className="font-bold text-4xl capitalize">We&apos;ve got {pagination.total} results for you</p>
                 </div>
             ) : (<div className="space-y-2">
-                <p className="font-bold md:text-4xl text-[28px] capitalize">Properties For {headerTxt}</p>
-                <p className="md:text-md text-black font-mono md:font-sans">Search for properties on {headerTxt}</p>
+                <p className="font-bold md:text-4xl text-[28px] capitalize">{organization?.name ? `${organization.name} properties for ${headerTxt}` : `Properties For ${headerTxt}`}</p>
+                <p className="md:text-md text-black font-mono md:font-sans">{organization?.city || organization?.state ? `Explore ${organization.name || "this organization"} properties${[organization.city, organization.state].filter(Boolean).join(", ") ? ` in ${[organization.city, organization.state].filter(Boolean).join(", ")}` : ""}.` : `Search ${organization?.name || "this organization"} properties for ${headerTxt}.`}</p>
             </div>)
             }
         </div>

@@ -6,6 +6,7 @@ export default function FilterSidebar({search}){
         <div className="flex flex-col p-6 gap-4 border border-neutral-200 bg-white shadow-md rounded-lg">
             <p className="text-black font-normal text-md">Filter Options</p>
             <form action={handleSearch} className="flex flex-col font-mono gap-6 text-base text-neutrals-900">
+                {search?.organizationId && <input type="hidden" name="organizationId" value={search.organizationId} />}
                 <select name="purpose" defaultValue={search?.purpose} className="px-2 py-4 border border-neutral-200 rounded-lg bg-white">
                     <option value={""}>Purpose</option>
                     <option value={"buy"}>Buy</option>

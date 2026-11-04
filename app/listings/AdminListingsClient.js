@@ -14,7 +14,7 @@ import MarketDemandTab from "./MarketDemandTab";
 import PricingIntelligenceTab from "./PricingIntelligenceTab";
 import ListingsDirectoryTab from "./ListingsDirectoryTab";
 
-export default function AdminListingsClient({ properties = [] }) {
+export default function AdminListingsClient({ listings = [], organization, organizationId }) {
   const [activeTab, setActiveTab] = useState("statistics");
   const [timeRange, setTimeRange] = useState("30days");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -23,6 +23,19 @@ export default function AdminListingsClient({ properties = [] }) {
     setIsRefreshing(true);
     setTimeout(() => setIsRefreshing(false), 600);
   };
+
+  const listingStatistics = listings.map((listing) => ({
+    ...listing,
+    property_name: listing.title || listing.property?.property_name || "Untitled listing",
+    property_type: listing.listingType || listing.unit?.unitType || "—",
+    property_status: listing.status || "UNKNOWN",
+    property_price: listing.price,
+    views: Number(listing.views) || 0,
+    enquiries: Number(listing.enquiries || listing.inquiries) || 0,
+    city: listing.location?.city || listing.property?.city,
+    state: listing.location?.state || listing.property?.state,
+    images: listing.property?.images || [],
+  }));
 
   const navTabs = [
     {
@@ -47,7 +60,7 @@ export default function AdminListingsClient({ properties = [] }) {
       id: "listings",
       label: "All Listings",
       icon: <Layers className="w-4 h-4" />,
-      badge: properties.length ? `${properties.length}` : "24",
+      badge: `${listings.length}`,
     },
   ];
 
@@ -57,11 +70,10 @@ export default function AdminListingsClient({ properties = [] }) {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-primary-100">
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-primary font-sans tracking-tight">
-            Listing Statistics &amp; Intelligence
+            {organization?.name ? `${organization.name} Listing Statistics` : "Listing Statistics & Intelligence"}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-gray-500">
-            Track how your listings perform across views, enquiries, market
-            demand, and price trends nationwide.
+            View listings and performance for {organization?.name || "this organization"}.
           </p>
         </div>
 
@@ -134,13 +146,13 @@ export default function AdminListingsClient({ properties = [] }) {
           {activeTab === "statistics" && (
             <ListingStatisticsTab
               timeRange={timeRange}
-              properties={properties}
+              properties={listingStatistics}
             />
           )}
           {activeTab === "trends" && <MarketDemandTab />}
           {activeTab === "pricing" && <PricingIntelligenceTab />}
           {activeTab === "listings" && (
-            <ListingsDirectoryTab properties={properties} />
+            <ListingsDirectoryTab listings={listings} organizationId={organizationId} />
           )}
         </main>
       </div>

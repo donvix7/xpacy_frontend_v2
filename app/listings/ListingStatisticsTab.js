@@ -41,10 +41,10 @@ export default function ListingStatisticsTab({
     (acc, p) => acc + (Number(p.views) || 0),
     0
   ) || 0;
-  const totalEnquiries = Math.round(totalViews * 0.082) || 0;
-  const contactedCount = Math.round(totalEnquiries * 0.55) || 0;
-  const listingsWithViews = properties.filter((p) => Number(p.views) > 0).length || Math.min(20, totalProperties);
-  const listingsWithEnquiries = Math.round(listingsWithViews * 0.72) || Math.min(15, totalProperties);
+  const totalEnquiries = properties.reduce((acc, p) => acc + Number(p.enquiries || p.inquiries || p.enquiry_count || 0), 0);
+  const contactedCount = properties.reduce((acc, p) => acc + Number(p.contactedCount || p.contacted_count || 0), 0);
+  const listingsWithViews = properties.filter((p) => Number(p.views) > 0).length;
+  const listingsWithEnquiries = properties.filter((p) => Number(p.enquiries || p.inquiries || p.enquiry_count) > 0).length;
   const avgViewsPerListing = totalProperties > 0 ? (totalViews / totalProperties).toFixed(1) : "0";
 
   // Performance chart data
@@ -79,24 +79,24 @@ export default function ListingStatisticsTab({
   // Derived or mock top performing listings
   const topListingsByEnquiries = properties.slice(0, 5).map((p, idx) => ({
     id: p.id || p._id || `prop-${idx}`,
-    name: p.property_name || p.name || `Luxury ${idx === 0 ? "4-Bed Penthouse" : idx === 1 ? "3-Bed Terrace" : "Modern 2-Bed Flat"}`,
-    location: [p.city, p.state].filter(Boolean).join(", ") || (idx === 0 ? "Ikoyi, Lagos" : idx === 1 ? "Maitama, Abuja" : "Lekki Phase 1, Lagos"),
-    price: p.property_price || (idx === 0 ? 120000000 : idx === 1 ? 85000000 : 4500000),
-    enquiries: 24 - idx * 4,
-    views: 310 - idx * 45,
-    conversion: `${(8.4 - idx * 0.9).toFixed(1)}%`,
+    name: p.property_name || p.name || "Untitled property",
+    location: [p.city, p.state].filter(Boolean).join(", ") || p.address || "Location unavailable",
+    price: p.property_price || p.price || 0,
+    enquiries: Number(p.enquiries || p.inquiries || p.enquiry_count || 0),
+    views: Number(p.views || 0),
+    conversion: Number(p.views) > 0 ? `${((Number(p.enquiries || p.inquiries || p.enquiry_count || 0) / Number(p.views)) * 100).toFixed(1)}%` : "—",
     status: p.status || p.property_status || "active",
     image: p.images?.[0] ? `https://app.xpacy.com/src/upload/properties/${p.images[0]}` : null,
   }));
 
   const topListingsByViews = properties.slice(0, 5).map((p, idx) => ({
     id: p.id || p._id || `prop-view-${idx}`,
-    name: p.property_name || p.name || `Prime ${idx === 0 ? "5-Bed Detached Villa" : idx === 1 ? "Furnished Studio" : "Executive Office Suite"}`,
-    location: [p.city, p.state].filter(Boolean).join(", ") || (idx === 0 ? "Victoria Island, Lagos" : idx === 1 ? "Wuse 2, Abuja" : "GRA Phase 2, Port Harcourt"),
-    price: p.property_price || (idx === 0 ? 250000000 : idx === 1 ? 3500000 : 18000000),
-    views: 420 - idx * 55,
-    enquiries: 19 - idx * 3,
-    avgTime: `${2 + idx}m ${15 + idx * 8}s`,
+    name: p.property_name || p.name || "Untitled property",
+    location: [p.city, p.state].filter(Boolean).join(", ") || p.address || "Location unavailable",
+    price: p.property_price || p.price || 0,
+    views: Number(p.views || 0),
+    enquiries: Number(p.enquiries || p.inquiries || p.enquiry_count || 0),
+    avgTime: "—",
     status: p.status || p.property_status || "active",
     image: p.images?.[0] ? `https://app.xpacy.com/src/upload/properties/${p.images[0]}` : null,
   }));
@@ -530,4 +530,3 @@ export default function ListingStatisticsTab({
     </div>
   );
 }
-

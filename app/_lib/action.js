@@ -51,7 +51,10 @@ export const handleSearch = async (formData) => {
     maxPrice: Number(formData.get("maxPrice")) || "",
   }
   const { purpose, type, location, minBedrooms, minPrice, maxPrice } = search
-  redirect(`/search?purpose=${purpose}&type=${type}&state=${location}&minBedrooms=${minBedrooms}&minPrice=${minPrice}&maxPrice=${maxPrice}`)
+  const params = new URLSearchParams({ purpose, type, state: location, minBedrooms: String(minBedrooms), minPrice: String(minPrice), maxPrice: String(maxPrice) });
+  const organizationId = formData.get("organizationId");
+  if (organizationId) params.set("organizationId", String(organizationId));
+  redirect(`/search?${params.toString()}`)
 }
 
 export async function handleUserLogin(userData) {

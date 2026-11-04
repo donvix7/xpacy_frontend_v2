@@ -7,7 +7,7 @@ import { useState, useTransition } from "react";
 import Modal from "./NetworkTriggerModal";
 import { handleContact } from "../_lib/action";
 
-const ContactForm = ({ user }) => {
+const ContactForm = ({ user, organization, organizationId }) => {
     const [open, setOpen] = useState(false)
     const [pending, startTransition] = useTransition()
     const { register, handleSubmit, formState: { errors }, reset, getValues } = useForm({
@@ -19,7 +19,7 @@ const ContactForm = ({ user }) => {
     });
     const onSubmit = (data) => {
        startTransition(async () => {
-        const res = await handleContact(data);
+        const res = await handleContact({ ...data, organizationId, organizationName: organization?.name });
         if(res.success) {
             setOpen(true)
             reset()

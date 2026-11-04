@@ -2,7 +2,7 @@ import MobileFilter from "./MobileFilter";
 import PropertyCard from "./PropertyCard";
 import LatestPropertyList from "./LatestPropertyList";
 import PropertySavedIcon from "@/app/_components/ProperySavedIcon";
- export default async function PropertyCardLists({properties, pagination }) {
+ export default async function PropertyCardLists({properties, pagination, organizationId }) {
 
     return (
         <>
@@ -20,7 +20,7 @@ import PropertySavedIcon from "@/app/_components/ProperySavedIcon";
             </div>
             <div className="grid md:grid-cols-2 grid-cols-1 md:gap-x-6 gap-y-6 md:gap-y-12">
                 {
-                    properties?.map((property, index) => <PropertyCard property={property} key={index}/>)
+                    properties?.map((property, index) => <PropertyCard property={property} organizationId={organizationId} key={index}/>)
                 }
             </div>
         </>

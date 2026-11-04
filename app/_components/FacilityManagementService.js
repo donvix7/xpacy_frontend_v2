@@ -49,7 +49,8 @@ const facilityServcies = [
   },
 ]
 
-const FacilityManagementService = () => {
+const FacilityManagementService = ({ organizationId }) => {
+  const contactHref = `/contact?organizationId=${encodeURIComponent(organizationId || "")}`;
   return (
     <section className="flex flex-col pt-12 lg:pt-0 lg:py-[120px] gap-16 ">
       <div className="flex flex-col gap-4">
@@ -64,7 +65,7 @@ const FacilityManagementService = () => {
             </div>
             <p className="text-lg text-center">{title}</p>
             <span className="font-mono text-center">{message}</span>
-            <Link href={"/book-service"} className="text-white bg-primary rounded-lg p-4 font-bold font-mono text-center"> Book Now</Link>
+            <Link href={contactHref} className="text-white bg-primary rounded-lg p-4 font-bold font-mono text-center"> Contact to Book</Link>
           </div>
         ))}
       </div>

@@ -7,10 +7,12 @@ import Link from "next/link";
 import { formatCurrency } from './../_lib/utils';
 import PropertySavedIcon from "./ProperySavedIcon";
 
-export default function PropertyCard({ property }) {
+export default function PropertyCard({ property, organizationId }) {
+    const detailsPath = `/${property.property_status.toLowerCase()}/${property?.property_slug}`;
+    const detailsHref = organizationId ? `${detailsPath}?organizationId=${encodeURIComponent(organizationId)}` : detailsPath;
     return (
         <div className=" h-[522px] flex flex-col rounded-bl-md rounded-br-md shadow-lg">
-            <Link href={`/${property.property_status.toLowerCase()}/${property?.property_slug}`} className="relative p-4 overflow-hidden h-[280px] rounded-tl-md rounded-tr-md">
+            <Link href={detailsHref} className="relative p-4 overflow-hidden h-[280px] rounded-tl-md rounded-tr-md">
                 <div className="flex items-center justify-between">
                     <span className="rounded-full z-10 px-4 py-2 bg-primary text-white font-mono text-sm  text-center">
                         {property.property_status}

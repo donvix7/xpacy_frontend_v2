@@ -7,6 +7,7 @@ import PropertySavedIcon from "@/app/_components/ProperySavedIcon";
 import { getProperty } from "@/app/_lib/data-services"
 
 import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 
 export async function generateMetadata({ params }) {
     const pageParams = await params
@@ -27,12 +28,16 @@ export async function generateMetadata({ params }) {
         }
     }
 }
-export default async function Page({ params }) {
+export default async function Page({ params, searchParams }) {
     const pageParams = await params;
+    const query = await searchParams;
+    const requestedOrganizationId = typeof query?.organizationId === "string" ? query.organizationId.trim() : "";
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
     const isAuthenticated = !!token?.value;
-    const property = await getProperty(pageParams.propertyslug)
+    const property = await getProperty(pageParams.propertyslug);
+    const propertyOrganizationId = property?.organizationId?.id || property?.organizationId?._id || property?.organizationId || property?.organization_id || property?.organization?.id || property?.organization?._id;
+    if (!requestedOrganizationId || requestedOrganizationId === '""' || String(propertyOrganizationId) !== requestedOrganizationId) notFound();
     return (
         <>
             <AppHeader />
