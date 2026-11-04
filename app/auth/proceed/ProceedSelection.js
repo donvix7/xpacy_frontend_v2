@@ -21,8 +21,9 @@ export default function ProceedSelection({ organizations = [], role = "user", re
     const [error, setError] = useState("");
 
     const selectedOrganization = organizations.find((organization) => String(organization.id) === selectedId);
-    const roleLabel = roleLabels[String(role).toLowerCase().replace(/[\s_-]/g, "")] || "Account";
+    const roleLabel = role.charAt(0).toUpperCase() + role.slice(1)
 
+    console.log(organizations)
     const continueToDashboard = async () => {
         if (organizations.length > 0 && !selectedId) {
             setError("Choose an organization to continue.");
@@ -90,7 +91,13 @@ export default function ProceedSelection({ organizations = [], role = "user", re
                                             </span>
                                         )}
                                     </span>
-                                    {selected && <Shield aria-hidden="true" className="h-5 w-5 shrink-0 text-primary" />}
+                                    {selected &&
+                                        <div className="ml-2 flex items-center">
+                                            <span>{}</span>
+                                            <Shield aria-hidden="true" className="h-5 w-5 shrink-0 text-primary" />
+
+                                        </div>
+                                    }
                                 </button>
                             );
                         })}
@@ -111,7 +118,7 @@ export default function ProceedSelection({ organizations = [], role = "user", re
                         type="button"
                         disabled={isSubmitting}
                         onClick={() => organizations.length > 0 ? setShowConfirmation(true) : void continueToDashboard()}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center text-sm px-4 sm:w-42  justify-center gap-2 rounded-lg bg-primary w-full px-4 py-2.5 font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
                     >
                         {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
                         Continue

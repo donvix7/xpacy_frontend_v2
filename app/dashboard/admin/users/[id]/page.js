@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
     Building2,
     ChevronLeft,
@@ -85,11 +86,48 @@ function buildDetailRows(user) {
 }
 
 export default async function Page({ params }) {
-    const { id } = await params;
-    const result = await getUserById(id);
-    const user =
-        result?.user ?? result?.data?.user ?? (result?.data ?? result);
+    // 1. Await params (Next.js 15+ — params is a Promise).
+    const resolvedParams = await params;
 
+    // 2. Safely extract `id` from whatever shape params takes.
+    //    Handles: { id: "..." }  |  { id: ["..."] }  |  { slug: [...] } fallback.
+    const rawId = resolvedParams?.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    // 3. Guard against missing / empty id.
+    if (!id || typeof id !== "string" || !id.trim()) {
+        return (
+            <div className="space-y-6 p-2">
+                <Link
+                    href="/dashboard/admin/users"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back to users
+                </Link>
+
+                <EmptyState
+                    icon={UserRound}
+                    title="Invalid user id"
+                    message="The user id in the URL is missing or malformed."
+                />
+            </div>
+        );
+    }
+
+    const userId = id.trim();
+
+    // 4. Fetch the user using the resolved id.
+    const result = await getUserById(userId);
+
+    // 5. Unwrap the response defensively — different APIs nest differently.
+    const user =
+        result?.user ??
+        result?.data?.user ??
+        (result?.data && !Array.isArray(result.data) ? result.data : null) ??
+        (result && !Array.isArray(result) ? result : null);
+
+    // 6. Bail out with a friendly UI if we couldn't find a valid user object.
     if (!user || typeof user !== "object" || Array.isArray(user)) {
         return (
             <div className="space-y-6 p-2">
@@ -104,19 +142,28 @@ export default async function Page({ params }) {
                 <EmptyState
                     icon={UserRound}
                     title="User not found"
-                    message="This user may have been removed or the link may be incorrect."
+                    message={`No user was found for id "${userId}". This user may have been removed or the link may be incorrect.`}
                 />
             </div>
         );
     }
 
     const name = displayName(user);
-    const profilePicture = user.display_picture
-        ? `${UPLOAD_BASE}/${user.display_picture}`
-        : "/avatar.png";
+
+    // 7. Build the profile picture URL from the user's display_picture (if any).
+    const profilePicture =
+        user.display_picture && typeof user.display_picture === "string"
+            ? `${UPLOAD_BASE}/${user.display_picture}`
+            : "/avatar.png";
 
     const details = buildDetailRows(user);
-    const memberships = user.organizationMemberships ?? [];
+
+    // 8. Memberships: prefer explicit property, fall back to organization_memberships.
+    const memberships = Array.isArray(user.organizationMemberships)
+        ? user.organizationMemberships
+        : Array.isArray(user.organization_memberships)
+        ? user.organization_memberships
+        : [];
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
@@ -150,7 +197,9 @@ export default async function Page({ params }) {
                     </div>
                     <div className="flex h-full w-full flex-wrap items-start justify-end gap-2">
                         <StatusChips status={user.status || "active"} />
-                        {user.kyc_status && <StatusChips status={user.kyc_status} />}
+                        {user.kyc_status && (
+                            <StatusChips status={user.kyc_status} />
+                        )}
                     </div>
                 </div>
             </DashboardGridItem>
@@ -198,16 +247,21 @@ export default async function Page({ params }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {memberships.map((membership) => (
+                                {memberships.map((membership, index) => (
                                     <tr
-                                        key={membership.id}
+                                        key={
+                                            membership.id ??
+                                            membership.organization?.id ??
+                                            index
+                                        }
                                         className="border-b border-gray-200 hover:bg-gray-50"
                                     >
                                         <td className="py-3 px-4 text-sm text-gray-800">
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="h-4 w-4 shrink-0 text-gray-400" />
                                                 <span className="break-words capitalize">
-                                                    {membership.organization?.name ?? "—"}
+                                                    {membership.organization?.name ??
+                                                        "—"}
                                                 </span>
                                             </div>
                                         </td>

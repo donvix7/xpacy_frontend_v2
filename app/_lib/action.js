@@ -63,7 +63,7 @@ export async function handleUserLogin(userData) {
     body: JSON.stringify({ ...userData }),
   });
   const data = await response.json();
-  console.log(data, "data")
+  console.log(data)
   if (!response.ok || data?.success === false) {
     return { success: false, message: data?.message || "Unable to log in. Check your details and try again." };
   }
@@ -1492,10 +1492,9 @@ export async function deleteDocument(id){
 
 
 export async function addProperty(propertyData){
-  console.log(propertyData)
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await safeFetch(`${SERVICES_URL}/properties`, {
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token?.value}`,
@@ -1503,7 +1502,7 @@ export async function addProperty(propertyData){
     },
     body: JSON.stringify(propertyData)
   });
-  console.log(response)
+  console.log('this is from the action', response)
   return response.json(); 
 
 }
@@ -2127,7 +2126,6 @@ export async function createOrganization(data){
     },
     body: JSON.stringify(payload)
   });
-  console.log(response.json())
   return response.json(); 
 }
 

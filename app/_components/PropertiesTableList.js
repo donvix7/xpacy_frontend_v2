@@ -31,7 +31,6 @@ const organizationTableHeadings = [
 ];
 
 export default function PropertiesTableList({ properties, bookings = [], pagination, baseUrl = "/dashboard/property-owner/properties", ctaLink = "/dashboard/property-owner/properties/add", recent = false }) {
-  console.log("properties",properties)  
   if (!properties?.length) return <EmptyState message={"No properties found."} />
 
     const isOrganizationProperty = properties.some((property) =>

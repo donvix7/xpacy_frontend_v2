@@ -674,7 +674,7 @@ export async function getAllTenants() {
 export async function getTenantById(id) {
   const token = await getRawToken();
   try {
-    const response = await safeFetch(`${SERVICE_URL}/tenants/${id}`, {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/tenants/${id}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -727,7 +727,6 @@ export async function getUnitById(id) {
     });
     if (!response.ok) return null;
     const  data  = await safeJson(response);
-    console.log("data",data)
     return data || null;
   } catch (error) {
     console.warn("Error fetching unit:", error);
@@ -1046,9 +1045,10 @@ export async function getAllUsers(passedToken, limit = 20) {
 }
 
 export async function getUserById(id) {
+  console.log(id)
   const token = await getRawToken();
   try {
-    const response = await safeFetch(`${SERVICE_URL}/users/${id}`, {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/users/${id}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -1057,6 +1057,7 @@ export async function getUserById(id) {
       cache: "no-store",
     });
     const data = await response.json();
+    console.log("from get user by id", response)
     return data || null;
   } catch (err) {
     console.warn(err);
@@ -1083,7 +1084,6 @@ export async function getOrganizationProperties(organizationId) {
       }
     );
     const {data} = await response.json();
-    console.log(response)
     return data || [];
   } catch (err) {
     console.warn(err);
@@ -1455,7 +1455,6 @@ export async function getAdminBooking(propertyId, token) {
         "Content-type": "application/json",
       },
     });
-    //console.log(response)
     if (!response.ok) {
       logUnexpectedResponse("Unable to fetch admin bookings", response);
       return [];
@@ -1751,7 +1750,6 @@ export async function debugFetch(urlStr) {
   try {
     const response = await safeFetch(urlStr);
     const text = await response.text();
-    console.log("Debug Fetch Response:", urlStr, text.slice(0, 500));
     return text;
   } catch (err) {
     console.warn("Debug Fetch Error:", urlStr, err);

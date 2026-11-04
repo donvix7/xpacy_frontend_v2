@@ -45,15 +45,47 @@ function Field({ label, htmlFor, children }) {
     );
 }
 
+// Helper: get a stable id from an owner object regardless of shape.
+const getOwnerId = (owner) => String(owner?.id ?? owner?._id ?? "");
+
+// Helper: build a display name for an owner.
+const getOwnerName = (owner) => {
+    const name = [
+        owner?.first_name || owner?.firstname,
+        owner?.last_name || owner?.lastname,
+    ]
+        .filter(Boolean)
+        .join(" ");
+    return name || owner?.email || "Unnamed owner";
+};
+
 export default function CreateNewPropertyForm({ owners = [], organizationId = "" }) {
     const [form, setForm] = useState({ ...initialForm, organizationId });
     const [selectedOwners, setSelectedOwners] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [activeStep, setActiveStep] = useState(1);
 
-    const selectedOwnerOptions = owners.filter((owner) =>
-        selectedOwners.includes(String(owner.id || owner._id))
+    // Deduplicate owners by id (or email as fallback) so MUI Autocomplete
+    // never receives duplicate keys.
+    const uniqueOwners = (() => {
+        const seen = new Set();
+        return owners.filter((owner) => {
+            const id = getOwnerId(owner) || owner?.email || "";
+            if (!id || seen.has(id)) return false;
+            seen.add(id);
+            return true;
+        });
+    })();
+
+    // Lookup map so we can turn selected IDs into full owner objects,
+    // preserving the order in which the user picked them.
+    const ownerById = new Map(
+        uniqueOwners.map((owner) => [getOwnerId(owner), owner])
     );
+
+    const selectedOwnerOptions = selectedOwners
+        .map((id) => ownerById.get(id))
+        .filter(Boolean);
 
     const updateField = (event) => {
         const { name, value } = event.target;
@@ -100,6 +132,18 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
             return;
         }
 
+        // Build an array of owner objects, preserving selection order.
+        const ownersPayload = selectedOwners.map((id, index) => {
+            const owner = ownerById.get(id) || {};
+            return {
+                id,
+                role: index === 0 ? "PRIMARY" : "CO_OWNER",
+                first_name: owner.first_name || owner.firstname || "",
+                last_name: owner.last_name || owner.lastname || "",
+                email: owner.email || "",
+            };
+        });
+
         const payload = {
             name: form.name.trim(),
             description: form.description.trim(),
@@ -115,8 +159,8 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
             totalFloors: Number(form.totalFloors) || 0,
             totalUnits: Number(form.totalUnits) || 0,
             organizationId: form.organizationId.trim(),
-            // ✅ Fixed: use the state variable, and shape each owner as an object.
-            owners: selectedOwners.map((id) => ({ id })),
+            // Array of objects — one per selected owner.
+            owners: ownersPayload,
         };
 
         setIsSubmitting(true);
@@ -172,27 +216,19 @@ export default function CreateNewPropertyForm({ owners = [], organizationId = ""
                             <Autocomplete
                                 id="owners"
                                 multiple
-                                options={owners}
+                                options={uniqueOwners}
                                 value={selectedOwnerOptions}
                                 onChange={(_, selected) =>
                                     setSelectedOwners(
-                                        selected.map((owner) =>
-                                            String(owner.id || owner._id)
-                                        )
+                                        selected.map((owner) => getOwnerId(owner))
                                     )
                                 }
-                                getOptionLabel={(owner) => {
-                                    const name = [
-                                        owner.first_name || owner.firstname,
-                                        owner.last_name || owner.lastname,
-                                    ]
-                                        .filter(Boolean)
-                                        .join(" ");
-                                    return name || owner.email || "Unnamed owner";
-                                }}
+                                getOptionLabel={getOwnerName}
+                                getOptionKey={(option) =>
+                                    getOwnerId(option) || option?.email || ""
+                                }
                                 isOptionEqualToValue={(option, value) =>
-                                    String(option.id || option._id) ===
-                                    String(value.id || value._id)
+                                    getOwnerId(option) === getOwnerId(value)
                                 }
                                 renderInput={(autocompleteParams) => (
                                     <TextField

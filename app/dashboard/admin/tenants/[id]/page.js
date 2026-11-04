@@ -17,6 +17,7 @@ import {
     Contact,
     BriefcaseBusiness,
     FileText,
+    Wallet,
 } from "lucide-react";
 import { getTenantById } from "@/app/_lib/data-services";
 import StatusChips from "@/app/_components/StatusChips";
@@ -383,8 +384,7 @@ function EmploymentInformationDetails({ info }) {
 
 export default async function Page({ params }) {
     const { id } = await params;
-    const result = await getTenantById(id);
-    const tenant = result?.data ?? result;
+    const tenant = await getTenantById(id);
 
     if (!tenant || typeof tenant !== "object" || Array.isArray(tenant)) {
         return (
