@@ -444,9 +444,7 @@ export default function ListingStatisticsTab({
                 className="py-3.5 flex items-center justify-between gap-3 hover:bg-gray-50/70 rounded-lg px-2 -mx-2 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-bold shrink-0">
-                    #{idx + 1}
-                  </div>
+                 
                   <div className="relative w-12 h-10 rounded-md bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
                     {listing.image ? (
                       <Image
@@ -479,7 +477,6 @@ export default function ListingStatisticsTab({
                       {listing.conversion} conv.
                     </span>
                   </div>
-                  <StatusChips status={listing.status} />
                 </div>
               </div>
             )) : <p className="py-6 text-sm text-gray-500">No listings are available for this organization yet.</p>}
@@ -505,9 +502,7 @@ export default function ListingStatisticsTab({
                 className="py-3.5 flex items-center justify-between gap-3 hover:bg-gray-50/70 rounded-lg px-2 -mx-2 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-bold shrink-0">
-                    #{idx + 1}
-                  </div>
+                  
                   <div className="relative w-12 h-10 rounded-md bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
                     {listing.image ? (
                       <Image
@@ -540,7 +535,6 @@ export default function ListingStatisticsTab({
                       {listing.avgTime} avg
                     </span>
                   </div>
-                  <StatusChips status={listing.status} />
                 </div>
               </div>
             )) : <p className="py-6 text-sm text-gray-500">No listings are available for this organization yet.</p>}

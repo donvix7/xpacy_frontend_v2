@@ -60,7 +60,7 @@ export default function AdminListingsClient({ listings = [], organization, organ
     },
     {
       id: "pricing",
-      label: "Prices Across Nigeria",
+      label: "Prices",
       icon: <DollarSign className="w-4 h-4" />,
       badge: "Monthly Index",
     },
