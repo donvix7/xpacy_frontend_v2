@@ -5,6 +5,7 @@ import StatusChips from "./StatusChips";
 import SearchInput from "./SearchInput";
 import DashboardFilter from "./DashboardFilter";
 import DataTable from "./DataTable";
+import { Suspense } from "react";
 
 const tableHeadings = [
     { heading: "Service Type" },
@@ -84,8 +85,8 @@ export default function PropertyOwnerServicesTable({ services, pagination, showF
 
     const headerActions = showFilters ? (
         <div className="flex items-center gap-2 shrink-0">
-            <SearchInput />
-            <DashboardFilter />
+            <Suspense fallback={<div className="h-10 w-48" />}><SearchInput /></Suspense>
+            <Suspense fallback={<div className="h-10 w-32" />}><DashboardFilter /></Suspense>
         </div>
     ) : null;
 

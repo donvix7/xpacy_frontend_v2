@@ -24,18 +24,26 @@ export default function AdminListingsClient({ listings = [], organization, organ
     setTimeout(() => setIsRefreshing(false), 600);
   };
 
-  const listingStatistics = listings.map((listing) => ({
-    ...listing,
-    property_name: listing.title || listing.property?.property_name || "Untitled listing",
-    property_type: listing.listingType || listing.unit?.unitType || "—",
-    property_status: listing.status || "UNKNOWN",
-    property_price: listing.price,
-    views: Number(listing.views) || 0,
-    enquiries: Number(listing.enquiries || listing.inquiries) || 0,
-    city: listing.location?.city || listing.property?.city,
-    state: listing.location?.state || listing.property?.state,
-    images: listing.property?.images || [],
-  }));
+  const listingStatistics = listings.map((listing) => {
+    const property = listing.property || {};
+    const location = listing.location;
+    return {
+      ...listing,
+      listing_title: listing.title || listing.name || "Untitled listing",
+      property_name: property.property_name || property.name || property.title || listing.title || "Untitled property",
+      property_type: property.property_type || property.propertyType || property.type || listing.unit?.unitType || "Other",
+      listing_type: listing.listingType || listing.listing_type || listing.category || "Other",
+      property_status: listing.status || property.status || property.property_status || "UNKNOWN",
+      property_price: listing.price ?? property.property_price ?? property.price,
+      views: Number(listing.views ?? property.views) || 0,
+      enquiries: Number(listing.enquiries ?? listing.inquiries ?? listing.enquiry_count ?? property.enquiries ?? property.inquiries) || 0,
+      contactedCount: Number(listing.contactedCount ?? listing.contacted_count ?? property.contactedCount ?? property.contacted_count) || 0,
+      city: (typeof location === "object" ? location?.city : null) || property.city || listing.city,
+      state: (typeof location === "object" ? location?.state : null) || property.state || listing.state,
+      address: (typeof location === "string" ? location : location?.address) || property.address || listing.address,
+      images: property.images || (listing.image ? [listing.image] : []),
+    };
+  });
 
   const navTabs = [
     {

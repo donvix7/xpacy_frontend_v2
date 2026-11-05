@@ -10,6 +10,7 @@ import NotificationList from "@/app/_components/NotificationList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import AdminNotificationsSummary from "@/app/_components/AdminNotificationsSummary";
 import { markAllAsRead, markNotificationRead } from "@/app/_lib/action";
+import { Suspense } from "react";
 export default async function Page() {
             const notifications = await getUserNotifications();
            
@@ -34,7 +35,7 @@ export default async function Page() {
                         <option>Last 30 days</option>
                         <option>Last 90 days</option>
                     </SortBy>
-                    <DashboardFilter />
+                    <Suspense fallback={<div className="h-10 w-32" />}><DashboardFilter /></Suspense>
                 </div>
             </div>
             {/* small screen only */}
@@ -48,7 +49,7 @@ export default async function Page() {
                 </button>
                 <div className="flex items-center gap-2 relative">
                 <MobileSortbyMenu/>
-                 <DashboardFilter />
+                 <Suspense fallback={<div className="h-10 w-32" />}><DashboardFilter /></Suspense>
                 </div>
             </div>
             {/* Notification Table for large screens only*/}
@@ -64,4 +65,3 @@ export default async function Page() {
         </div>
     )
 }
-

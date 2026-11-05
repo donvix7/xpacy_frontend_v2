@@ -2,20 +2,14 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import {
   Eye,
   MessageSquare,
   PhoneCall,
-  TrendingUp,
-  TrendingDown,
   BarChart3,
   Building2,
   CheckCircle2,
-  Clock,
   Sparkles,
-  ArrowUpRight,
-  ExternalLink,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -34,71 +28,90 @@ export default function ListingStatisticsTab({
   properties = [],
 }) {
   const [activeChartTab, setActiveChartTab] = useState("summary"); // summary | views | enquiries | boosts
+  const listingRecords = Array.isArray(properties) ? properties : [];
+  const countValue = (value) => {
+    const count = Number(value);
+    return Number.isFinite(count) ? count : 0;
+  };
+  const categoryName = (listing) => {
+    const value = String(listing.listing_type || listing.listingType || listing.category || "Other").toUpperCase();
+    if (value.includes("SHORT")) return "Shortlet";
+    if (["SALE", "BUY", "FOR SALE"].includes(value)) return "For Sale";
+    if (["RENT", "FOR RENT", "LEASE"].includes(value)) return "For Rent";
+    return value === "OTHER" ? "Other" : value.replaceAll("_", " ");
+  };
 
-  // Base metrics calculated from real properties or rich intelligent data
-  const totalProperties = properties.length || 0;
-  const totalViews = properties.reduce(
-    (acc, p) => acc + (Number(p.views) || 0),
-    0
-  ) || 0;
-  const totalEnquiries = properties.reduce((acc, p) => acc + Number(p.enquiries || p.inquiries || p.enquiry_count || 0), 0);
-  const contactedCount = properties.reduce((acc, p) => acc + Number(p.contactedCount || p.contacted_count || 0), 0);
-  const listingsWithViews = properties.filter((p) => Number(p.views) > 0).length;
-  const listingsWithEnquiries = properties.filter((p) => Number(p.enquiries || p.inquiries || p.enquiry_count) > 0).length;
-  const avgViewsPerListing = totalProperties > 0 ? (totalViews / totalProperties).toFixed(1) : "0";
+  // Metrics are calculated from the listing records returned for this organization.
+  const totalListings = listingRecords.length;
+  const totalViews = listingRecords.reduce((total, listing) => total + countValue(listing.views), 0);
+  const totalEnquiries = listingRecords.reduce((total, listing) => total + countValue(listing.enquiries ?? listing.inquiries ?? listing.enquiry_count), 0);
+  const contactedCount = listingRecords.reduce((total, listing) => total + countValue(listing.contactedCount ?? listing.contacted_count), 0);
+  const listingsWithViews = listingRecords.filter((listing) => countValue(listing.views) > 0).length;
+  const listingsWithEnquiries = listingRecords.filter((listing) => countValue(listing.enquiries ?? listing.inquiries ?? listing.enquiry_count) > 0).length;
+  const avgViewsPerListing = totalListings > 0 ? (totalViews / totalListings).toFixed(1) : "0";
 
-  // Performance chart data
-  const performanceData = [
-    /*
-    { date: "Oct 05", views: 42, enquiries: 3, boosts: 1 },
-    { date: "Oct 09", views: 58, enquiries: 5, boosts: 2 },
-    { date: "Oct 13", views: 76, enquiries: 7, boosts: 2 },
-    { date: "Oct 17", views: 92, enquiries: 8, boosts: 3 },
-    { date: "Oct 21", views: 115, enquiries: 11, boosts: 4 },
-    { date: "Oct 25", views: 138, enquiries: 14, boosts: 4 },
-    { date: "Oct 29", views: 124, enquiries: 12, boosts: 3 },
-    { date: "Nov 02", views: 162, enquiries: 17, boosts: 5 },*/
-  ];
+  // The API currently supplies totals per listing, not dated activity records.
+  const performanceData = [];
 
-  // Property types distribution
-  const typeDistribution = [/*
-    { name: "Flats & Apartments", count: 12, percentage: 50, views: 740, color: "bg-primary-700" },
-    { name: "Detached Houses", count: 6, percentage: 25, views: 390, color: "bg-primary" },
-    { name: "Semi-Detached Duplex", count: 3, percentage: 12.5, views: 185, color: "bg-[#c2a269]" },
-    { name: "Terraced Duplex", count: 2, percentage: 8.3, views: 110, color: "bg-[#477899]" },
-    { name: "Commercial & Office", count: 1, percentage: 4.2, views: 55, color: "bg-gray-400" },
-  */];
+  const distributionColors = ["bg-primary-700", "bg-primary", "bg-[#c2a269]", "bg-[#477899]", "bg-gray-400"];
+  const buildDistribution = (keyFor, metricKey) => {
+    const groups = new Map();
+    for (const listing of listingRecords) {
+      const name = keyFor(listing) || "Other";
+      const group = groups.get(name) || { name, count: 0, metric: 0 };
+      group.count += 1;
+      group.metric += countValue(listing[metricKey]);
+      groups.set(name, group);
+    }
+    return [...groups.values()]
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+      .map((group, index) => ({
+        ...group,
+        views: metricKey === "views" ? group.metric : undefined,
+        enquiries: metricKey === "enquiries" ? group.metric : undefined,
+        percentage: totalListings ? Math.round((group.count / totalListings) * 100) : 0,
+        color: distributionColors[index % distributionColors.length],
+      }));
+  };
 
-  // Category distribution
-  const categoryDistribution = [/*
-    { name: "For Rent", count: 14, percentage: 58.3, enquiries: 58, color: "bg-emerald-600" },
-    { name: "For Sale", count: 7, percentage: 29.2, enquiries: 27, color: "bg-blue-600" },
-    { name: "Short Let", count: 3, percentage: 12.5, enquiries: 11, color: "bg-amber-600" },
-  */];
+  const typeDistribution = buildDistribution(
+    (listing) => listing.property_type || listing.propertyType || listing.unit?.unitType || "Other",
+    "views"
+  );
+  const categoryDistribution = buildDistribution(categoryName, "enquiries");
 
-  // Derived or mock top performing listings
-  const topListingsByEnquiries = properties.slice(0, 5).map((p, idx) => ({
+  const topListingsByEnquiries = [...listingRecords]
+    .sort((a, b) => countValue(b.enquiries ?? b.inquiries ?? b.enquiry_count) - countValue(a.enquiries ?? a.inquiries ?? a.enquiry_count))
+    .slice(0, 5)
+    .map((p, idx) => ({
     id: p.id || p._id || `prop-${idx}`,
-    name: p.property_name || p.name || "Untitled property",
+    name: p.listing_title || p.title || p.property_name || p.name || "Untitled listing",
     location: [p.city, p.state].filter(Boolean).join(", ") || p.address || "Location unavailable",
-    price: p.property_price || p.price || 0,
-    enquiries: Number(p.enquiries || p.inquiries || p.enquiry_count || 0),
-    views: Number(p.views || 0),
-    conversion: Number(p.views) > 0 ? `${((Number(p.enquiries || p.inquiries || p.enquiry_count || 0) / Number(p.views)) * 100).toFixed(1)}%` : "—",
+    price: p.price ?? p.property_price ?? 0,
+    enquiries: countValue(p.enquiries ?? p.inquiries ?? p.enquiry_count),
+    views: countValue(p.views),
+    conversion: countValue(p.views) > 0 ? `${((countValue(p.enquiries ?? p.inquiries ?? p.enquiry_count) / countValue(p.views)) * 100).toFixed(1)}%` : "—",
     status: p.status || p.property_status || "active",
-    image: p.images?.[0] ? `https://app.xpacy.com/src/upload/properties/${p.images[0]}` : null,
+    image: p.images?.[0]
+      ? (/^https?:\/\//i.test(p.images[0]) ? p.images[0] : `https://app.xpacy.com/src/upload/properties/${p.images[0]}`)
+      : null,
   }));
 
-  const topListingsByViews = properties.slice(0, 5).map((p, idx) => ({
+  const topListingsByViews = [...listingRecords]
+    .sort((a, b) => countValue(b.views) - countValue(a.views))
+    .slice(0, 5)
+    .map((p, idx) => ({
     id: p.id || p._id || `prop-view-${idx}`,
-    name: p.property_name || p.name || "Untitled property",
+    name: p.listing_title || p.title || p.property_name || p.name || "Untitled listing",
     location: [p.city, p.state].filter(Boolean).join(", ") || p.address || "Location unavailable",
-    price: p.property_price || p.price || 0,
-    views: Number(p.views || 0),
-    enquiries: Number(p.enquiries || p.inquiries || p.enquiry_count || 0),
+    price: p.price ?? p.property_price ?? 0,
+    views: countValue(p.views),
+    enquiries: countValue(p.enquiries ?? p.inquiries ?? p.enquiry_count),
     avgTime: "—",
     status: p.status || p.property_status || "active",
-    image: p.images?.[0] ? `https://app.xpacy.com/src/upload/properties/${p.images[0]}` : null,
+    image: p.images?.[0]
+      ? (/^https?:\/\//i.test(p.images[0]) ? p.images[0] : `https://app.xpacy.com/src/upload/properties/${p.images[0]}`)
+      : null,
   }));
 
   return (
@@ -163,10 +176,10 @@ export default function ListingStatisticsTab({
           <div className="my-3">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-gray-900 font-sans tracking-tight">
-                {listingsWithViews}/{totalProperties}
+                {listingsWithViews}/{totalListings}
               </span>
               <span className="text-xs font-medium text-gray-500">
-                ({Math.round((listingsWithViews / (totalProperties || 1)) * 100)}%)
+                ({Math.round((listingsWithViews / (totalListings || 1)) * 100)}%)
               </span>
             </div>
           </div>
@@ -186,7 +199,7 @@ export default function ListingStatisticsTab({
           <div className="my-3">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-gray-900 font-sans tracking-tight">
-                {listingsWithEnquiries}/{totalProperties}
+                {listingsWithEnquiries}/{totalListings}
               </span>
              
             </div>
@@ -243,7 +256,12 @@ export default function ListingStatisticsTab({
         </div>
 
         {/* Chart Container */}
-        <div className="h-[300px] w-full pt-6">
+        <div className="relative h-[300px] w-full pt-6">
+          {!performanceData.length && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-gray-50 text-center text-sm text-gray-500">
+              This listings response has no dated views or enquiry history yet.
+            </div>
+          )}
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
@@ -350,12 +368,12 @@ export default function ListingStatisticsTab({
             </span>
           </div>
           <div className="mt-5 space-y-4">
-            {typeDistribution.map((item) => (
+            {typeDistribution.length ? typeDistribution.map((item) => (
               <div key={item.name} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-gray-800">{item.name}</span>
                   <div className="flex items-center gap-3 text-gray-500">
-                    <span>{item.views} views</span>
+                    <span>{item.count} listings · {item.views} views</span>
                     <span className="font-bold text-gray-900">{item.percentage}%</span>
                   </div>
                 </div>
@@ -366,7 +384,7 @@ export default function ListingStatisticsTab({
                   />
                 </div>
               </div>
-            ))}
+            )) : <p className="py-5 text-sm text-gray-500">No property type details were returned for these listings.</p>}
           </div>
         </div>
 
@@ -384,7 +402,7 @@ export default function ListingStatisticsTab({
             </span>
           </div>
           <div className="mt-5 space-y-4">
-            {categoryDistribution.map((item) => (
+            {categoryDistribution.length ? categoryDistribution.map((item) => (
               <div key={item.name} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-gray-800">{item.name}</span>
@@ -400,7 +418,7 @@ export default function ListingStatisticsTab({
                   />
                 </div>
               </div>
-            ))}
+            )) : <p className="py-5 text-sm text-gray-500">No listing categories were returned.</p>}
           </div>
         </div>
       </div>
@@ -420,7 +438,7 @@ export default function ListingStatisticsTab({
             </div>
           </div>
           <div className="mt-4 divide-y divide-gray-100">
-            {topListingsByEnquiries.map((listing, idx) => (
+            {topListingsByEnquiries.length ? topListingsByEnquiries.map((listing, idx) => (
               <div
                 key={listing.id}
                 className="py-3.5 flex items-center justify-between gap-3 hover:bg-gray-50/70 rounded-lg px-2 -mx-2 transition-colors"
@@ -449,6 +467,7 @@ export default function ListingStatisticsTab({
                       {listing.name}
                     </p>
                     <p className="text-xs text-gray-500 truncate">{listing.location}</p>
+                    <p className="text-xs font-semibold text-primary">{formatCurrency(listing.price)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 shrink-0 text-right">
@@ -463,7 +482,7 @@ export default function ListingStatisticsTab({
                   <StatusChips status={listing.status} />
                 </div>
               </div>
-            ))}
+            )) : <p className="py-6 text-sm text-gray-500">No listings are available for this organization yet.</p>}
           </div>
         </div>
 
@@ -480,7 +499,7 @@ export default function ListingStatisticsTab({
             </div>
           </div>
           <div className="mt-4 divide-y divide-gray-100">
-            {topListingsByViews.map((listing, idx) => (
+            {topListingsByViews.length ? topListingsByViews.map((listing, idx) => (
               <div
                 key={listing.id}
                 className="py-3.5 flex items-center justify-between gap-3 hover:bg-gray-50/70 rounded-lg px-2 -mx-2 transition-colors"
@@ -509,6 +528,7 @@ export default function ListingStatisticsTab({
                       {listing.name}
                     </p>
                     <p className="text-xs text-gray-500 truncate">{listing.location}</p>
+                    <p className="text-xs font-semibold text-primary">{formatCurrency(listing.price)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 shrink-0 text-right">
@@ -523,7 +543,7 @@ export default function ListingStatisticsTab({
                   <StatusChips status={listing.status} />
                 </div>
               </div>
-            ))}
+            )) : <p className="py-6 text-sm text-gray-500">No listings are available for this organization yet.</p>}
           </div>
         </div>
       </div>

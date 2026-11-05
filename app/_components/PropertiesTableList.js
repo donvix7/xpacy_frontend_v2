@@ -8,6 +8,7 @@ import PropertyOptionsMenu from "./PropertyOptionsMenu";
 import SearchInput from "./SearchInput";
 import DashboardFilter from "./DashboardFilter";
 import DataTable from "./DataTable";
+import { Suspense } from "react";
 
 const legacyTableHeadings = [
     { heading: "Property" },
@@ -244,8 +245,8 @@ export default function PropertiesTableList({ properties, bookings = [], paginat
         </Link>
     ) : (
         <div className="flex items-center gap-4 shrink-0">
-            <SearchInput />
-            <DashboardFilter />
+            <Suspense fallback={<div className="h-10 w-48" />}><SearchInput /></Suspense>
+            <Suspense fallback={<div className="h-10 w-32" />}><DashboardFilter /></Suspense>
         </div>
     );
 

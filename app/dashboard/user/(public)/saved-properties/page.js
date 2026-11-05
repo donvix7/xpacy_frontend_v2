@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 import MobileDashboardHeader from "@/app/_components/MobileDashboardHeader";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SavedPropCardList from "@/app/_components/SavedProCardList";
+import { Suspense } from "react";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -27,7 +28,7 @@ export default async function Page() {
              <DashboardGridItem title={"Saved Properties"} >
                 <SavedPropCardList/>
             </DashboardGridItem>
-            <Pagination pagination={pagination} />
+            <Suspense fallback={<div className="h-10" />}><Pagination pagination={pagination} /></Suspense>
         </main>
     )
 }

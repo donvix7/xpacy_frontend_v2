@@ -6,6 +6,7 @@ import SignupForm from "@/app/_components/SignupForm";
 import AuthCarousel from "@/app/_components/AuthCarousel";
 import Logo from "@/app/_components/Logo";
 import { getCities, getBanners } from "@/app/_lib/data-services";
+import { Suspense } from "react";
 
 export default async function Page(){
         const cities = await  getCities()
@@ -22,7 +23,7 @@ export default async function Page(){
                             <p className="text-base text-black font-mono">Enter your email address and password to sign up.</p>
                         </div>
 
-                        <SignupForm cities={cities}/>
+                        <Suspense fallback={<div className="h-96" />}><SignupForm cities={cities}/></Suspense>
                         <p className="text-base text-black font-mono -mt-6">Already have an account?  <Link href={"/auth/log-in"} className="text-primary text-base font-bold">Log In</Link></p>
                     </div>
                 </div>

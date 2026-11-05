@@ -6,6 +6,7 @@ import ExportButton from "@/app/_components/ExportButton";
 import DateFilter from "@/app/_components/DateFilter";
 import { checkDateInRange } from "@/app/_lib/utils";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import { Suspense } from "react";
 
 export default async function Page({searchParams}) {
     const cookieStore = await cookies();
@@ -69,7 +70,7 @@ export default async function Page({searchParams}) {
             <div className="flex justify-between items-center gap-2">
                 <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Properties</p>
                 <div className="flex items-center gap-2">
-                    <DateFilter />
+                    <Suspense fallback={<div className="h-10 w-32" />}><DateFilter /></Suspense>
                     <ExportButton 
                         data={propertiesList} 
                         filename="property_summary" 

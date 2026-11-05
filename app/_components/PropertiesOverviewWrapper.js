@@ -1,5 +1,6 @@
 "use client"
 import { useState, useMemo } from "react";
+import { Suspense } from "react";
 import DateFilter from "./DateFilter";
 import ExportButton from "./ExportButton";
 import PropertiesSummary from "./PropertiesSummary";
@@ -20,7 +21,9 @@ export default function PropertiesOverviewWrapper({ properties, showFilters = tr
         <div className="flex flex-col gap-4">
             {showFilters && (
                 <div className="flex justify-end gap-2 text-nowrap">
-                    <DateFilter onFilterChange={setFilterRange} value={filterRange} />
+                    <Suspense fallback={<div className="h-10 w-32" />}>
+                        <DateFilter onFilterChange={setFilterRange} value={filterRange} />
+                    </Suspense>
                     <ExportButton 
                         data={filteredProperties} 
                         filename="property_summary" 

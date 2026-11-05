@@ -3,7 +3,7 @@ export const publicNavigationLinks = [
   { label: "Rent", href: "/rent" },
   { label: "Buy", href: "/buy" },
   { label: "Blogs", href: "/blogs" },
-  { label: "Listings", href: "/listings" },
+  { label: "Explore", href: "/listings" },
   { label: "Management", href: "/management" },
   { label: "Contact", href: "/contact" },
 ];

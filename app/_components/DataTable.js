@@ -1,4 +1,5 @@
 import Pagination from "./Pagination";
+import { Suspense } from "react";
 import EmptyState from "./EmptyState";
 
 /**
@@ -76,7 +77,9 @@ export default function DataTable({
                         <span className="text-sm font-mono text-gray-500">
                             Showing <span>{(pagination.page - 1) * pagination.limit + 1}</span> - <span>{pagination?.page === pagination?.totalPages ? pagination.total : pagination?.page * pagination?.limit}</span> of <span>{pagination?.total}</span> results 
                         </span>
-                        <Pagination pagination={pagination} />
+                        <Suspense fallback={<div className="h-10" />}>
+                            <Pagination pagination={pagination} />
+                        </Suspense>
                     </div>
                 </div>
             )}

@@ -1,11 +1,12 @@
 
 import AuthCarousel from "@/app/_components/AuthCarousel";
 import LoginForm from "@/app/_components/LoginForm";
+import { Suspense } from "react";
 export default function Page() {
 
     return (
         <div className="flex min-h-dvh">
-            <LoginForm role={"property-owner"}/>
+            <Suspense fallback={<div className="w-full md:w-1/2" />}><LoginForm role={"property-owner"}/></Suspense>
             <div className="w-1/2 hidden md:block">
                 <AuthCarousel />
             </div>

@@ -1,5 +1,6 @@
 "use client"
 import { useState, useMemo } from "react";
+import { Suspense } from "react";
 import DateFilter from "./DateFilter";
 import ExportButton from "./ExportButton";
 import ServicesSummary from "./ServicesSummary";
@@ -26,7 +27,9 @@ export default function ServicesOverviewWrapper({ services = [], serviceProvider
                                 <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Services</p>
                                 <div className="flex gap-2">
                 
-                                <DateFilter />
+                                <Suspense fallback={<div className="h-10 w-32" />}>
+                                    <DateFilter />
+                                </Suspense>
                                 <ExportButton 
                                     data={serviceList}
                                     filename="property_summary" 

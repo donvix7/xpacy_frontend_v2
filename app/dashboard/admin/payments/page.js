@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import DateFilter from "@/app/_components/DateFilter";
 import ExportButton from "@/app/_components/ExportButton";
 import { toRecordArray } from "@/app/_lib/utils";
+import { Suspense } from "react";
 
 export default async function Page() {
   
@@ -17,7 +18,7 @@ export default async function Page() {
                 <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Payments</p>
                     <div className="flex gap-2">
     
-                    <DateFilter />
+                    <Suspense fallback={<div className="h-10 w-32" />}><DateFilter /></Suspense>
                     <ExportButton 
                         data={invoices} 
                         filename="invoice_payment_summary" 

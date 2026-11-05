@@ -12,7 +12,9 @@ export default function SidebarHeader({ role = "user" }) {
     return (
         <div className="sticky top-0 z-[10000] flex items-center justify-between border-b border-primary-200 bg-primary-50 px-3 py-3 md:px-6">
             <DashboardHeading />
-            <MobileNav isSidebar={true} role={role} />
+            <Suspense fallback={<div className="h-8 w-8" />}>
+                <MobileNav isSidebar={true} role={role} />
+            </Suspense>
             
             <div className="flex gap-2 md:gap-4 items-center relative">
                 {/* Static Navigations hoisted out of Suspense to ensure they always load instantly */}

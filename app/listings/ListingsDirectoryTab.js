@@ -59,6 +59,10 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
       title: listing.title || `Listing ${idx + 1}`,
       description: listing.description,
       propertyName: property.property_name || property.name || property.title || "—",
+      propertyType: property.property_type || property.propertyType || property.type,
+      bedrooms: property.total_bedrooms ?? property.bedrooms ?? property.bedroomsCount,
+      bathrooms: property.total_bathrooms ?? property.bathrooms ?? property.bathroomsCount,
+      propertyPrice: property.property_price ?? property.price,
       unitNumber: listing.unit?.unitNumber,
       unitType: listing.unit?.unitType,
       locality: listingLocation || [property.address, property.city, property.state, property.country].filter(Boolean).join(", ") || null,
@@ -100,7 +104,7 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
       return matchesSearch && matchesStatus && matchesCategory;
     });
   }, [allListings, searchQuery, selectedStatus, selectedCategory]);
-
+console.log(filteredListings)
   return (
     <div className="space-y-6">
       {/* Top Filter & Search Controls */}
@@ -157,13 +161,11 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
           <thead className="bg-gray-50/80 text-neutrals-900 font-mono text-xs font-bold uppercase tracking-wider border-b border-gray-100">
             <tr>
               <th className="p-4">Listing Details</th>
-              <th className="p-4">Property / Unit</th>
+              <th className="p-4">Unit</th>
               <th className="p-4">Location</th>
               <th className="p-4 text-center">Category</th>
-              <th className="p-4 text-right">Price / Deposit</th>
-              <th className="p-4">Availability / Amenities</th>
-              <th className="p-4">Listing Dates</th>
-              <th className="p-4 text-center">Status</th>
+              <th className="p-4 text-right">Price</th>
+              <th className="p-4">Availability</th>
               <th className="p-4 text-right">Action</th>
             </tr>
           </thead>
@@ -211,9 +213,7 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
                           {listing.title}
                         </p>
                         <p className="max-w-[220px] truncate text-[11px] text-gray-500" title={displayField(listing.description)}>{displayField(listing.description)}</p>
-                        <p className="text-[11px] text-gray-500 font-mono">
-                          ID: {listing.id}
-                        </p>
+                       
                       </div>
                     </div>
                   </td>
@@ -224,9 +224,9 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
                         <span className="font-semibold block truncate">
                           {listing.propertyName}
                         </span>
+                        <span className="text-[11px] text-gray-500 block">Type: {displayField(listing.propertyType)}</span>
+                        <span className="text-[11px] text-gray-500 block">Property price: {formatListingPrice(listing.propertyPrice)}</span>
                         <span className="text-[11px] text-gray-400 block">Unit {displayField(listing.unitNumber)} · {displayField(listing.unitType)}</span>
-                        <span className="text-[10px] text-gray-400 block">Property ID: {displayField(listing.propertyId)}</span>
-                        <span className="text-[10px] text-gray-400 block">Unit ID: {displayField(listing.unitId)}</span>
                     </div>
                   </td>
 
@@ -248,28 +248,15 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
                   {/* Price and deposit */}
                   <td className="p-4 text-right font-extrabold text-primary font-mono">
                     <span>{formatListingPrice(listing.price, listing.currency)}</span>
-                    <span className="block text-[10px] font-medium text-gray-400">Currency: {displayField(listing.currency)}</span>
-                    <span className="block text-[11px] font-medium text-gray-500">Deposit: {formatListingPrice(listing.deposit, listing.currency)}</span>
                   </td>
 
                   <td className="max-w-[180px] p-4 text-xs text-gray-600">
                     <span className="block">Available: {displayField(listing.availability)}</span>
-                    <span className="mt-1 block">Amenities: {displayField(listing.amenities)}</span>
                   </td>
 
-                  <td className="p-4 text-xs text-gray-600">
-                    <span className="block">Published: {formatListingDate(listing.publishedAt)}</span>
-                    <span className="mt-1 block">Expires: {formatListingDate(listing.expiresAt)}</span>
-                    <span className="mt-1 block">Created: {formatListingDate(listing.createdAt)}</span>
-                    <span className="mt-1 block">Updated: {formatListingDate(listing.updatedAt)}</span>
-                  </td>
+           
 
-                  {/* Status */}
-                  <td className="p-4 text-center">
-                    <div className="flex justify-center">
-                      <StatusChips status={listing.status} />
-                    </div>
-                  </td>
+            
 
                   {/* Action */}
                   <td className="p-4 text-right">
@@ -277,8 +264,7 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
                       href={listing.detailsHref}
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-50 text-primary text-xs font-bold hover:bg-primary-100 transition-colors"
                     >
-                      <span>View</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-7 h-7" />
                     </Link>
                   </td>
                 </tr>
@@ -342,7 +328,8 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
 
               <dl className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 text-xs">
                 {[
-                  ["Listing ID", listing.id], ["Property ID", listing.propertyId], ["Unit ID", listing.unitId],
+                  ["Listing ID", listing.id], ["Property ID", listing.propertyId], ["Property type", listing.propertyType],
+                  ["Bedrooms", listing.bedrooms], ["Bathrooms", listing.bathrooms], ["Property price", listing.propertyPrice], ["Unit ID", listing.unitId],
                   ["Listing type", listing.listingType], ["Unit number", listing.unitNumber], ["Unit type", listing.unitType],
                   ["Availability", listing.availability], ["Amenities", listing.amenities], ["Published", formatListingDate(listing.publishedAt)],
                   ["Expires", formatListingDate(listing.expiresAt)], ["Created", formatListingDate(listing.createdAt)], ["Updated", formatListingDate(listing.updatedAt)],
