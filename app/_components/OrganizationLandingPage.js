@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getPublicNavigationLinks } from "@/app/_lib/public-navigation";
 
 function propertyImage(property) {
   const image = property?.images?.[0] || property?.image || property?.coverImage;
@@ -22,13 +23,7 @@ export default function OrganizationLandingPage({ organization, organizationId, 
   const description = organization?.description || organization?.about || organization?.tagline ||
     `Explore properties and services from ${name}${location ? ` in ${location}` : ""}.`;
   const query = `organizationId=${encodeURIComponent(organizationId)}`;
-  const links = [
-    ["Buy", `/buy?${query}`],
-    ["Rent", `/rent?${query}`],
-    ["Shortlet", `/shortlet?${query}`],
-    ["Management", `/management?${query}`],
-    ["Contact", `/contact?${query}`],
-  ];
+  const links = getPublicNavigationLinks(organizationId).filter(({ label }) => label !== "Home" && label !== "Blogs");
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
@@ -38,7 +33,7 @@ export default function OrganizationLandingPage({ organization, organizationId, 
             {name}
           </Link>
           <nav aria-label={`${name} navigation`} className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-slate-700">
-            {links.map(([label, href]) => <Link key={label} href={href} className="hover:text-primary">{label}</Link>)}
+            {links.map(({ label, href }) => <Link key={label} href={href} className="hover:text-primary">{label}</Link>)}
           </nav>
         </div>
       </header>

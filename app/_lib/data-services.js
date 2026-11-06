@@ -23,6 +23,15 @@ async function getRawToken(passed) {
   }
 }
 
+async function getActiveOrganizationId() {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get("organizationId")?.value || "";
+  } catch {
+    return "";
+  }
+}
+
 // Safely parse JSON; returns null on failure.
 async function safeJson(response) {
   try {
@@ -1458,12 +1467,16 @@ export async function getPropertyOwnerProperties(token, searchParams = {}) {
   if (typeof searchParams === "string" || typeof searchParams === "number") {
     paramsObj.page = searchParams;
   } else {
-    paramsObj = searchParams || {};
+    paramsObj = { ...(searchParams || {}) };
   }
+
+  const activeOrganizationId = await getActiveOrganizationId();
+  if (activeOrganizationId) paramsObj.organizationId = activeOrganizationId;
 
   const params = new URLSearchParams({
     ...(paramsObj.page && { page: paramsObj.page }),
     ...(paramsObj.limit && { limit: paramsObj.limit }),
+    ...(paramsObj.organizationId && { organizationId: paramsObj.organizationId }),
   });
 
   try {
@@ -1594,7 +1607,9 @@ export async function getPropertyOwnerBookings(token) {
   const raw = await getRawToken(token);
   if (!raw) return [];
   try {
-    const response = await safeFetch(`${url}/property-owner/fetch-bookings`, {
+    const organizationId = await getActiveOrganizationId();
+    const query = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
+    const response = await safeFetch(`${url}/property-owner/fetch-bookings${query}`, {
       next: { tags: ["property-owner-bookings"] },
       method: "GET",
       headers: {
@@ -1618,7 +1633,9 @@ export async function getPropertyOwnerServices(token) {
   const raw = await getRawToken(token);
   if (!raw) return [];
   try {
-    const response = await safeFetch(`${url}/property-owner/fetch-services`, {
+    const organizationId = await getActiveOrganizationId();
+    const query = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
+    const response = await safeFetch(`${url}/property-owner/fetch-services${query}`, {
       next: { tags: ["property-owner-services"] },
       method: "GET",
       headers: {
@@ -1642,7 +1659,9 @@ export async function getPropertyOwnerInvoices(token) {
   const raw = await getRawToken(token);
   if (!raw) return [];
   try {
-    const response = await safeFetch(`${url}/property-owner/fetch-invoices`, {
+    const organizationId = await getActiveOrganizationId();
+    const query = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
+    const response = await safeFetch(`${url}/property-owner/fetch-invoices${query}`, {
       next: { tags: ["property-owner-invoices"] },
       method: "GET",
       headers: {
@@ -1666,7 +1685,9 @@ export async function getPropertyOwnerNotifications(token) {
   const raw = await getRawToken(token);
   if (!raw) return [];
   try {
-    const response = await safeFetch(`${url}/notification/fetch-notifications`, {
+    const organizationId = await getActiveOrganizationId();
+    const query = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
+    const response = await safeFetch(`${url}/notification/fetch-notifications${query}`, {
       next: { tags: ["property-owner-notifications"] },
       method: "GET",
       headers: {

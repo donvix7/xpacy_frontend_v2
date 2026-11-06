@@ -20,7 +20,9 @@ export default async function Page(){
         // Normalize data structure if needed
         const ownersList = (owners || []).map(u => ({ ...u, role: 'property-owner' }));
         const adminsList = (admins || []).map(u => ({ ...u, role: 'admin' }));
-        const usersList = (regularUsers || []).map(u => ({ ...u, role: 'user' }));
+        const usersList = (regularUsers || [])
+            .filter((user) => ![user.role, user.user_role, user.user_type].some((role) => String(role || "").trim().toLowerCase() === "tenant"))
+            .map(u => ({ ...u, role: 'user' }));
 
         // Deduplicate users for the "All Registered Users" list
         // Priority: Admin > Property Owner > User

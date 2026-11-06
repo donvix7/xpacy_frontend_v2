@@ -11,7 +11,7 @@ import { LuBell, LuLayoutDashboard, LuMessageCircleQuestion, LuMessageSquare, Lu
 import { IoCalendarOutline } from "react-icons/io5";
 import { RiHome2Line, RiSearchLine, RiSettings3Line, RiPulseLine } from "react-icons/ri";
 import { Archive, Calendar1, MessageSquare, Settings, User } from "lucide-react";
-import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaUsers, FaWrench } from "react-icons/fa6";
+import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaWrench } from "react-icons/fa6";
 import { TbBuilding, TbBuildingCommunity, TbFileText, TbHelp, TbReportAnalytics, TbSettings, TbUsers } from "react-icons/tb";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import { BsTools } from "react-icons/bs";
@@ -19,7 +19,7 @@ import { GiPayMoney, GiTakeMyMoney } from "react-icons/gi";
 import { MdInventory2, MdOutlineReport } from "react-icons/md";
 
 
-export default function SidebarNav({ role = "user" }) {
+export default function SidebarNav({ role = "user", isOrganizationAdmin = false }) {
     const userNavList = [
         {
             text: "Go to Homepage",
@@ -30,6 +30,11 @@ export default function SidebarNav({ role = "user" }) {
             text: "Dashboard",
             link: "/dashboard/user",
             icon: <RxDashboard />
+        },
+        {
+            text: "Create Organization",
+            link: "/dashboard/user/create-organization",
+            icon: <BiBuildingHouse />
         },
         {
             text: "Notifications",
@@ -97,25 +102,9 @@ export default function SidebarNav({ role = "user" }) {
             icon: <FiBell />
         },
         {
-            text: "Properties",
-            link: "/dashboard/admin/properties",
-            icon: <BiBuildingHouse />
-        },
-      
-        {
-            text: "Services",
-            link: "/dashboard/admin/services",
-            icon: <IoCalendarOutline />
-        },
-        {
             text: "Users",
             link: "/dashboard/admin/users",
             icon: <User />
-        },
-          {
-            text: "Tenants",
-            link: "/dashboard/admin/tenants",
-            icon: <FaUsers />
         },
         {
             text: "Organizations",
@@ -126,16 +115,6 @@ export default function SidebarNav({ role = "user" }) {
             text: "Blogs",
             link: "/dashboard/admin/blogs",
             icon: <MessageSquare />
-        },
-        {
-            text: "Maintenance",
-            link: "/dashboard/admin/maintenance",
-            icon: <BsTools />
-        },
-        {
-            text: "Bookings",
-            link: "/dashboard/admin/bookings",
-            icon: <IoCalendarOutline />
         },
         {
             text: "Payments",
@@ -429,7 +408,18 @@ export default function SidebarNav({ role = "user" }) {
     ];
     let navList = [];
     if (role?.toLowerCase() === "admin") navList = adminNavList;
-    else if (role?.toLowerCase() === "property-owner" || role?.toLowerCase() === "propertyowner") navList = propertyOwnerNavList;
+    else if (role?.toLowerCase() === "property-owner" || role?.toLowerCase() === "propertyowner") {
+        navList = isOrganizationAdmin
+            ? propertyOwnerNavList
+            : propertyOwnerNavList.filter((item) => item.text === "Bookings");
+        if (isOrganizationAdmin) {
+            navList = [
+                ...navList,
+                { text: "Create Property", link: "/admin/add-new-property", icon: <BiBuildingHouse className="w-5 h-5" /> },
+                { text: "Add Manager", link: "/property-owner/invite-manager", icon: <IoPeopleOutline className="w-5 h-5" /> },
+            ];
+        }
+    }
     else if (role?.toLowerCase() === "facility-manager") navList = facilityManagerNavList;
     else if (role?.toLowerCase() === "property-manager") navList = propertyManagerNavList;
     else navList = userNavList;

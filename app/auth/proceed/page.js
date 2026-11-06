@@ -25,6 +25,10 @@ export default async function ProceedPage({ searchParams }) {
 
     if (!token || !role) redirect("/auth/log-in");
 
+    if (["admin", "administrator", "superadmin"].includes(String(role).toLowerCase().replace(/[\s_-]/g, ""))) {
+        redirect("/dashboard/admin");
+    }
+
     let organizations = [];
     try {
         organizations = getOrganizations(await getAllOrganization())

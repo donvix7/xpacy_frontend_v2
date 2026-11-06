@@ -24,6 +24,8 @@ export default function ServiceRequestDetails({ service }) {
 
     const dateIssued = createdAt ? format(new Date(createdAt), "dd/MM/yy") : "N/A";
     const timeIssued = createdAt ? format(new Date(createdAt), "h:mma").toLowerCase() : "N/A";
+    const attachment = Array.isArray(service.attachments) ? service.attachments[0] : service.attachments;
+    const attachmentHref = typeof attachment === "string" ? attachment : attachment?.url;
 
     const timeline = [
         {
@@ -120,9 +122,11 @@ export default function ServiceRequestDetails({ service }) {
                     />
                 </FieldGroup>
 
-                <Link href="#" className="text-primary font-bold font-mono underline text-sm mt-[-16px]">
-                    View Attachments
-                </Link>
+                {attachmentHref && (
+                    <a href={attachmentHref} target="_blank" rel="noreferrer" className="text-primary font-bold font-mono underline text-sm mt-[-16px]">
+                        View Attachments
+                    </a>
+                )}
             </div>
 
             <hr className="border-gray-100" />

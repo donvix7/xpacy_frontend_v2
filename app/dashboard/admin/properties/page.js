@@ -3,6 +3,7 @@ import {
     getManagedProperties,
     getMyProperties,
     getMyRentedProperties,
+    getOrganizationIdFromProperty,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
@@ -21,9 +22,10 @@ export default async function Page() {
             ? result.value
             : [];
 
-    const ownedProperties = unwrap(results[0]);
-    const managedProperties = unwrap(results[1]);
-    const rentedProperties = unwrap(results[2]);
+    const withoutOrganizationProperties = (properties) => properties.filter((property) => !getOrganizationIdFromProperty(property));
+    const ownedProperties = withoutOrganizationProperties(unwrap(results[0]));
+    const managedProperties = withoutOrganizationProperties(unwrap(results[1]));
+    const rentedProperties = withoutOrganizationProperties(unwrap(results[2]));
 
     const counts = {
         owned: ownedProperties.length,

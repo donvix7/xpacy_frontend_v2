@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
     Building2,
     ChevronLeft,
@@ -146,6 +146,10 @@ export default async function Page({ params }) {
                 />
             </div>
         );
+    }
+
+    if ([user.role, user.user_role, user.user_type].some((value) => String(value || "").trim().toLowerCase() === "tenant")) {
+        redirect("/dashboard/admin/users");
     }
 
     const name = displayName(user);

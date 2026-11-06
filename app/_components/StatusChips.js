@@ -21,8 +21,13 @@ const statusBg = {
     "upcoming": "bg-[#DBEAFE] text-[#1D4ED8]", // Blue
 }
 
-export default function StatusChips({status}) {
-    return (  
-            <span className={`${statusBg[status.toLowerCase()] || ""} px-4 py-1 flex items-center justify-center rounded-full  text-xs font-bold font-mono capitalize`}>{status}</span>
-    )
+export default function StatusChips({ status }) {
+    const label = typeof status === "string" && status.trim() ? status.trim() : "N/A";
+    const normalizedStatus = label.toLowerCase();
+
+    return (
+        <span className={`${statusBg[normalizedStatus] || "bg-gray-100 text-gray-600"} px-4 py-1 flex items-center justify-center rounded-full text-xs font-bold font-mono capitalize`}>
+            {label}
+        </span>
+    );
 }

@@ -86,6 +86,9 @@ export async function handleUserLogin(userData) {
   }
 
   const cookieStore = await cookies();
+  cookieStore.delete("organizationAdmin");
+  cookieStore.delete("organizationId");
+  cookieStore.delete("organizationSubscription");
   cookieStore.set("token", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -143,6 +146,11 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
     return { success: false, message: "Your session has expired. Please log in again." };
   }
 
+  if (["admin", "administrator", "superadmin"].includes(role)) {
+    cookieStore.delete("organizationId");
+    return { success: true, redirectTo };
+  }
+
   if (typeof organizationId === "string" && organizationId.trim()) {
     cookieStore.set("organizationId", organizationId.trim(), {
       httpOnly: true,
@@ -163,6 +171,114 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
     : redirectTo;
 
   return { success: true, redirectTo: returnTo };
+}
+
+export async function setActiveOrganization(organizationId) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const role = normalizeRole(cookieStore.get("userRole")?.value);
+  if (!token || role !== "propertyowner" || cookieStore.get("organizationAdmin")?.value !== "1") {
+    return { success: false, message: "You cannot switch organizations with this account." };
+  }
+  if (typeof organizationId !== "string" || !organizationId.trim()) {
+    return { success: false, message: "Choose an organization." };
+  }
+
+  try {
+    const response = await safeFetch("https://services.xpacy.com/api/v1/organizations?page=1&limit=100", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!response.ok) return { success: false, message: "Could not verify your organization access." };
+    const payload = await response.json();
+    const organizations = [payload, payload?.data, payload?.organizations, payload?.data?.organizations, payload?.items]
+      .find(Array.isArray) || [];
+    const hasAccess = organizations.some((organization) =>
+      String(organization?.id || organization?._id || organization?.organizationId || organization?.organization_id || "") === organizationId.trim()
+    );
+    if (!hasAccess) return { success: false, message: "You do not have access to that organization." };
+
+    cookieStore.set("organizationId", organizationId.trim(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    revalidatePath("/dashboard/property-owner");
+    return { success: true };
+  } catch {
+    return { success: false, message: "Could not switch organizations. Try again." };
+  }
+}
+
+export async function createOrganizationForCurrentUser(data) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) return { success: false, message: "Please log in to create an organization." };
+  if (cookieStore.get("organizationSubscription")?.value !== "active") {
+    return { success: false, message: "Subscribe before completing organization creation." };
+  }
+
+  const payload = {
+    name: String(data?.name || "").trim(),
+    slug: String(data?.slug || "").trim(),
+    email: String(data?.email || "").trim(),
+    phone: String(data?.phone || "").trim(),
+    address: String(data?.address || "").trim(),
+    city: String(data?.city || "").trim(),
+    state: String(data?.state || "").trim(),
+    country: String(data?.country || "").trim(),
+    timezone: String(data?.timezone || "").trim(),
+    currency: String(data?.currency || "").trim(),
+  };
+  if (!payload.name || !payload.slug) {
+    return { success: false, message: "Organization name and slug are required." };
+  }
+
+  try {
+    const response = await safeFetch("https://services.xpacy.com/api/v1/organizations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+    const result = await response.json();
+    if (!response.ok || result?.success === false || result?.error) {
+      return { success: false, message: result?.message || result?.error || "Could not create the organization." };
+    }
+    const organization = result?.data?.organization || result?.organization || result?.data || result;
+    const organizationId = organization?.id || organization?._id || organization?.organizationId;
+    if (!organizationId) return { success: false, message: "The organization was created, but the response did not include its ID." };
+
+    cookieStore.set("userRole", "propertyowner", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    cookieStore.set("organizationAdmin", "1", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    cookieStore.set("organizationId", String(organizationId), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    cookieStore.delete("organizationSubscription");
+    revalidatePath("/dashboard/property-owner");
+    return { success: true, redirectTo: "/dashboard/property-owner" };
+  } catch (error) {
+    return { success: false, message: error?.message || "Could not create the organization." };
+  }
 }
 
 
@@ -341,6 +457,9 @@ export async function handleLogOut() {
 
   cookieStore.delete("token");
   cookieStore.delete("refreshToken");
+  cookieStore.delete("organizationAdmin");
+  cookieStore.delete("organizationId");
+  cookieStore.delete("organizationSubscription");
   redirect("/auth/log-in");
 }
 
@@ -1059,6 +1178,9 @@ export async function invitePropertyOwner(formData) {
 
 export async function invitePropertyManager(formData) {
   const cookieStore = await cookies();
+  if (normalizeRole(cookieStore.get("userRole")?.value) !== "propertyowner" || cookieStore.get("organizationAdmin")?.value !== "1") {
+    return { success: false, message: "Only organization administrators can add managers." };
+  }
   const token = cookieStore.get("token");
   const headersList = await headers();
   const host = headersList.get("host") || "app.xpacy.com";
@@ -1066,6 +1188,7 @@ export async function invitePropertyManager(formData) {
   const origin = `${protocol}://${host}`;
   const name = formData.get("name");
   const email = formData.get("email");
+  const organizationId = cookieStore.get("organizationId")?.value;
 
   // Construct the payload
   const payload = {
@@ -1073,7 +1196,7 @@ export async function invitePropertyManager(formData) {
     email,
     phone: "0000000000", // Required by endpoint but likely irrelevant for invite
     subject: "Invitation to Join Xpacy as Property Manager",
-    message: `${formData.get("message") || "You have been invited to join Xpacy as a property manager. Please sign up to start managing properties."}\n\nAccept your invitation here: ${origin}/auth/accept-invite?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
+    message: `${formData.get("message") || "You have been invited to join Xpacy as a property manager. Please sign up to start managing properties."}${organizationId ? `\n\nOrganization ID: ${organizationId}` : ""}\n\nAccept your invitation here: ${origin}/auth/accept-invite?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
   };
 
   const response = await safeFetch(`${URL}/contact/send-mail`, {
@@ -1086,7 +1209,7 @@ export async function invitePropertyManager(formData) {
   });
 
   const data = await response.json();
-  return data;
+  return { ...data, success: response.ok && data?.success !== false && !data?.error };
 }
 
 export async function inviteStaffMember(formData) {
@@ -1497,13 +1620,23 @@ export async function deleteDocument(id){
 export async function addProperty(propertyData){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
+  const role = normalizeRole(cookieStore.get("userRole")?.value);
+  const isOrganizationAdmin = cookieStore.get("organizationAdmin")?.value === "1";
+  const organizationId = cookieStore.get("organizationId")?.value || "";
+  if (role === "propertyowner" && (!isOrganizationAdmin || !organizationId)) {
+    return { success: false, message: "Only organization administrators can create properties." };
+  }
+  if (role === "propertyowner" && String(propertyData?.organizationId || "") !== organizationId) {
+    return { success: false, message: "Select your active organization before creating a property." };
+  }
+  const payload = role === "propertyowner" ? { ...propertyData, organizationId } : propertyData;
   const response = await safeFetch(`https://services.xpacy.com/api/v1/properties`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token?.value}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(propertyData)
+    body: JSON.stringify(payload)
   });
   console.log('this is from the action', response)
   return response.json(); 

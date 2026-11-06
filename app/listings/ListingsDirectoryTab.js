@@ -1,358 +1,144 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Search,
-  Building2,
-  ExternalLink,
-  Zap,
-  MapPin,
-  Plus,
-} from "lucide-react";
+import { Building2, LayoutGrid, MapPin, Search, SlidersHorizontal, Table2 } from "lucide-react";
 import StatusChips from "@/app/_components/StatusChips";
 import { formatCurrency } from "@/app/_lib/utils";
 
-const displayField = (value) => {
-  if (value == null || value === "") return "—";
-  if (Array.isArray(value)) return value.length ? value.map(displayField).join(", ") : "—";
-  if (typeof value === "object") return Object.values(value).filter((part) => part != null && part !== "").map(displayField).join(", ") || "—";
-  return String(value);
-};
-
-const formatListingDate = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "UTC" }).format(date);
-};
-
-const formatListingPrice = (amount, currency = "NGN") => {
-  if (amount == null || amount === "") return "—";
-  if (currency === "NGN") return formatCurrency(amount);
-  try {
-    return new Intl.NumberFormat("en", { style: "currency", currency }).format(Number(amount));
-  } catch {
-    return `${currency} ${Number(amount).toLocaleString()}`;
-  }
-};
+function listingImage(property) {
+  const image = property?.images?.[0];
+  if (!image) return null;
+  return /^https?:\/\//i.test(image) ? image : `https://app.xpacy.com/src/upload/properties/${image}`;
+}
 
 export default function ListingsDirectoryTab({ listings = [], organizationId }) {
-  const organizationQuery = organizationId ? `organizationId=${encodeURIComponent(organizationId)}` : "";
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [unitType, setUnitType] = useState("all");
+  const [availability, setAvailability] = useState("all");
+  const [view, setView] = useState("grid");
 
-  const allListings = useMemo(() => listings.map((listing, idx) => {
+  const cards = useMemo(() => listings.map((listing, index) => {
     const property = listing.property || {};
-    const rawType = String(listing.listingType || "").toUpperCase().replace(/[\s_-]/g, "");
-    const route = rawType === "RENT" ? "rent" : rawType.includes("SHORT") ? "shortlet" : "buy";
-    const propertySlug = property.property_slug || property.slug;
-    const location = listing.location;
-    const listingLocation = typeof location === "string"
-      ? location
-      : [location?.address, location?.city, location?.state, location?.country].filter(Boolean).join(", ");
+    const kind = String(listing.listingType || listing.listing_type || "").toUpperCase();
+    const categoryName = kind.includes("SHORT") ? "Shortlet" : kind === "SALE" || kind === "BUY" ? "For Sale" : "For Rent";
+    const name = property.property_name || property.name || property.title || listing.title || "Property listing";
+    const address = [property.address, property.city || listing.location?.city, property.state || listing.location?.state].filter(Boolean).join(", ");
+    const slug = property.property_slug || property.slug;
+    const route = categoryName === "Shortlet" ? "shortlet" : categoryName === "For Sale" ? "buy" : "rent";
+    const href = slug ? `/${route}/${slug}?organizationId=${encodeURIComponent(organizationId || "")}` : `/listings?organizationId=${encodeURIComponent(organizationId || "")}`;
     return {
-      id: listing.id || listing._id || `listing-${idx}`,
-      propertyId: listing.propertyId,
-      unitId: listing.unitId || listing.unit?.id,
-      title: listing.title || `Listing ${idx + 1}`,
-      description: listing.description,
-      propertyName: property.property_name || property.name || property.title || "—",
-      propertyType: property.property_type || property.propertyType || property.type,
-      bedrooms: property.total_bedrooms ?? property.bedrooms ?? property.bedroomsCount,
-      bathrooms: property.total_bathrooms ?? property.bathrooms ?? property.bathroomsCount,
-      propertyPrice: property.property_price ?? property.price,
-      unitNumber: listing.unit?.unitNumber,
-      unitType: listing.unit?.unitType,
-      locality: listingLocation || [property.address, property.city, property.state, property.country].filter(Boolean).join(", ") || null,
-      listingType: listing.listingType,
-      category: rawType.includes("SHORT") ? "Shortlet" : rawType === "SALE" || rawType === "BUY" ? "For Sale" : "For Rent",
-      price: listing.price,
-      currency: listing.currency || "NGN",
-      deposit: listing.deposit,
-      availability: listing.availability,
-      amenities: listing.amenities,
-      publishedAt: listing.publishedAt,
-      expiresAt: listing.expiresAt,
-      createdAt: listing.createdAt,
-      updatedAt: listing.updatedAt,
-      status: listing.status || "UNKNOWN",
-      isBoosted: Boolean(listing.isBoosted || listing.featured),
-      image: property.images?.[0] ? `https://app.xpacy.com/src/upload/properties/${property.images[0]}` : null,
-      detailsHref: propertySlug ? `/${route}/${propertySlug}?${organizationQuery}` : `/listings?${organizationQuery}`,
+      ...listing,
+      key: listing.id || listing._id || `${listing.propertyId}-${index}`,
+      property,
+      name,
+      address,
+      categoryName,
+      href,
+      image: listingImage(property),
+      price: listing.price ?? property.property_price ?? property.price,
+      unitName: listing.unit?.unitNumber || listing.unit?.unitType || "Not specified",
+      resolvedUnitType: listing.unit?.unitType || property.property_type || property.propertyType || property.type || "Not specified",
+      availabilityText: listing.availability == null || listing.availability === "" ? "Not specified" : String(listing.availability),
     };
-  }), [listings, organizationQuery]);
+  }), [listings, organizationId]);
 
-  // Filtered listings
-  const filteredListings = useMemo(() => {
-    return allListings.filter((item) => {
-      const matchesSearch =
-        searchQuery === "" ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        displayField(item.locality).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.propertyName.toLowerCase().includes(searchQuery.toLowerCase());
+  const availableCategories = [...new Set(cards.map((item) => item.categoryName))];
+  const availableUnitTypes = [...new Set(cards.map((item) => item.resolvedUnitType).filter((item) => item !== "Not specified"))];
+  const availableStatuses = [...new Set(cards.map((item) => String(item.status || "PUBLISHED").toUpperCase()))];
+  const visible = cards.filter((item) => {
+    const query = search.trim().toLowerCase();
+    const matchesSearch = !query || `${item.name} ${item.title || ""} ${item.address} ${item.description || ""} ${item.unitName}`.toLowerCase().includes(query);
+    const matchesCategory = category === "all" || item.categoryName === category;
+    const matchesStatus = status === "all" || String(item.status || "PUBLISHED").toUpperCase() === status;
+    const matchesUnit = unitType === "all" || item.resolvedUnitType === unitType;
+    const matchesAvailability = availability === "all" || (availability === "specified" ? item.availability != null && item.availability !== "" : item.availability == null || item.availability === "");
+    return matchesSearch && matchesCategory && matchesStatus && matchesUnit && matchesAvailability;
+  });
 
-      const matchesStatus =
-        selectedStatus === "all" ||
-        String(item.status).toLowerCase() === selectedStatus.toLowerCase();
-
-      const matchesCategory =
-        selectedCategory === "all" ||
-        item.category.toLowerCase().includes(selectedCategory.toLowerCase());
-
-      return matchesSearch && matchesStatus && matchesCategory;
-    });
-  }, [allListings, searchQuery, selectedStatus, selectedCategory]);
-console.log(filteredListings)
   return (
-    <div className="space-y-6">
-      {/* Top Filter & Search Controls */}
-      <div className="bg-white rounded-xl border border-primary-100 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search listings by title, locality, or building..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs sm:text-sm pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-primary text-gray-900"
-          />
+    <div className="flex flex-col gap-6 md:flex-row">
+      <aside className="h-fit w-full shrink-0 rounded-xl border border-primary-100 bg-white p-5  md:sticky md:top-28 md:w-[290px]">
+        <div className="mb-5 flex items-center gap-2 border-b border-gray-100 pb-4">
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
+          <h2 className="font-bold text-gray-900">Filter listings</h2>
         </div>
-
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Status select */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="text-xs font-semibold py-2 px-3 rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-primary"
-          >
-            <option value="all">All Statuses</option>
-            <option value="published">Published</option>
-          </select>
-
-          {/* Category select */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="text-xs font-semibold py-2 px-3 rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-primary"
-          >
-            <option value="all">All Categories</option>
-            <option value="rent">For Rent</option>
-            <option value="sale">For Sale</option>
-            <option value="shortlet">Short Let</option>
-          </select>
-
-          <Link
-            href={`/management?${organizationQuery}`}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-xs font-bold py-2 px-3.5 rounded-lg hover:bg-primary-900 transition-colors shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Management</span>
-          </Link>
+        <div className="space-y-4">
+          <label className="block text-xs font-semibold text-gray-600">Search listings
+            <span className="relative mt-1.5 block"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, location, unit..." className="w-full rounded-lg border border-gray-200 py-2.5 pl-9 pr-3 text-sm font-normal text-gray-900 outline-none focus:border-primary" /></span>
+          </label>
+          <FilterSelect label="Listing type" value={category} onChange={setCategory} options={availableCategories} allLabel="All listing types" />
+          <FilterSelect label="Listing status" value={status} onChange={setStatus} options={availableStatuses} allLabel="All statuses" />
+          <FilterSelect label="Unit / property type" value={unitType} onChange={setUnitType} options={availableUnitTypes} allLabel="All unit types" />
+          <label className="block text-xs font-semibold text-gray-600">Availability
+            <select value={availability} onChange={(event) => setAvailability(event.target.value)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal text-gray-800 outline-none focus:border-primary">
+              <option value="all">Any availability</option><option value="specified">Availability provided</option><option value="unspecified">Not specified</option>
+            </select>
+          </label>
+          <button type="button" onClick={() => { setSearch(""); setCategory("all"); setStatus("all"); setUnitType("all"); setAvailability("all"); }} className="w-full rounded-lg border border-primary px-3 py-2.5 text-sm font-bold text-primary transition hover:bg-primary-50">Clear filters</button>
         </div>
-      </div>
+      </aside>
 
-      {/* Listings Table (Desktop) */}
-      <div className="hidden lg:block bg-white rounded-xl border border-primary-100 shadow-xs overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50/80 text-neutrals-900 font-mono text-xs font-bold uppercase tracking-wider border-b border-gray-100">
-            <tr>
-              <th className="p-4">Listing Details</th>
-              <th className="p-4">Unit</th>
-              <th className="p-4">Location</th>
-              <th className="p-4 text-center">Category</th>
-              <th className="p-4 text-right">Price</th>
-              <th className="p-4">Availability</th>
-              <th className="p-4 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 font-medium">
-            {filteredListings.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="p-10 text-center text-gray-400 text-sm">
-                  No listings found matching your search and filter criteria.
-                </td>
-              </tr>
-            ) : (
-              filteredListings.map((listing) => (
-                <tr
-                  key={listing.id}
-                  className="hover:bg-gray-50/60 transition-colors text-xs sm:text-sm"
-                >
-                  {/* Listing Details */}
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-14 h-11 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
-                        {listing.image ? (
-                          <Image
-                            src={listing.image}
-                            alt={listing.title}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <Building2 className="w-5 h-5 text-gray-400" />
-                          </div>
-                        )}
-                        {listing.isBoosted && (
-                          <span
-                            title="Featured Boost Active"
-                            className="absolute top-1 left-1 p-0.5 bg-amber-500 text-white rounded-xs"
-                          >
-                            <Zap className="w-2.5 h-2.5 fill-current" />
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0 max-w-[200px]">
-                        <p className="font-bold text-gray-900 truncate" title={listing.title}>
-                          {listing.title}
-                        </p>
-                        <p className="max-w-[220px] truncate text-[11px] text-gray-500" title={displayField(listing.description)}>{displayField(listing.description)}</p>
-                       
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Property / Unit */}
-                  <td className="p-4 text-gray-700">
-                    <div>
-                        <span className="font-semibold block truncate">
-                          {listing.propertyName}
-                        </span>
-                        <span className="text-[11px] text-gray-500 block">Type: {displayField(listing.propertyType)}</span>
-                        <span className="text-[11px] text-gray-500 block">Property price: {formatListingPrice(listing.propertyPrice)}</span>
-                        <span className="text-[11px] text-gray-400 block">Unit {displayField(listing.unitNumber)} · {displayField(listing.unitType)}</span>
-                    </div>
-                  </td>
-
-                  {/* Location */}
-                  <td className="p-4 text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="truncate max-w-[150px]">{displayField(listing.locality)}</span>
-                    </div>
-                  </td>
-
-                  {/* Category */}
-                  <td className="p-4 text-center">
-                    <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                      {listing.category}
-                    </span>
-                  </td>
-
-                  {/* Price and deposit */}
-                  <td className="p-4 text-right font-extrabold text-primary font-mono">
-                    <span>{formatListingPrice(listing.price, listing.currency)}</span>
-                  </td>
-
-                  <td className="max-w-[180px] p-4 text-xs text-gray-600">
-                    <span className="block">Available: {displayField(listing.availability)}</span>
-                  </td>
-
-           
-
-            
-
-                  {/* Action */}
-                  <td className="p-4 text-right">
-                    <Link
-                      href={listing.detailsHref}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-50 text-primary text-xs font-bold hover:bg-primary-100 transition-colors"
-                    >
-                      <ExternalLink className="w-7 h-7" />
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="lg:hidden space-y-3">
-        {filteredListings.length === 0 ? (
-          <div className="bg-white p-8 rounded-xl text-center text-gray-400 text-xs">
-            No listings found.
+      <section className="min-w-0 flex-1 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-100 bg-white px-4 py-3">
+          <p className="text-sm text-gray-500"><span className="font-bold text-gray-900">{visible.length}</span> {visible.length === 1 ? "listing" : "listings"}</p>
+          <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1" aria-label="Listing view">
+            <button type="button" onClick={() => setView("grid")} aria-label="Grid view" aria-pressed={view === "grid"} className={`rounded-md p-2 ${view === "grid" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100"}`}><LayoutGrid className="h-4 w-4" /></button>
+            <button type="button" onClick={() => setView("table")} aria-label="Table view" aria-pressed={view === "table"} className={`rounded-md p-2 ${view === "table" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100"}`}><Table2 className="h-4 w-4" /></button>
           </div>
-        ) : (
-          filteredListings.map((listing) => (
-            <div
-              key={listing.id}
-              className="bg-white rounded-xl border border-primary-100 p-4 shadow-xs space-y-3"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
-                    {listing.image ? (
-                      <Image
-                        src={listing.image}
-                        alt={listing.title}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <Building2 className="w-5 h-5 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
+        </div>
+
+        {visible.length ? view === "grid" ? <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {visible.map((listing) => (
+            <article key={listing.key} className="overflow-hidden rounded-xl border border-primary-100 bg-white shadow-sm transition hover:shadow-md">
+              <Link href={listing.href} className="relative block h-52 bg-gray-100">
+                {listing.image ? <Image src={listing.image} alt={listing.name} fill unoptimized className="object-cover" /> : <div className="flex h-full items-center justify-center text-gray-400"><Building2 className="h-10 w-10" /></div>}
+                <span className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-white">{listing.categoryName}</span>
+              </Link>
+              <div className="space-y-3 p-4">
+                <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h4 className="text-sm font-bold text-gray-900 truncate">
-                      {listing.title}
-                    </h4>
-                    <p className="text-xs text-gray-500 truncate">{displayField(listing.locality)}</p>
-                  </div>
-                </div>
-                <StatusChips status={listing.status} />
+                    <h3 className="truncate font-bold text-gray-900">{listing.name}</h3>
+                    <p className="mt-1 line-clamp-2 text-sm text-gray-500">{listing.title && listing.title !== listing.name ? listing.title : listing.description || "View property details and availability."}</p>
+                    </div>
+                    </div>
+                <p className="flex items-center gap-1.5 text-sm text-gray-500">{listing.address || "Location available on request"}</p>
+                <div className="flex items-end justify-between border-t border-gray-100 pt-3"><div><p className="text-xs text-gray-400">{listing.unit?.unitNumber ? `Unit ${listing.unit.unitNumber}` : listing.resolvedUnitType}</p><p className="mt-1 text-sm font-extrabold text-primary">{listing.price == null ? "Price on request" : formatCurrency(listing.price)}</p></div><Link href={listing.href} className="rounded-lg bg-primary-50 px-3 py-2 text-sm font-bold text-primary hover:bg-primary-100">Details</Link></div>
               </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-100">
-                <div>
-                  <span className="text-gray-400 block text-[11px]">Price ({listing.currency})</span>
-                  <span className="font-extrabold text-primary font-mono">
-                    {formatListingPrice(listing.price, listing.currency)}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-gray-400 block text-[11px]">Deposit</span>
-                  <span className="font-bold text-gray-700">{formatListingPrice(listing.deposit, listing.currency)}</span>
-                </div>
-              </div>
-
-              <dl className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 text-xs">
-                {[
-                  ["Listing ID", listing.id], ["Property ID", listing.propertyId], ["Property type", listing.propertyType],
-                  ["Bedrooms", listing.bedrooms], ["Bathrooms", listing.bathrooms], ["Property price", listing.propertyPrice], ["Unit ID", listing.unitId],
-                  ["Listing type", listing.listingType], ["Unit number", listing.unitNumber], ["Unit type", listing.unitType],
-                  ["Availability", listing.availability], ["Amenities", listing.amenities], ["Published", formatListingDate(listing.publishedAt)],
-                  ["Expires", formatListingDate(listing.expiresAt)], ["Created", formatListingDate(listing.createdAt)], ["Updated", formatListingDate(listing.updatedAt)],
-                ].map(([label, value]) => <div key={label}><dt className="text-gray-400">{label}</dt><dd className="mt-0.5 break-words font-medium text-gray-700">{displayField(value)}</dd></div>)}
-                <div className="col-span-2"><dt className="text-gray-400">Description</dt><dd className="mt-0.5 break-words font-medium text-gray-700">{displayField(listing.description)}</dd></div>
-              </dl>
-
-              <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-gray-500">
-                  {listing.propertyName} • Unit {displayField(listing.unitNumber)} ({displayField(listing.unitType)})
-                </span>
-                <Link
-                  href={listing.detailsHref}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
-                >
-                  <span>Details</span>
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+            </article>
+          ))}
+        </div> : <div className="overflow-x-auto rounded-xl border border-primary-100 bg-white shadow-sm"><table className="w-full min-w-[940px] text-left text-sm">
+          <thead className="border-b border-gray-100 bg-gray-50/80 text-xs font-bold uppercase tracking-wide text-gray-600"><tr>
+            <th className="p-4">Listing</th>
+            <th className="p-4">Unit</th>
+            <th className="p-4">Location</th>
+            <th className="p-4">Type</th>
+            <th className="p-4 text-right">Price</th>
+            <th className="p-4">Availability</th>
+            <th className="p-4 text-right">Action</th>
+          </tr></thead>
+          <tbody className="divide-y divide-gray-100">{visible.map((listing) => <tr key={listing.key} className="text-gray-700 transition hover:bg-gray-50/70">
+            <td className="p-4"><div className="flex min-w-[220px] items-center gap-3"><div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">{listing.image ? <Image src={listing.image} alt={listing.name} fill unoptimized className="object-cover" /> : <div className="flex h-full items-center justify-center text-gray-400"><Building2 className="h-5 w-5" /></div>}</div><div className="min-w-0"><p className="truncate font-bold text-gray-900">{listing.title || listing.name}</p><p className="truncate text-xs text-gray-500">{listing.name}</p></div></div></td>
+            <td className="p-4">{listing.unit?.unitNumber ? `Unit ${listing.unit.unitNumber}` : listing.resolvedUnitType}</td>
+            <td className="p-4"><span className="flex max-w-[180px] items-center gap-1.5"><MapPin className="h-3.5 w-3.5 shrink-0 text-gray-400" /><span className="truncate">{listing.address || "Location unavailable"}</span></span></td>
+            <td className="p-4"><span className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary">{listing.categoryName}</span></td>
+            <td className="p-4 text-right font-bold text-primary">{listing.price == null ? "Price on request" : formatCurrency(listing.price)}</td>
+            <td className="p-4 text-xs text-gray-600">{listing.availabilityText}</td>
+            <td className="p-4 text-right"><Link href={listing.href} className="inline-flex whitespace-nowrap rounded-lg bg-primary-50 px-3 py-2 text-xs font-bold text-primary hover:bg-primary-100">View details</Link></td>
+          </tr>)}</tbody>
+        </table></div> : <div className="rounded-xl border border-primary-100 bg-white p-12 text-center text-sm text-gray-500">No listings match these filters.</div>}
+      </section>
     </div>
   );
+}
+
+function FilterSelect({ label, value, onChange, options, allLabel }) {
+  return <label className="block text-xs font-semibold text-gray-600">{label}
+    <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal text-gray-800 outline-none focus:border-primary">
+      <option value="all">{allLabel}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}
+    </select>
+  </label>;
 }

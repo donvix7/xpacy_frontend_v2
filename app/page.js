@@ -21,6 +21,7 @@ import OrganizationLandingPage from "./_components/OrganizationLandingPage";
 import { filterPropertiesByOrganization, getProperties, getPublicOrganizationById } from "./_lib/data-services";
 import { isValidOrganizationId } from "./_lib/public-navigation";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 
 export default async function Home({ searchParams }) {
   const params = await searchParams;
@@ -51,12 +52,15 @@ export default async function Home({ searchParams }) {
       ? bannersResult.value
       : [];
 
+  const cookieStore = await cookies();
+  const isAuthenticated = Boolean(cookieStore.get("token")?.value);
+
   return (
     <>
       <AppHeader />
       <main>
         {/* Reference Hero Section: Dynamic Changing Background + PM value proposition + Demo Booking Form */}
-        <PMHeroSection banners={banners} />
+        <PMHeroSection banners={banners} isAuthenticated={isAuthenticated} />
 
         {/* The Complete PM Lifecycle: Prospect -> Lease -> Manage -> Renew */}
         <PMLifecycleSection />
@@ -65,12 +69,7 @@ export default async function Home({ searchParams }) {
         <BuiltForPropertyManagers />
 
         {/* Our Services Section (Retained) */}
-        <SectionLayout
-          heading={"Our Services"}
-          subheading={"Tailored Property Services to Meet Your Unique Needs"}
-        >
-          <ServicesSection />
-        </SectionLayout>
+
 
         {/* Want To List Your Property Section (Retained & Polished) */}
         <div className="py-16 md:py-24 px-6 md:px-[7%] max-w-7xl mx-auto">

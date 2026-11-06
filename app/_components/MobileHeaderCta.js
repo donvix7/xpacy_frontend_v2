@@ -9,16 +9,20 @@ const MobileHeaderCta = async () => {
     const userProfile = await getUserProfile(token);
     const adminProfile = await getAdminProfile(token);
     const profile = adminProfile || userProfile;
+    const role = cookieStoreRole(cookieStore);
 
     return (
         <>
             {token ? (
-                <li className="py-2 border-b border-primary-100 flex items-center justify-between">
-                    <Link href={profile?.role === "admin" ? "/dashboard/admin" : "/dashboard/user"} className="text-primary font-bold">Dashboard</Link>
-                    <div className="w-8 h-8 p-0.5 border border-primary-200 rounded-full relative overflow-hidden">
-                        <Image unoptimized src={profile?.display_picture ? `https://app.xpacy.com/src/upload/display_img/${profile?.display_picture}` : "/avatar.png"} alt="avatar" fill className="rounded-full object-cover" />
-                    </div>
-                </li>
+                <>
+                    <li className="py-2 border-b border-primary-100 flex items-center justify-between">
+                        <Link href={profile?.role === "admin" ? "/dashboard/admin" : "/dashboard/user"} className="text-primary font-bold">Dashboard</Link>
+                        <div className="w-8 h-8 p-0.5 border border-primary-200 rounded-full relative overflow-hidden">
+                            <Image unoptimized src={profile?.display_picture ? `https://app.xpacy.com/src/upload/display_img/${profile?.display_picture}` : "/avatar.png"} alt="avatar" fill className="rounded-full object-cover" />
+                        </div>
+                    </li>
+                    {role === "user" && <li className="py-2 border-b border-primary-100 font-semibold text-primary"><Link href="/dashboard/user/create-organization">Create Organization</Link></li>}
+                </>
             ) : (
                 <>
                     <li className="py-2 border-b border-primary-100 text-secondary font-bold">
@@ -32,5 +36,7 @@ const MobileHeaderCta = async () => {
         </>
     );
 };
+
+const cookieStoreRole = (cookieStore) => cookieStore.get("userRole")?.value?.toLowerCase().replace(/[\s_-]/g, "");
 
 export default MobileHeaderCta;

@@ -12,6 +12,7 @@ import AdminListingsClient from "./AdminListingsClient";
 import AppHeader from "../_components/AppHeader";
 import { isValidOrganizationId } from "../_lib/public-navigation";
 import { notFound } from "next/navigation";
+import Footer from "../_components/Footer";
 
 export const metadata = {
   title: "Organization Property Listings",
@@ -57,10 +58,12 @@ export default async function AdminListingsPage({ searchParams }) {
 
   // 3. Combine everything into one list, then scope + dedupe by property id
   const params = await searchParams;
-  const organizationId =
+  const cookieStore = await cookies();
+  const organizationIdFromQuery =
     typeof params?.organizationId === "string"
       ? params.organizationId.trim()
       : "";
+  const organizationId = organizationIdFromQuery || cookieStore.get("organizationId")?.value || "";
 
   const organization = isValidOrganizationId(organizationId)
     ? await getPublicOrganizationById(organizationId)
@@ -154,6 +157,7 @@ export default async function AdminListingsPage({ searchParams }) {
           organizationId={organizationId}
         />
       </div>
+      <Footer/>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { TbBuildingSkyscraper } from "react-icons/tb";
 import { Currency, UsersIcon } from "lucide-react";
 import { HomeModernIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import { FaCalendarCheck, FaMoneyBillWave, FaUsers, FaUserTie } from "react-icons/fa6";
+import { getOrganizationIdFromProperty } from "@/app/_lib/data-services";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -37,8 +38,8 @@ export default async function Page() {
     const invoices = results[7].status === "fulfilled" ? results[7].value : [];
     const notifications = results[8].status === "fulfilled" ? results[8].value : [];
 
-    const properties = propertiesData?.properties || [];
-    const totalProperties = propertiesData?.pagination?.total || properties.length;
+    const properties = (propertiesData?.properties || []).filter((property) => !getOrganizationIdFromProperty(property));
+    const totalProperties = properties.length;
     const allUsers = Array.isArray(users) ? users : [];
     const allBookings = Array.isArray(bookings) ? bookings : [];
     const allInvoices = Array.isArray(invoices) ? invoices : [];

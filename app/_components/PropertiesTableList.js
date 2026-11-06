@@ -85,7 +85,7 @@ export default function PropertiesTableList({ properties, bookings = [], paginat
                 </td>
                 {isOrganizationProperty ? (
                     <>
-                        <td className="p-4 text-capitalize text-xs">{(property.propertyType || "N/A").replaceAll("_", " ")}</td>
+                        <td className="p-4 capitalize text-xs">{(property.propertyType || "N/A").replaceAll("_", " ")}</td>
                         <td className="p-4"><StatusChips status={status} /></td>
                         <td className="p-4">{property.totalUnits ?? property._count?.units ?? "N/A"}</td>
                         <td className="p-4">{property._count?.buildings ?? "N/A"}</td>
@@ -94,8 +94,8 @@ export default function PropertiesTableList({ properties, bookings = [], paginat
                 ) : (
                     <>
                         <td className="p-4 ">{Views}</td>
-                        <td className="p-4"><div className="flex justify-center captitalize"><StatusChips status={status} /></div></td>
-                        <td className="p-4"><div className="flex justify-center captitalize"><StatusChips status={property.availability_status || "N/A"} /></div></td>
+                        <td className="p-4"><div className="flex justify-center"><StatusChips status={status} /></div></td>
+                        <td className="p-4"><div className="flex justify-center"><StatusChips status={property.availability_status || "N/A"} /></div></td>
                         <td className="p-4 text-gray-600 font-mono text-xs">{Featured}</td>
                         <td className="p-4 text-primary font-bold">{property.property_price ? formatCurrency(property.property_price) : "N/A"}</td>
                         <td className="p-4 text-primary font-bold">{property.reserve_amount || activeBooking?.amount ? formatCurrency(property.reserve_amount || activeBooking?.amount) : "None"}</td>

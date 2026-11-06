@@ -11,7 +11,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { getPublicNavigationLinks, isPublicNavigationLinkActive } from "@/app/_lib/public-navigation";
 
 
-export default function MobileNav({ children, isSidebar = false, role = "user" }) {
+export default function MobileNav({ children, isSidebar = false, role = "user", isOrganizationAdmin = false }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const links = getPublicNavigationLinks(searchParams.get("organizationId"));
@@ -25,7 +25,7 @@ export default function MobileNav({ children, isSidebar = false, role = "user" }
                 {
                     isSidebar ?
                         (
-                            <MobileSideBarWindow role={role} />
+                            <MobileSideBarWindow role={role} isOrganizationAdmin={isOrganizationAdmin} />
                         ) :
                         (
                             <MainAppWindow pathname={pathname} links={links}>
@@ -74,10 +74,10 @@ const MainAppWindow = ({ children, pathname, links }) => {
 }
 
 
-const MobileSideBarWindow = ({ role }) => {
+const MobileSideBarWindow = ({ role, isOrganizationAdmin }) => {
     return (
         <div className="max-h-max  bg-primary-900 flex flex-col py-8 px-6 w-max items-start gap-8 overflow-y-auto lg:hidden">
-            <SidebarNav role={role} />
+            <SidebarNav role={role} isOrganizationAdmin={isOrganizationAdmin} />
         </div>
     )
 }

@@ -16,11 +16,12 @@ export default async function AppHeader() {
           <HeaderCta />
         </Navigation>
       </Suspense>
-      <Suspense fallback={<SpinnerMini />}>
+   <Suspense fallback={<SpinnerMini />}>
         <MobileNav>
           <MobileHeaderCta />
         </MobileNav>
       </Suspense>
+   
     </header >
   );
 }

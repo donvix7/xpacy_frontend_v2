@@ -39,19 +39,19 @@ const InviteManagerForm = () => {
         formData.append("email", data.email);
         formData.append("message", data.message || defaultMessage);
 
-        toast.promise(invitePropertyManager(formData), {
-            loading: "Sending invitation...",
-            success: () => {
-                setIsPending(false);
-                setActiveStep(1);
-                reset();
-                return "Invitation sent successfully!";
-            },
-            error: (error) => {
-                setIsPending(false);
-                return error?.message || "Failed to send invitation.";
-            },
-        });
+        try {
+            const result = await invitePropertyManager(formData);
+            if (result?.success === false || result?.error) {
+                throw new Error(result.message || result.error || "Failed to send invitation.");
+            }
+            toast.success("Invitation sent successfully!");
+            setActiveStep(1);
+            reset();
+        } catch (error) {
+            toast.error(error?.message || "Failed to send invitation.");
+        } finally {
+            setIsPending(false);
+        }
     };
 
     return (

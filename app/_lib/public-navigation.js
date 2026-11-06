@@ -2,6 +2,7 @@ export const publicNavigationLinks = [
   { label: "Home", href: "/" },
   { label: "Rent", href: "/rent" },
   { label: "Buy", href: "/buy" },
+  { label: "Shortlet", href: "/shortlet" },
   { label: "Blogs", href: "/blogs" },
   { label: "Explore", href: "/listings" },
   { label: "Management", href: "/management" },
@@ -13,7 +14,7 @@ export function isValidOrganizationId(value) {
 }
 
 export function getPublicNavigationLinks(organizationId) {
-  const organizationScopedLinks = new Set(["Rent", "Buy", "Management", "Contact"]);
+  const organizationScopedLinks = new Set(["Rent", "Buy", "Shortlet", "Management", "Contact"]);
   return publicNavigationLinks
     .filter(({ label }) => isValidOrganizationId(organizationId) || !organizationScopedLinks.has(label))
     .map(({ label, href }) => ({

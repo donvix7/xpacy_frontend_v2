@@ -29,14 +29,19 @@ export default function DataTable({
     showPagination = true,
     children
 }) {
-    if (!data?.length) return <EmptyState message={emptyMessage} />;
-
     return (
         <div className={`flex flex-col gap-6 rounded-lg ${className}`}>
-           
+            {(title || headerActions) && (
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    {title && <h2 className="text-lg font-semibold text-primary-900">{title}</h2>}
+                    {headerActions && <div className="flex flex-wrap items-center gap-3">{headerActions}</div>}
+                </div>
+            )}
+
+            {!data?.length && <EmptyState message={emptyMessage} />}
 
             {/* Desktop View - Table */}
-            <div className="bg-white border border-primary-100 rounded-xl overflow-x-auto shadow-sm hidden lg:block">
+            {data?.length > 0 && <div className="bg-white border border-primary-100 rounded-xl overflow-x-auto shadow-sm hidden lg:block">
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-gray-50 text-neutrals-900 text-sm font-mono font-bold border-b border-primary-100">
                         <tr>
@@ -51,10 +56,10 @@ export default function DataTable({
                         {data.map((item, index) => renderRow(item, index))}
                     </tbody>
                 </table>
-            </div>
+            </div>}
 
             {/* Mobile View - Cards */}
-            <div className="lg:hidden grid gap-3">
+            {data?.length > 0 && <div className="lg:hidden grid gap-3">
                 {renderMobileCard
                     ? data.map((item, index) => renderMobileCard(item, index))
                     : data.map((item, index) => (
@@ -69,9 +74,9 @@ export default function DataTable({
                             </dl>
                         </article>
                     ))}
-            </div>
+            </div>}
 
-            {showPagination && pagination && (
+            {data?.length > 0 && showPagination && pagination && (
                 <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-sm font-mono text-gray-500">

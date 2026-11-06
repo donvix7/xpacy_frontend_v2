@@ -1,7 +1,6 @@
 "use client"
 import Image from "next/image";
 import Link from "next/link";
-import { FiBell } from "react-icons/fi";
 import { MdKeyboardArrowDown, MdOutlineDashboardCustomize } from "react-icons/md";
 import { RiUserSettingsLine } from "react-icons/ri";
 import { TbLogout2 } from "react-icons/tb";
@@ -20,10 +19,6 @@ export default function MobileProfileMenu({ profile, role="user" }) {
         <FilterMenu>
             <FilterMenu.Open>
                 <button className="group flex items-center gap-1.5 lg:hidden">
-                    <span className="text-2xl relative">
-                        <span className="text-2xl" ><FiBell /></span>
-                        <span className="absolute text-xs -top-2 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center bg-red-600 text-black font-mono">5</span>
-                    </span>
                     <div className=" cursor-pointer flex items-center border border-primary-200 rounded-lg bg-white justify-center py-1 px-3">
                         <div className="w-8 h-8 p-1 relative">
                             <Image unoptimized src={profile?.display_picture ? `https://app.xpacy.com/src/upload/display_img/${profile?.display_picture}` : "/avatar.png"} alt="avatar" fill className="rounded-full" />

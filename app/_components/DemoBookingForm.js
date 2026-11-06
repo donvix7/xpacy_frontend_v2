@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { CheckCircle2, Sparkles, Loader2, CalendarCheck, ShieldCheck } from "lucide-react";
 
-export default function DemoBookingForm() {
+export default function DemoBookingForm({ isAuthenticated = false }) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -33,6 +34,21 @@ export default function DemoBookingForm() {
       setSubmitted(true);
     }, 900);
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div id="demo-form-card" className="bg-white rounded-2xl p-8 shadow-2xl border border-primary-100 text-center text-gray-900">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary">
+          <CalendarCheck className="h-7 w-7" />
+        </div>
+        <h3 className="text-2xl font-bold font-sans text-primary">Book a Demo</h3>
+        <p className="mt-2 text-sm text-gray-600">Log in to book a personalized walkthrough of the platform.</p>
+        <Link href="/auth/log-in?redirectUrl=%2F" className="mt-6 inline-flex rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-900">
+          Log in to book demo
+        </Link>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -67,9 +83,7 @@ export default function DemoBookingForm() {
         <h3 className="text-2xl font-bold font-sans text-primary tracking-tight">
           See the Platform
         </h3>
-        <p className="text-xs sm:text-sm text-gray-500 font-mono mt-0.5">
-          Live demo in 30 minutes
-        </p>
+
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 font-mono">
@@ -212,21 +226,12 @@ export default function DemoBookingForm() {
                 <span>Scheduling walkthrough...</span>
               </>
             ) : (
-              <span>Book a personalized demo</span>
+              <span>Request demo</span>
             )}
           </button>
         </div>
 
-        {/* Microcopy reassurance */}
-        <p className="text-center text-[11px] text-gray-500 font-mono flex items-center justify-center gap-1.5 pt-1">
-          <span>⚡ No commitment</span>
-          <span>•</span>
-          <span>Free</span>
-          <span>•</span>
-          <span>30-min call</span>
-        </p>
       </form>
     </div>
   );
 }
-

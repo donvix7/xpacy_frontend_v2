@@ -10,7 +10,7 @@ const DEFAULT_SLIDES = [
   "/management_banner.jpg",
 ];
 
-export default function PMHeroSection({ banners = [] }) {
+export default function PMHeroSection({ banners = [], isAuthenticated = false }) {
   const backendImages = (banners || [])
     .filter((b) => b?.image_url)
     .map((b) => ({
@@ -108,7 +108,7 @@ export default function PMHeroSection({ banners = [] }) {
 
         {/* Right Column: Demo Form Card */}
         <div className="lg:col-span-5 w-full">
-          <DemoBookingForm />
+          <DemoBookingForm isAuthenticated={isAuthenticated} />
         </div>
       </div>
     </section>

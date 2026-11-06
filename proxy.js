@@ -3,6 +3,21 @@ import { NextResponse } from 'next/server';
 export function proxy(request) {
   const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
+  const role = (request.cookies.get('userRole')?.value || '').toLowerCase().replace(/[\s_-]/g, '');
+  const isSuperAdmin = ['admin', 'administrator', 'superadmin'].includes(role);
+  const isOrganizationAdmin = request.cookies.get('organizationAdmin')?.value === '1';
+
+  if (isSuperAdmin && (pathname.startsWith('/dashboard/admin/tenants') || pathname.startsWith('/admin/add-new-tenant') || /^\/dashboard\/admin\/properties\/[^/]+/.test(pathname) || pathname.startsWith('/admin/property-details/') || pathname.startsWith('/admin/edit-property/'))) {
+    return NextResponse.redirect(new URL('/dashboard/admin', request.url));
+  }
+
+  if (role === 'propertyowner' && !isOrganizationAdmin && pathname.startsWith('/dashboard/property-owner') && pathname !== '/dashboard/property-owner/bookings') {
+    return NextResponse.redirect(new URL('/dashboard/property-owner/bookings', request.url));
+  }
+
+  if (role === 'propertyowner' && !isOrganizationAdmin && (pathname === '/admin/add-new-property' || pathname.startsWith('/property-owner/invite-manager'))) {
+    return NextResponse.redirect(new URL('/dashboard/property-owner/bookings', request.url));
+  }
 
 
   // Handle email verification redirection (from proxy.js)
@@ -60,6 +75,7 @@ export const config = {
       '/auth/verify-email', 
       '/invoice/:invoiceId*', 
       // '/book-service', // proxy.js had this, adding it back if needed for protection
-      '/admin/:path*'
+      '/admin/:path*',
+      '/property-owner/invite-manager/:path*'
   ],
 };
