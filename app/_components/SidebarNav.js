@@ -31,11 +31,7 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             link: "/dashboard/user",
             icon: <RxDashboard />
         },
-        {
-            text: "Create Organization",
-            link: "/dashboard/user/create-organization",
-            icon: <BiBuildingHouse />
-        },
+        
         {
             text: "Notifications",
             link: "/dashboard/user/notifications",
