@@ -1,11 +1,12 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import AppHeader from "@/app/_components/AppHeader";
 import Footer from "@/app/_components/Footer";
 import ListingInsightsClient from "./ListingInsightsClient";
 import { filterPropertiesByOrganization, getListingById, getOrganizationProperties, getPublicOrganizationById, getMyProperties, getManagedProperties, getMyRentedProperties } from "@/app/_lib/data-services";
 import { isValidOrganizationId } from "@/app/_lib/public-navigation";
+import EmptyState from "@/app/_components/EmptyState";
 
 function toListingArray(payload) {
   if (Array.isArray(payload)) return payload;
@@ -18,7 +19,21 @@ function toListingArray(payload) {
 export default async function ListingStatisticsPage({ searchParams }) {
   const params = await searchParams;
   const organizationId = typeof params?.organizationId === "string" ? params.organizationId.trim() : "";
-  if (!isValidOrganizationId(organizationId)) notFound();
+  if (!isValidOrganizationId(organizationId)){
+    return(
+     <div className="w-full h-full"><AppHeader /><main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="flex flex-col w-full gap-4 border-b border-primary-100 pb-5 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-wide text-secondary">Organization Insights</p>
+      </div>
+      <Link href={`/listings?organizationId=${encodeURIComponent(organizationId)}`} className="inline-flex w-fit rounded-lg border border-primary px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-primary-50">Back to Listings</Link>
+    </div>
+    <EmptyState
+    message={"Must be invited or belong to an organization to view statistics"}
+    />
+    </main><Footer /></div>
+    )
+  } 
   const organization = await getPublicOrganizationById(organizationId);
 
   const cookieStore = await cookies();

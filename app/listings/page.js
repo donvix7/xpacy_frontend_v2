@@ -59,23 +59,24 @@ export default async function AdminListingsPage({ searchParams }) {
   // 3. Combine everything into one list, then scope + dedupe by property id
   const params = await searchParams;
   const cookieStore = await cookies();
-  const organizationIdFromQuery =
-    typeof params?.organizationId === "string"
-      ? params.organizationId.trim()
-      : "";
-  const organizationId = organizationIdFromQuery || cookieStore.get("organizationId")?.value || "";
-
-  const organization = isValidOrganizationId(organizationId)
-    ? await getPublicOrganizationById(organizationId)
-    : null;
-  if (isValidOrganizationId(organizationId) && !organization) notFound();
-
-  // Merge all result-sourced properties (array-safe)
   const allResultsProperties = [
     ...(Array.isArray(myProperties) ? myProperties : []),
     ...(Array.isArray(managedProperties) ? managedProperties : []),
     ...(Array.isArray(rentedProperties) ? rentedProperties : []),
   ];
+  const organizationIdFromQuery =
+    typeof params?.organizationId === "string"
+      ? params.organizationId.trim()
+      : "";
+  const cookieOrganizationId = cookieStore.get("organizationId")?.value || "";
+  const organizationId = organizationIdFromQuery || cookieOrganizationId || "";
+
+  console.log("organizationId", organizationId);
+
+  const organization = isValidOrganizationId(organizationId)
+    ? await getPublicOrganizationById(organizationId)
+    : null;
+  if (isValidOrganizationId(organizationId) && !organization) notFound();
 
   let listings = [];
 
