@@ -6,14 +6,21 @@ import { RiUserSettingsLine } from "react-icons/ri";
 import { TbLogout2 } from "react-icons/tb";
 import { handleLogOut } from "../_lib/action";
 import FilterMenu from "./FilterMenu";
-import { usePathname } from "next/navigation";
 
 
 export default function MobileProfileMenu({ profile, role="user" }) {
-    const pathname = usePathname();
-    const profileSettingsHref = pathname?.includes("/dashboard/property-owner")
-        ? "/dashboard/property-owner/profile-settings"
-        : "/dashboard/user/profile-settings";
+    const dashboardBaseByRole = {
+        admin: "/dashboard/admin",
+        "property-owner": "/dashboard/property-owner",
+        "property-manager": "/dashboard/property-manager",
+        "facility-manager": "/dashboard/facility-manager",
+        user: "/dashboard/user",
+    };
+    const dashboardHref = dashboardBaseByRole[role.toLowerCase()] || "/dashboard/user";
+    const profileSettingsHref = {
+        "property-manager": "/dashboard/property-manager/settings",
+        "facility-manager": "/dashboard/facility-manager/settings",
+    }[role.toLowerCase()] || `${dashboardHref}/profile-settings`;
 
     return (
         <FilterMenu>
@@ -30,7 +37,7 @@ export default function MobileProfileMenu({ profile, role="user" }) {
             <FilterMenu.Window right={"-left-8"}>
                 <div className="w-max flex flex-col gap-2 border border-primary-200 rounded-lg p-4 absolute bg-white z-40 ">
                     {/* Notifications */}
-                    <Link href={role.toLowerCase() === "admin" ? "/dashboard/admin" : role.toLowerCase() === "property-owner" ? "/dashboard/property-owner" : "/dashboard/user"} className="p-1  flex items-center gap-2 text-gray-500 font-mono hover:text-gray-800 ">
+                    <Link href={dashboardHref} className="p-1  flex items-center gap-2 text-gray-500 font-mono hover:text-gray-800 ">
                         <span className="text-lg"><MdOutlineDashboardCustomize /></span>
                         <span>Dashboard</span>
                     </Link>

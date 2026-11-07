@@ -87,17 +87,14 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
     /* The invite panel (shared between inline & modal)                    */
     /* ------------------------------------------------------------------ */
     const invitePanel = (
-        <section className="overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-xl shadow-primary/5">
+        <section className="overflow-hidden rounded-2xl  bg-white shadow-xl shadow-primary/5">
             {/* ---- Header ---- */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary-700 px-6 py-6 sm:px-8 sm:py-7">
-                <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-                <div className="absolute -bottom-16 -left-8 h-40 w-40 rounded-full bg-secondary/20 blur-2xl" />
+            <div className="relative overflow-hidden bg-primary-900 px-6 py-6 sm:px-8 sm:py-7">
+                
 
                 <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-start gap-3">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25">
-                            <Sparkles size={20} />
-                        </span>
+                        
                         <div>
                             <h2 className="font-sans text-lg font-bold leading-tight text-white sm:text-xl">
                                 Invite people to explore your listings
@@ -108,18 +105,7 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
                         </div>
                     </div>
 
-                    <Link
-                        href={listingsPath}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 font-mono text-sm font-semibold text-white ring-1 ring-white/25 backdrop-blur-sm transition-all hover:bg-white/20 hover:ring-white/40"
-                    >
-                        Preview listings
-                        <ExternalLink
-                            size={15}
-                            className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                        />
-                    </Link>
+                  
                 </div>
             </div>
 
@@ -218,7 +204,7 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
                 <button
                     type="button"
                     onClick={() => setIsOpen(true)}
-                    className="group inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-3.5 py-2.5 font-sans text-sm font-semibold text-white shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-lg hover:shadow-primary/30"
+                    className="group inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary-900 px-3.5 py-2.5 font-sans text-sm font-semibold text-white transition-all  hover:bg-primary-700 "
                 >
                     <Share2
                         size={16}
@@ -239,7 +225,7 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
                             role="dialog"
                             aria-modal="true"
                             aria-label="Share organization listings"
-                            className="relative w-full max-w-3xl animate-[scaleIn_200ms_ease-out]"
+                            className="relative w-full max-w-2xl animate-[scaleIn_200ms_ease-out]"
                         >
                             <button
                                 type="button"
