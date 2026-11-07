@@ -21,7 +21,6 @@ import OrganizationLandingPage from "./_components/OrganizationLandingPage";
 import { filterPropertiesByOrganization, getProperties, getPublicOrganizationById } from "./_lib/data-services";
 import { isValidOrganizationId } from "./_lib/public-navigation";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
 
 export default async function Home({ searchParams }) {
   const params = await searchParams;
@@ -52,15 +51,12 @@ export default async function Home({ searchParams }) {
       ? bannersResult.value
       : [];
 
-  const cookieStore = await cookies();
-  const isAuthenticated = Boolean(cookieStore.get("token")?.value);
-
   return (
     <>
       <AppHeader />
       <main>
         {/* Reference Hero Section: Dynamic Changing Background + PM value proposition + Demo Booking Form */}
-        <PMHeroSection banners={banners} isAuthenticated={isAuthenticated} />
+        <PMHeroSection banners={banners} />
 
         {/* The Complete PM Lifecycle: Prospect -> Lease -> Manage -> Renew */}
         <PMLifecycleSection />
@@ -94,9 +90,11 @@ export default async function Home({ searchParams }) {
               <div>
                 <Link
                   href="/contact"
-                  className="inline-flex items-center justify-center bg-primary hover:bg-primary-900 text-white text-base py-3.5 px-8 font-sans font-bold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="group relative mt-6 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary-700 px-6 py-3 text-sm font-bold text-white  transition-all duration-300 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5"
                 >
-                  List My Property
+                  {/* Shine sweep on hover */}
+                  <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                  <span className="relative">List My Property</span>
                 </Link>
               </div>
             </div>

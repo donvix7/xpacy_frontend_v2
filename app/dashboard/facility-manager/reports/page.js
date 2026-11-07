@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 import {
-    getPropertyOwnerProperties,
-    getPropertyOwnerServices,
-    getPropertyOwnerBookings,
-    getPropertyOwnerInvoices,
+    getManagedProperties,
+    getBookedServices,
+    getMyBookings,
+    getInvoiceList,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
@@ -29,10 +29,10 @@ export default async function Page() {
     const token = cookieStore.get("token");
 
     const results = await Promise.allSettled([
-        getPropertyOwnerProperties(token, { limit: 10000 }),
-        getPropertyOwnerServices(token),
-        getPropertyOwnerBookings(token),
-        getPropertyOwnerInvoices(token),
+        getManagedProperties(10000),
+        getBookedServices(token),
+        getMyBookings(),
+        getInvoiceList(),
     ]);
 
     const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];

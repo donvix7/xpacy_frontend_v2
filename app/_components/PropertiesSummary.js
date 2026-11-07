@@ -56,7 +56,7 @@ export default function PropertiesSummary({ properties, totalProperties, showHea
                             <span className="w-12 h-12 text-primary bg-primary-100/80 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl shadow-sm">
                                 <BiBuildings />
                             </span>
-                            <span className="font-mono text-primary-900 font-bold uppercase tracking-wide text-sm">Properties Owned</span>
+                            <span className="font-mono text-primary-900 font-bold uppercase tracking-wide text-sm">Properties</span>
                         </div>
                         <p className="text-center lg:text-left font-bold text-4xl font-mono mt-4 lg:ml-[60px] text-gray-800">{totalProperties || properties.length}</p>
                     </div>

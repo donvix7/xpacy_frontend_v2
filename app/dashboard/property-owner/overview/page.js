@@ -7,11 +7,15 @@ import NotificationsSummary from "@/app/_components/NotificationsSummary";
 import PropertiesTableList from "@/app/_components/PropertiesTableList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
+import ShareOrganizationListings from "@/app/_components/ShareOrganizationListings";
+import { isValidOrganizationId } from "@/app/_lib/public-navigation";
 import { AlertCircle, Building2, CalendarDays, DollarSign, TrendingUp } from "lucide-react";
 
 export default async function Page() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
+    const organizationId = cookieStore.get("organizationId")?.value;
+    const canShareOrganizationListings = isValidOrganizationId(organizationId);
 
     const results = await Promise.allSettled([
         getPropertyOwnerProfile(token),
@@ -86,6 +90,10 @@ export default async function Page() {
             </p>
 
             <SummaryCards cards={summaryCards} />
+
+            {canShareOrganizationListings && (
+                <ShareOrganizationListings organizationId={organizationId} />
+            )}
 
             <div className="flex flex-col gap-8">
                 <DashboardGridItem title="Recent Properties" viewAllLink="/dashboard/property-owner/properties">

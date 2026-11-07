@@ -1,9 +1,4 @@
-import { cookies } from "next/headers";
-import {
-    getPropertyOwnerProfile,
-    getPropertyOwnerProperties,
-    getPropertyOwnerBookings,
-} from "@/app/_lib/data-services";
+import { getManagedProperties, getMyBookings } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
@@ -13,21 +8,16 @@ import { FaBuilding, FaCheckDouble, FaClipboardList, FaClock } from "react-icons
 import { isInspectionBooking, parseBookingDate } from "@/app/_lib/utils";
 
 export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-
     const results = await Promise.allSettled([
-        getPropertyOwnerProfile(token),
-        getPropertyOwnerProperties(token, { limit: 10000 }),
-        getPropertyOwnerBookings(token),
+        getManagedProperties(10000),
+        getMyBookings(),
     ]);
 
-    const profile = results[0].status === "fulfilled" ? results[0].value : null;
-    const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
-    const bookingsData = results[2].status === "fulfilled" ? results[2].value : [];
+    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
+    const bookingsData = results[1].status === "fulfilled" ? results[1].value : [];
 
     const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
+    const properties = allProperties;
 
     const allBookings = Array.isArray(bookingsData?.[0]) ? bookingsData[0] : Array.isArray(bookingsData) ? bookingsData : [];
     const inspections = allBookings.filter(isInspectionBooking);

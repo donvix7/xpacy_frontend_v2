@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Building2, Plus, Users } from "lucide-react";
-import { getAllOrganization } from "@/app/_lib/data-services";
+import { getAllAdminOrganization, getAllOrganization } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 
 const getOrganizationList = (payload) => {
@@ -10,8 +10,10 @@ const getOrganizationList = (payload) => {
     return [];
 };
 
+
+
 export default async function Page() {
-    const organizations = getOrganizationList(await getAllOrganization());
+    const organizations = getOrganizationList(await getAllAdminOrganization());
 
     return (
         <div className="space-y-6 p-2">

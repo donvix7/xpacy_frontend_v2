@@ -1,7 +1,7 @@
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
-import { getAdminBooking } from "@/app/_lib/data-services";
+import { getMyBookings } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import { FaCalendarCheck, FaDoorOpen, FaPeopleRoof } from "react-icons/fa6";
 import { FiLogIn } from "react-icons/fi";
@@ -12,7 +12,7 @@ const statusKey = (s) => (s || "").toLowerCase();
 export default async function Page() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
-    const bookings = await getAdminBooking(token) || [];
+    const bookings = await getMyBookings() || [];
     const myBookings = Array.isArray(bookings) ? bookings : [];
 
     const expectedCheckIns = myBookings.filter(b => ["confirmed", "pending", "approved", "accepted"].includes(statusKey(b.status)));

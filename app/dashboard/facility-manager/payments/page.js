@@ -1,33 +1,19 @@
-
-import { getPropertyOwnerBookings, getProperties, getUserProfile } from "@/app/_lib/data-services";
-import { cookies } from "next/headers";
-import PaymentsOverviewWrapper from "@/app/_components/PaymentsOverviewWrapper";
-import PaymentsTableList from "@/app/_components/PaymentsTableList";
-import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import InvoiceListTable from "@/app/_components/InvoiceListTable";
+import InvoiceSummary from "@/app/_components/InvoiceSummary";
+import MobileDashboardHeader from "@/app/_components/MobileDashboardHeader";
+import { getInvoiceList } from "@/app/_lib/data-services";
+import { Suspense } from "react";
 
 export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    
-    const [user, propertiesData, bookingsData] = await Promise.all([
-        getUserProfile(token),
-        getProperties(),
-        getPropertyOwnerBookings(token)
-    ]);
+  const invoices = await getInvoiceList();
 
-    const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : [];
-    const myProperties = allProperties.filter(property => property.property_owner_id === user?.id);
-    const myPropertyIds = myProperties.map(p => p.id || p._id);
-
-    // Bookings for my properties
-    const myBookings = Array.isArray(bookingsData) ? bookingsData : [];
-
-    return (
-        <div className="space-y-6 p-2">
-            <PaymentsOverviewWrapper bookings={myBookings} />
-            <DashboardGridItem title={"Payment Table List"}>
-            <PaymentsTableList bookings={myBookings} />
-            </DashboardGridItem>
-        </div>
-    )
+  return (
+    <div className="p-2 flex flex-col lg:gap-12">
+      <MobileDashboardHeader />
+      <InvoiceSummary invoices={invoices} />
+      <Suspense fallback={<div className="spinner" />}>
+        <InvoiceListTable invoices={invoices} />
+      </Suspense>
+    </div>
+  );
 }

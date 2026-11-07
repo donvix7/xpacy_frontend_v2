@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getPropertyOwnerBookings, getPropertyOwnerServices, getPropertyOwnerProfile, getUserNotifications, getPropertyOwnerProperties, getPropertyOwnerInvoices } from "@/app/_lib/data-services";
+import { getMyBookings, getBookedServices, getUserProfile, getUserNotifications, getManagedProperties } from "@/app/_lib/data-services";
 import PropertiesOverviewWrapper from "@/app/_components/PropertiesOverviewWrapper";
 import ServicesOverviewWrapper from "@/app/_components/ServicesOverviewWrapper";
 import PaymentsOverviewWrapper from "@/app/_components/PaymentsOverviewWrapper";
@@ -17,12 +17,11 @@ export default async function Page() {
     const token = cookieStore.get("token");
 
     const results = await Promise.allSettled([
-        getPropertyOwnerProfile(token),
-        getPropertyOwnerProperties(token, { limit: 10000 }),
-        getPropertyOwnerServices(token),
-        getPropertyOwnerBookings(token),
+        getUserProfile(token),
+        getManagedProperties(10000),
+        getBookedServices(token),
+        getMyBookings(),
         getUserNotifications(token),
-        getPropertyOwnerInvoices(token),
     ]);
 
     const profile = results[0].status === "fulfilled" ? results[0].value : null;
@@ -30,10 +29,8 @@ export default async function Page() {
     const services = results[2].status === "fulfilled" ? results[2].value : [];
     const bookings = results[3].status === "fulfilled" ? results[3].value : [];
     const notifications = results[4].status === "fulfilled" ? results[4].value : [];
-    const invoices = results[5].status === "fulfilled" ? results[5].value : [];
 
-    const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
+    const properties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
     const myServices = Array.isArray(services) ? services : [];
     const myBookings = Array.isArray(bookings) ? bookings : [];
 

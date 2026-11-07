@@ -17,6 +17,43 @@ const dashboardByRole = {
 };
 
 const normalizeRole = (role) => String(role || "").trim().toLowerCase().replace(/[\s_-]/g, "");
+const dashboardByOrganizationRole = {
+  facilitymanager: "/dashboard/facility-manager",
+  propertymanager: "/dashboard/property-manager",
+  propertyowner: "/dashboard/property-owner",
+  organizationadmin: "/dashboard/property-owner",
+  organizationadministrator: "/dashboard/property-owner",
+  organizationowner: "/dashboard/property-owner",
+  orgadmin: "/dashboard/property-owner",
+  owner: "/dashboard/property-owner",
+  admin: "/dashboard/property-owner",
+  tenant: "/dashboard/user",
+};
+
+async function getOrganizationMembershipRole(organizationId, token, userId, email) {
+  if (!organizationId || !token) return "";
+  try {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/organizations/${encodeURIComponent(organizationId)}/members?page=1&limit=100`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!response.ok) return "";
+    const payload = await response.json();
+    const members = [payload, payload?.data, payload?.members, payload?.data?.members, payload?.items]
+      .find(Array.isArray) || [];
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const member = members.find((entry) => {
+      const ids = [entry?.userId, entry?.user_id, entry?.user?.id, entry?.user?._id, entry?.profile?.id, entry?.profile?._id]
+        .filter(Boolean).map(String);
+      const memberEmail = String(entry?.email || entry?.user?.email || entry?.profile?.email || "").trim().toLowerCase();
+      return (userId && ids.includes(String(userId))) || (normalizedEmail && memberEmail === normalizedEmail);
+    });
+    return String(member?.role || member?.organizationRole || "");
+  } catch {
+    return "";
+  }
+}
 
 
 export const submitSubscribe = async (formData) => {
@@ -88,7 +125,9 @@ export async function handleUserLogin(userData) {
   const cookieStore = await cookies();
   cookieStore.delete("organizationAdmin");
   cookieStore.delete("organizationId");
+  cookieStore.delete("organizationRole");
   cookieStore.delete("organizationSubscription");
+  cookieStore.delete("organizationSubscriptionPlan");
   cookieStore.set("token", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -103,6 +142,12 @@ export async function handleUserLogin(userData) {
     path: "/",
     maxAge: 60 * 60 * 24,
   });
+  const userId = user.id || user._id || user.userId || user.user_id || auth.userId || auth.user_id;
+  const email = user.email || auth.email;
+  if (userId) cookieStore.set("userId", String(userId), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+  else cookieStore.delete("userId");
+  if (email) cookieStore.set("userEmail", String(email), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+  else cookieStore.delete("userEmail");
   const refreshToken = auth.refreshToken || auth.refresh_token || data.refreshToken || data.refresh_token;
   if (typeof refreshToken === "string" && refreshToken) {
     cookieStore.set("refreshToken", refreshToken, {
@@ -148,10 +193,13 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
 
   if (["admin", "administrator", "superadmin"].includes(role)) {
     cookieStore.delete("organizationId");
+    cookieStore.delete("organizationRole");
     return { success: true, redirectTo };
   }
 
+  let organizationRole = "";
   if (typeof organizationId === "string" && organizationId.trim()) {
+    const selectedOrganizationId = organizationId.trim();
     cookieStore.set("organizationId", organizationId.trim(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -159,16 +207,28 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
       path: "/",
       maxAge: 60 * 60 * 24,
     });
+    organizationRole = await getOrganizationMembershipRole(
+      selectedOrganizationId,
+      cookieStore.get("token")?.value,
+      cookieStore.get("userId")?.value,
+      cookieStore.get("userEmail")?.value
+    );
+    if (organizationRole) cookieStore.set("organizationRole", organizationRole, {
+      httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 24,
+    });
+    else cookieStore.delete("organizationRole");
   } else {
     cookieStore.delete("organizationId");
+    cookieStore.delete("organizationRole");
   }
 
-  const returnTo = role === "user" &&
+  const organizationDashboard = dashboardByOrganizationRole[normalizeRole(organizationRole)];
+  const returnTo = organizationDashboard || (role === "user" &&
     typeof requestedReturnTo === "string" &&
     requestedReturnTo.startsWith("/") &&
     !requestedReturnTo.startsWith("//")
     ? requestedReturnTo
-    : redirectTo;
+    : redirectTo);
 
   return { success: true, redirectTo: returnTo };
 }
@@ -206,6 +266,13 @@ export async function setActiveOrganization(organizationId) {
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
     });
+    const organizationRole = await getOrganizationMembershipRole(
+      organizationId.trim(), token, cookieStore.get("userId")?.value, cookieStore.get("userEmail")?.value
+    );
+    if (organizationRole) cookieStore.set("organizationRole", organizationRole, {
+      httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30,
+    });
+    else cookieStore.delete("organizationRole");
     revalidatePath("/dashboard/property-owner");
     return { success: true };
   } catch {
@@ -217,8 +284,9 @@ export async function createOrganizationForCurrentUser(data) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
   if (!token) return { success: false, message: "Please log in to create an organization." };
-  if (cookieStore.get("organizationSubscription")?.value !== "active") {
-    return { success: false, message: "Subscribe before completing organization creation." };
+  const selectedPlan = cookieStore.get("organizationSubscriptionPlan")?.value;
+  if (!["core", "growth", "enterprise"].includes(selectedPlan)) {
+    return { success: false, message: "Choose an organization subscription plan before completing setup." };
   }
 
   const payload = {
@@ -266,6 +334,13 @@ export async function createOrganizationForCurrentUser(data) {
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
     });
+    cookieStore.set("organizationRole", "ADMIN", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
     cookieStore.set("organizationId", String(organizationId), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -273,12 +348,38 @@ export async function createOrganizationForCurrentUser(data) {
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
     });
-    cookieStore.delete("organizationSubscription");
+    cookieStore.delete("organizationSubscriptionPlan");
     revalidatePath("/dashboard/property-owner");
     return { success: true, redirectTo: "/dashboard/property-owner" };
   } catch (error) {
     return { success: false, message: error?.message || "Could not create the organization." };
   }
+}
+
+export async function selectOrganizationSubscriptionPlan(formData) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const planId = String(formData.get("planId") || "");
+  const requestedReturnTo = String(formData.get("returnTo") || "");
+  const returnTo = requestedReturnTo.startsWith("/dashboard/user/create-organization")
+    ? requestedReturnTo
+    : "/dashboard/user/create-organization";
+
+  if (!token) {
+    redirect(`/auth/log-in?redirectUrl=${encodeURIComponent(returnTo)}`);
+  }
+  if (!["core", "growth", "enterprise"].includes(planId)) {
+    redirect(`/dashboard/user/subscriptions?returnTo=${encodeURIComponent(returnTo)}&error=invalid-plan`);
+  }
+
+  cookieStore.set("organizationSubscriptionPlan", planId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+  redirect(returnTo);
 }
 
 
@@ -459,7 +560,11 @@ export async function handleLogOut() {
   cookieStore.delete("refreshToken");
   cookieStore.delete("organizationAdmin");
   cookieStore.delete("organizationId");
+  cookieStore.delete("organizationRole");
+  cookieStore.delete("userId");
+  cookieStore.delete("userEmail");
   cookieStore.delete("organizationSubscription");
+  cookieStore.delete("organizationSubscriptionPlan");
   redirect("/auth/log-in");
 }
 
@@ -496,6 +601,45 @@ export async function updateUserProfile(userData) {
   const data = await response.json();
   revalidateTag("user-profile");
   return data
+}
+
+export async function deleteCurrentUserProfile() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) return { success: false, message: "Please log in to continue." };
+
+  try {
+    let userId = cookieStore.get("userId")?.value;
+    if (!userId) {
+      const profileResponse = await safeFetch("https://services.xpacy.com/api/v1/auth/profile", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (profileResponse.ok) {
+        const profilePayload = await profileResponse.json();
+        const profile = profilePayload?.user || profilePayload?.data?.user || profilePayload?.data || profilePayload;
+        userId = profile?.id || profile?._id || profile?.userId || profile?.user_id;
+      }
+    }
+    if (!userId) return { success: false, message: "Could not identify your account. Please sign in again and retry." };
+
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/users/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+    let result = null;
+    try { result = await response.json(); } catch {}
+    if (!response.ok || result?.success === false || result?.error) {
+      return { success: false, message: result?.message || result?.error || "Could not delete your profile." };
+    }
+
+    ["token", "refreshToken", "userRole", "userId", "userEmail", "organizationAdmin", "organizationId", "organizationRole", "organizationSubscription", "organizationSubscriptionPlan"].forEach((name) => cookieStore.delete(name));
+    return { success: true };
+  } catch {
+    return { success: false, message: "Could not delete your profile. Please try again." };
+  }
 }
 
 export async function updateUserPassword(userData) {

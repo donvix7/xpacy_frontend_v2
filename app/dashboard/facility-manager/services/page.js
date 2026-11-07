@@ -1,23 +1,13 @@
 import { cookies } from "next/headers";
-import Link from "next/link";
 import PropertyOwnerServicesTable from "@/app/_components/PropertyOwnerServicesTable";
 import ServicesOverviewWrapper from "@/app/_components/ServicesOverviewWrapper";
-import { getUserProfile, getProperties, getPropertyOwnerServices, getPropertyOwnerProperties } from "@/app/_lib/data-services";
-import { MdAdd } from "react-icons/md";
+import { getBookedServices } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 
 export default async function Page({ searchParams }) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const [user, propertiesData, services] = await Promise.all([
-      getUserProfile(token),
-      getPropertyOwnerProperties(token),
-      getPropertyOwnerServices(token) 
-  ]);
-
-  const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : [];
-  const myProperties = allProperties.filter(property => property.property_owner_id === user?.id);
-  const myPropertyIds = myProperties.map(p => p.id || p._id);
+  const services = await getBookedServices(token);
 
   // Filter services that are linked to my properties
   let myServices = Array.isArray(services) ? services : [];

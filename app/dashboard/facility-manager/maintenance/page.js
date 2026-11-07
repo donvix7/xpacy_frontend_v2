@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
 import {
-    getPropertyOwnerProfile,
-    getPropertyOwnerProperties,
-    getPropertyOwnerServices,
+    getManagedProperties,
+    getBookedServices,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
@@ -16,17 +15,15 @@ export default async function Page() {
     const token = cookieStore.get("token");
 
     const results = await Promise.allSettled([
-        getPropertyOwnerProfile(token),
-        getPropertyOwnerProperties(token, { limit: 10000 }),
-        getPropertyOwnerServices(token),
+        getManagedProperties(10000),
+        getBookedServices(token),
     ]);
 
-    const profile = results[0].status === "fulfilled" ? results[0].value : null;
-    const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
-    const services = results[2].status === "fulfilled" ? results[2].value : [];
+    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
+    const services = results[1].status === "fulfilled" ? results[1].value : [];
 
     const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
+    const properties = allProperties;
     const myServices = Array.isArray(services) ? services : [];
 
     const maintenanceServices = myServices.filter(s =>

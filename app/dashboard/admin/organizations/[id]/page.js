@@ -16,11 +16,14 @@ import {
     Shield,
     Calendar,
     BadgeCheck,
+    User2,
 } from "lucide-react";
 import {
     getOrganizationById,
     getOrganizationProperties,
     getOrganizationMembers,
+    getAdminOrganizationById,
+    getAdminOrganizationMembers,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
@@ -35,13 +38,17 @@ const detailConfig = [
     { key: "country", label: "Country", icon: Flag },
     { key: "timezone", label: "Timezone", icon: Clock },
     { key: "currency", label: "Currency", icon: DollarSign },
+    { key: "members", label: "Members", icon: User2 },
     { key: "slug", label: "Slug", icon: Link2 },
 ];
 
 function detailRows(organization) {
     return detailConfig
         .map(({ key, label, icon }) => [label, organization[key], icon])
-        .filter(([, value]) => value);
+        .filter(
+            ([, value]) =>
+                value !== undefined && value !== null && value !== ""
+        );
 }
 
 const memberName = (member) => {
@@ -63,9 +70,9 @@ export default async function Page({ params }) {
     const { id } = await params;
 
     const [result, organizationProperties, members] = await Promise.all([
-        getOrganizationById(id),
+        getAdminOrganizationById(id),
         getOrganizationProperties(id),
-        getOrganizationMembers(id),
+        getAdminOrganizationMembers(id),
     ]);
 
     const organization = result?.organization || result;
@@ -95,6 +102,20 @@ export default async function Page({ params }) {
         );
     }
 
+    // Prefer an explicit count from the API, otherwise fall back to list length
+    const totalMembers =
+        result?.memberCount ??
+        organization?.memberCount ??
+        organization?.membersCount ??
+        organization?.members?.length ??
+        memberList.length;
+
+    // Merge the computed count into the object used for rendering details
+    const organizationWithCounts = {
+        ...organization,
+        members: totalMembers,
+    };
+
     return (
         <div className="space-y-6 p-2 sm:p-4">
             {/* Header */}
@@ -119,7 +140,7 @@ export default async function Page({ params }) {
                             <Building2 className="h-7 w-7 text-primary" />
                         </div>
                         <div className="min-w-0">
-                            <h1 className="break-words text-2xl font-bold text-primary lg:text-3xl">
+                            <h1 className="break-words text-2xl font-bold text-primary">
                                 {organization.name}
                             </h1>
                             <p className="mt-1 break-all text-sm text-gray-500">
@@ -136,7 +157,7 @@ export default async function Page({ params }) {
             {/* Details */}
             <DashboardGridItem title="Organization Details">
                 <dl className="flex flex-col gap-3">
-                    {detailRows(organization).map(([label, value, Icon]) => (
+                    {detailRows(organizationWithCounts).map(([label, value, Icon]) => (
                         <div key={label} className="flex items-start gap-3">
                             <div className="flex min-w-0 flex-col">
                                 <div className="flex items-center gap-2">
@@ -154,135 +175,6 @@ export default async function Page({ params }) {
                         </div>
                     ))}
                 </dl>
-            </DashboardGridItem>
-
-            {/* Members */}
-            <DashboardGridItem title={`Members${memberList.length ? ` (${memberList.length})` : ""}`}>
-                {memberList.length === 0 ? (
-                    <EmptyState
-                        icon={Users}
-                        title="No members"
-                        message="No members have been added to this organization yet."
-                    />
-                ) : (
-                    <>
-                        {/* Desktop table */}
-                        <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm md:block">
-                            <table className="w-full border-collapse text-left text-sm">
-                                <thead className="border-b border-gray-100 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                    <tr>
-                                        <th className="px-4 py-3.5">Name</th>
-                                        <th className="px-4 py-3.5">Contact</th>
-                                        <th className="px-4 py-3.5">Role</th>
-                                        <th className="px-4 py-3.5 text-center">Status</th>
-                                        <th className="px-4 py-3.5 text-right">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {memberList.map((member, idx) => {
-                                        const name = memberName(member);
-                                        const u = member.user || member.profile || {};
-                                        const email = u.email || member.email || "—";
-                                        const phone = u.phone || member.phone;
-                                        const role =
-                                            member.role?.replace(/_/g, " ").toLowerCase() || "Member";
-                                        const status = member.status || u.status || "active";
-                                        const userId = member.userId || u.id || member.id;
-
-                                        return (
-                                            <tr
-                                                key={member.id || idx}
-                                                className="transition-colors hover:bg-gray-50/60"
-                                            >
-                                                <td className="px-4 py-3.5">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary">
-                                                            <Users className="h-4 w-4" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-gray-900">{name}</p>
-                                                            {u.username && (
-                                                                <p className="text-xs text-gray-400">@{u.username}</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3.5 text-xs">
-                                                    <p className="text-gray-800">{email}</p>
-                                                    {phone && (
-                                                        <p className="mt-0.5 text-gray-400">{phone}</p>
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-3.5 text-xs capitalize text-gray-600">
-                                                    {role}
-                                                </td>
-                                                <td className="px-4 py-3.5 text-center">
-                                                    <div className="flex justify-center">
-                                                        <StatusChips status={status} />
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3.5 text-right">
-                                                    {userId ? (
-                                                        <Link
-                                                            href={`/dashboard/admin/users/${userId}`}
-                                                            className="inline-flex items-center text-xs font-semibold text-primary hover:underline"
-                                                        >
-                                                            View
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="text-xs text-gray-300">—</span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Mobile cards */}
-                        <div className="grid gap-4 sm:grid-cols-2 md:hidden">
-                            {memberList.map((member, idx) => {
-                                const name = memberName(member);
-                                const u = member.user || member.profile || {};
-                                const email = u.email || member.email;
-                                const role =
-                                    member.role?.replace(/_/g, " ").toLowerCase() || "Member";
-                                const status = member.status || u.status || "active";
-                                const userId = member.userId || u.id || member.id;
-
-                                return (
-                                    <div
-                                        key={member.id || idx}
-                                        className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Users className="h-4 w-4 shrink-0 text-primary" />
-                                                <h3 className="text-sm font-medium text-gray-900">{name}</h3>
-                                            </div>
-                                            <StatusChips status={status} />
-                                        </div>
-                                        <p className="mt-2 text-xs capitalize text-gray-500">{role}</p>
-                                        {email && (
-                                            <p className="mt-1 break-all text-xs text-gray-400">{email}</p>
-                                        )}
-                                        {userId && (
-                                            <div className="mt-3 flex justify-end border-t border-gray-100 pt-3">
-                                                <Link
-                                                    href={`/dashboard/admin/users/${userId}`}
-                                                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                                                >
-                                                    View profile
-                                                </Link>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </>
-                )}
             </DashboardGridItem>
 
             {/* Properties */}

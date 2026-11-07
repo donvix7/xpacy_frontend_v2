@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Sparkles, Loader2, CalendarCheck, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Sparkles, Loader2, CalendarCheck, ShieldCheck, Server } from "lucide-react";
 
 export default function DemoBookingForm({ isAuthenticated = false }) {
   const [formData, setFormData] = useState({
@@ -37,16 +37,41 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
 
   if (!isAuthenticated) {
     return (
-      <div id="demo-form-card" className="bg-white rounded-2xl p-8 shadow-2xl border border-primary-100 text-center text-gray-900">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary">
-          <CalendarCheck className="h-7 w-7" />
-        </div>
-        <h3 className="text-2xl font-bold font-sans text-primary">Book a Demo</h3>
-        <p className="mt-2 text-sm text-gray-600">Log in to book a personalized walkthrough of the platform.</p>
-        <Link href="/auth/log-in?redirectUrl=%2F" className="mt-6 inline-flex rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-900">
-          Log in to book demo
-        </Link>
-      </div>
+      <div 
+  id="demo-form-card" 
+  className="relative overflow-hidden rounded-2xl p-8 text-center text-gray-900 shadow-2xl border border-white/40 bg-gradient-to-br from-white via-primary-50/60 to-primary-100/80 backdrop-blur-xl"
+>
+  {/* Decorative gradient blobs */}
+  <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-gradient-to-br from-primary-300/40 to-primary-500/20 blur-3xl" />
+  <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-gradient-to-tr from-primary-200/40 to-primary-400/20 blur-3xl" />
+
+  {/* Subtle top highlight line */}
+  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
+
+  {/* Content (relative so it sits above decorations) */}
+  <div className="relative">
+    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-700 text-white  ring-4 ring-white/60">
+      <Server className="h-7 w-7" />
+    </div>
+
+    <h3 className="bg-gradient-to-r from-primary-700 via-primary to-primary-600 bg-clip-text text-2xl font-bold font-sans text-transparent">
+      Access Features
+    </h3>
+
+    <p className="mt-2 text-sm text-gray-600">
+      Log in to access features and services.
+    </p>
+
+    <Link
+      href="/auth/log-in?redirectUrl=%2F"
+      className="group relative mt-6 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary-700 px-6 py-3 text-sm font-bold text-white  transition-all duration-300 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5"
+    >
+      {/* Shine sweep on hover */}
+      <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+      <span className="relative">Log in to Access</span>
+    </Link>
+  </div>
+</div>
     );
   }
 
@@ -226,7 +251,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
                 <span>Scheduling walkthrough...</span>
               </>
             ) : (
-              <span>Request demo</span>
+              <span>Join us</span>
             )}
           </button>
         </div>

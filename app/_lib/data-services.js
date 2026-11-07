@@ -973,7 +973,70 @@ export async function getDocumentById(id) {
 /* ----------------------------------------------------------------
  * Organizations, users, members
  * ---------------------------------------------------------------- */
+export async function getAllAdminOrganization(){
+  
+ const token = await getRawToken();
+  try {
+    const response = await safeFetch(
+      `${SERVICE_URL}/admin/organizations?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    const { data } = await response.json();
+    
+    return data || [];
+  } catch (err) {
+    console.warn(err);
+    return [];
+  }  
+}
 
+export async function getAdminOrganizationById(id) {
+  const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/admin/organizations/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    const data = await response.json();
+    return data || null;
+  } catch (err) {
+    console.warn(err);
+    return null;
+  }
+}
+
+export async function getAdminOrganizationMembers(id) {
+  const token = await getRawToken();
+  try {
+    const response = await safeFetch(
+      `${SERVICE_URL}/admin/organizations/${id}/members?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    const { data } = await response.json();
+    return data || [];
+  } catch (err) {
+    console.warn(err);
+    return [];
+  }
+}
 export async function getAllOrganization() {
   const token = await getRawToken();
   try {
@@ -1938,3 +2001,32 @@ export async function getSingleListing(id) {
   }
 }
 
+export async function getSubscriptionList(){
+  const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/admin/subscription-plans?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const { data } = await safeJson(response);
+    return data || null;
+  } catch (error) {
+    console.warn("Error fetching Subscriptons:", error);
+    return null;
+  }
+}
+
+export async function getActiveOrganizationRole() {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get("organizationRole")?.value || "";
+  } catch {
+    return "";
+  }
+}

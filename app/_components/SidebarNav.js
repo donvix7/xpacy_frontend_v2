@@ -10,7 +10,7 @@ import { RiUserSettingsLine } from "react-icons/ri";
 import { LuBell, LuLayoutDashboard, LuMessageCircleQuestion, LuMessageSquare, LuWrench } from "react-icons/lu";
 import { IoCalendarOutline } from "react-icons/io5";
 import { RiHome2Line, RiSearchLine, RiSettings3Line, RiPulseLine } from "react-icons/ri";
-import { Archive, Calendar1, MessageSquare, Settings, User } from "lucide-react";
+import { Archive, Calendar1, MessageSquare, Settings, User, User2 } from "lucide-react";
 import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaWrench } from "react-icons/fa6";
 import { TbBuilding, TbBuildingCommunity, TbFileText, TbHelp, TbReportAnalytics, TbSettings, TbUsers } from "react-icons/tb";
 import { HiOutlineClipboardList } from "react-icons/hi";
@@ -243,6 +243,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             link: "/dashboard/facility-manager/properties",
             icon: <BiBuildingHouse />
         },
+           {
+            text: "Tenants",
+            link: "/dashboard/facility-manager/tenants",
+            icon: <User2 />
+        },
         {
             text: "Inventory",
             link: "/dashboard/facility-manager/inventory",
@@ -272,6 +277,21 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             text: "Bookings",
             link: "/dashboard/facility-manager/bookings",
             icon: <FaCheck />
+        },
+        {
+            text: "Inspections",
+            link: "/dashboard/facility-manager/inspections",
+            icon: <HiOutlineClipboardList />
+        },
+        {
+            text: "Rents",
+            link: "/dashboard/facility-manager/rents",
+            icon: <GiTakeMyMoney />
+        },
+        {
+            text: "Security",
+            link: "/dashboard/facility-manager/security",
+            icon: <BiShield />
         },
         {
             text: "Utilities",
@@ -380,6 +400,21 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             text: "Vendor",
             link: "/dashboard/property-manager/vendor",
             icon: <FaHandshake className="w-5 h-5" /> // Handshake represents vendors
+        },
+        {
+            text: "Rents",
+            link: "/dashboard/property-manager/rents",
+            icon: <GiTakeMyMoney className="w-5 h-5" />
+        },
+        {
+            text: "Security",
+            link: "/dashboard/property-manager/security",
+            icon: <BiShield className="w-5 h-5" />
+        },
+        {
+            text: "Payments",
+            link: "/dashboard/property-manager/payments",
+            icon: <GiPayMoney className="w-5 h-5" />
         },
         {
             text: "Community Forum",

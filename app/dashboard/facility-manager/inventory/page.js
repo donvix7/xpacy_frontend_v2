@@ -1,7 +1,5 @@
-import { cookies } from "next/headers";
 import {
-    getPropertyOwnerProfile,
-    getPropertyOwnerProperties,
+    getManagedProperties,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
@@ -9,19 +7,14 @@ import PropertyManagerInventory from "@/app/_components/PropertyManagerInventory
 import { FaBuilding, FaClipboardCheck, FaTriangleExclamation, FaBoxOpen } from "react-icons/fa6";
 
 export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-
     const results = await Promise.allSettled([
-        getPropertyOwnerProfile(token),
-        getPropertyOwnerProperties(token, { limit: 10000 }),
+        getManagedProperties(10000),
     ]);
 
-    const profile = results[0].status === "fulfilled" ? results[0].value : null;
-    const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
+    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
 
     const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
+    const properties = allProperties;
 
     const summaryCards = [
         {
