@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import AppHeader from "@/app/_components/AppHeader";
 import Footer from "@/app/_components/Footer";
 import ListingInsightsClient from "./ListingInsightsClient";
@@ -16,8 +15,38 @@ function toListingArray(payload) {
   return payload && typeof payload === "object" && (payload.id || payload._id || payload.title || payload.listingType) ? [payload] : [];
 }
 
+function normalizeRole(role) {
+  return String(role || "").trim().toLowerCase().replace(/[\s_-]/g, "");
+}
+
 export default async function ListingStatisticsPage({ searchParams }) {
   const params = await searchParams;
+  const cookieStore = await cookies();
+  const userRole = normalizeRole(cookieStore.get("userRole")?.value);
+  const organizationRole = normalizeRole(cookieStore.get("organizationRole")?.value);
+  const allowedRoles = new Set([
+    "propertyowner",
+    "owner",
+    "organizationowner",
+    "organizationadmin",
+    "organizationadministrator",
+    "orgadmin",
+    "facilitymanager",
+  ]);
+  const isAllowedRole = allowedRoles.has(userRole) || allowedRoles.has(organizationRole);
+
+  if (!cookieStore.get("token")?.value || !isAllowedRole) {
+    return (
+      <div className="w-full h-full">
+        <AppHeader />
+        <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+          <EmptyState message="Only property owners and facility managers can view listing statistics." />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   const organizationId = typeof params?.organizationId === "string" ? params.organizationId.trim() : "";
   if (!isValidOrganizationId(organizationId)){
     return(
@@ -36,7 +65,6 @@ export default async function ListingStatisticsPage({ searchParams }) {
   } 
   const organization = await getPublicOrganizationById(organizationId);
 
-  const cookieStore = await cookies();
   const propertyResults = await Promise.allSettled([
     getMyProperties(),
     getManagedProperties(),
