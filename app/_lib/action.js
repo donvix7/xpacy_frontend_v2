@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers"
 import { revalidatePath, revalidateTag } from "next/cache";
+import { getAdminOrganizationMembers } from "./data-services";
 
 const URL = "https://app.xpacy.com";
 const dashboardByRole = {
@@ -11,6 +12,7 @@ const dashboardByRole = {
   admin: "/dashboard/admin",
   administrator: "/dashboard/admin",
   superadmin: "/dashboard/admin",
+  superadministrator: "/dashboard/admin",
   propertyowner: "/dashboard/property-owner",
   propertymanager: "/dashboard/property-manager",
   facilitymanager: "/dashboard/facility-manager",
@@ -40,19 +42,154 @@ async function getOrganizationMembershipRole(organizationId, token, userId, emai
     });
     if (!response.ok) return "";
     const payload = await response.json();
-    const members = [payload, payload?.data, payload?.members, payload?.data?.members, payload?.items]
+    const members = [
+      payload,
+      payload?.data,
+      payload?.members,
+      payload?.memberships,
+      payload?.data?.members,
+      payload?.data?.memberships,
+      payload?.data?.items,
+      payload?.data?.data,
+      payload?.data?.data?.members,
+      payload?.data?.data?.items,
+      payload?.data?.results,
+      payload?.result?.members,
+      payload?.result?.items,
+      payload?.result,
+      payload?.items,
+    ]
       .find(Array.isArray) || [];
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const member = members.find((entry) => {
-      const ids = [entry?.userId, entry?.user_id, entry?.user?.id, entry?.user?._id, entry?.profile?.id, entry?.profile?._id]
+      const ids = [
+        entry?.userId,
+        entry?.user_id,
+        entry?.member?.userId,
+        entry?.member?.user_id,
+        entry?.member?.user?.id,
+        entry?.member?.user?._id,
+        entry?.user?.id,
+        entry?.user?._id,
+        entry?.user?.userId,
+        entry?.user?.user_id,
+        entry?.profile?.id,
+        entry?.profile?._id,
+      ]
         .filter(Boolean).map(String);
-      const memberEmail = String(entry?.email || entry?.user?.email || entry?.profile?.email || "").trim().toLowerCase();
+      const memberEmail = String(entry?.email || entry?.member?.email || entry?.user?.email || entry?.profile?.email || "").trim().toLowerCase();
       return (userId && ids.includes(String(userId))) || (normalizedEmail && memberEmail === normalizedEmail);
     });
-    return String(member?.role || member?.organizationRole || "");
+    const role = member?.role?.name || member?.role?.value || member?.role?.code || member?.role
+      || member?.organizationRole?.name || member?.organizationRole?.value || member?.organizationRole?.code || member?.organizationRole
+      || member?.memberRole?.name || member?.memberRole?.value || member?.memberRole?.code || member?.memberRole
+      || member?.membership?.role?.name || member?.membership?.role?.value || member?.membership?.role
+      || member?.roleName;
+    return typeof role === "string" ? role : "";
   } catch {
     return "";
   }
+}
+
+async function getOrganizationMemberList(organizationId) {
+  const limit = 100;
+  const members = [];
+  let page = 1;
+
+  try {
+    while (page <= 100) {
+      const payload = await getAdminOrganizationMembers(organizationId, limit, page);
+      const currentPageMembers = Array.isArray(payload)
+        ? payload
+        : [
+            payload?.members,
+            payload?.memberships,
+            payload?.items,
+            payload?.results,
+            payload?.data,
+            payload?.data?.members,
+            payload?.data?.memberships,
+            payload?.data?.items,
+            payload?.data?.results,
+            payload?.data?.data?.members,
+            payload?.data?.data?.items,
+          ].find(Array.isArray) || [];
+      members.push(...currentPageMembers);
+      if (currentPageMembers.length < limit) break;
+      page += 1;
+    }
+
+    return members;
+  } catch {
+    return members;
+  }
+}
+
+function getRoleFromMemberList(members, userId, email) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const currentMember = members.find((member) => {
+    const ids = [
+      member?.userId,
+      member?.user_id,
+      member?.member?.userId,
+      member?.member?.user_id,
+      member?.member?.user?.id,
+      member?.member?.user?._id,
+      member?.user?.id,
+      member?.user?._id,
+      member?.profile?.id,
+      member?.profile?._id,
+      member?.member?.profile?.id,
+      member?.member?.profile?._id,
+    ]
+      .filter(Boolean).map(String);
+    const memberEmail = String(member?.email || member?.member?.email || member?.user?.email || member?.profile?.email || member?.member?.user?.email || member?.member?.profile?.email || "").trim().toLowerCase();
+    return (userId && ids.includes(String(userId))) || (normalizedEmail && memberEmail === normalizedEmail);
+  });
+  const role = currentMember?.role?.name || currentMember?.role?.value || currentMember?.role?.code || currentMember?.role
+    || currentMember?.organizationRole?.name || currentMember?.organizationRole?.value || currentMember?.organizationRole?.code || currentMember?.organizationRole
+    || currentMember?.memberRole?.name || currentMember?.memberRole?.value || currentMember?.memberRole?.code || currentMember?.memberRole
+    || currentMember?.membership?.role?.name || currentMember?.membership?.role?.value || currentMember?.membership?.role
+    || currentMember?.roleName;
+  return typeof role === "string" ? role : "";
+}
+
+export async function attachCurrentUserRolesToOrganizations(organizations = []) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const userId = cookieStore.get("userId")?.value;
+  const email = cookieStore.get("userEmail")?.value;
+
+  return Promise.all(organizations.map(async (organization) => {
+    const id = organization?.id || organization?._id || organization?.organizationId || organization?.organization_id;
+    if (!id || !token) return { ...organization, id: id ? String(id) : "", organizationRole: "", members: [] };
+
+    const members = await getOrganizationMemberList(String(id));
+    const organizationRole = getRoleFromMemberList(members, userId, email);
+    const displayMembers = members.map((member, index) => {
+      const user = member?.user || member?.profile || member?.member?.user || member?.member?.profile || {};
+      const name = member?.name
+        || [user?.firstName || user?.firstname, user?.lastName || user?.lastname].filter(Boolean).join(" ")
+        || user?.name
+        || user?.username
+        || user?.email
+        || member?.email
+        || `Member ${index + 1}`;
+      const memberRole = member?.role?.name || member?.role?.value || member?.role?.code || member?.role
+        || member?.organizationRole?.name || member?.organizationRole?.value || member?.organizationRole?.code || member?.organizationRole
+        || member?.memberRole?.name || member?.memberRole?.value || member?.memberRole?.code || member?.memberRole
+        || member?.membership?.role?.name || member?.membership?.role?.value || member?.membership?.role
+        || member?.roleName;
+      return {
+        id: String(member?.id || member?._id || member?.userId || member?.user_id || index),
+        name: String(name),
+        email: String(member?.email || user?.email || ""),
+        role: typeof memberRole === "string" ? memberRole : "",
+      };
+    });
+
+    return { ...organization, id: String(id), organizationRole, members: displayMembers };
+  }));
 }
 
 
@@ -94,7 +231,7 @@ export const handleSearch = async (formData) => {
   redirect(`/search?${params.toString()}`)
 }
 
-export async function handleUserLogin(userData) {
+export async function handleUserLogin(userData, requestedRedirectUrl = "") {
   const response = await fetch(`https://services.xpacy.com/api/v1/auth/login`, {
     method: "POST",
     headers: {
@@ -161,19 +298,15 @@ export async function handleUserLogin(userData) {
     cookieStore.delete("refreshToken");
   }
 
-  const returnTo = typeof requestedRedirectUrl === "string" &&
+  const safeRequestedRedirectUrl = typeof requestedRedirectUrl === "string" &&
     requestedRedirectUrl.startsWith("/") &&
     !requestedRedirectUrl.startsWith("//") &&
     role === "user"
-    ?  "/dashboard/user" :
-    role === "FACILITY_MANAGER" || role === "PROPERTY_MANAGER" || role === "PROPERTY_OWNER"
-    ? "/dashboard/propertymanager" :
-    role === "admin" || role === "SUPER_ADMIN" ? "/dashboard/admin" : roleDestination;
+    ? requestedRedirectUrl
+    : "";
 
   const proceedParams = new URLSearchParams({ role });
-  if (role === "user" && returnTo !== roleDestination) {
-    proceedParams.set("returnTo", returnTo);
-  }
+  if (safeRequestedRedirectUrl) proceedParams.set("returnTo", safeRequestedRedirectUrl);
 
   return {
     success: true,
@@ -191,7 +324,7 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
     return { success: false, message: "Your session has expired. Please log in again." };
   }
 
-  if (["admin", "administrator", "superadmin"].includes(role)) {
+  if (["admin", "administrator", "superadmin", "superadministrator"].includes(role)) {
     cookieStore.delete("organizationId");
     cookieStore.delete("organizationRole");
     return { success: true, redirectTo };
@@ -200,23 +333,33 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
   let organizationRole = "";
   if (typeof organizationId === "string" && organizationId.trim()) {
     const selectedOrganizationId = organizationId.trim();
-    cookieStore.set("organizationId", organizationId.trim(), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24,
-    });
     organizationRole = await getOrganizationMembershipRole(
       selectedOrganizationId,
       cookieStore.get("token")?.value,
       cookieStore.get("userId")?.value,
       cookieStore.get("userEmail")?.value
     );
-    if (organizationRole) cookieStore.set("organizationRole", organizationRole, {
+
+    const organizationDashboard = dashboardByOrganizationRole[normalizeRole(organizationRole)];
+    if (!organizationRole || !organizationDashboard) {
+      cookieStore.delete("organizationId");
+      cookieStore.delete("organizationRole");
+      return {
+        success: false,
+        message: "We couldn’t verify your role in that organization. Please try again or ask an organization admin to check your membership.",
+      };
+    }
+
+    cookieStore.set("organizationId", selectedOrganizationId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+    cookieStore.set("organizationRole", organizationRole, {
       httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 24,
     });
-    else cookieStore.delete("organizationRole");
   } else {
     cookieStore.delete("organizationId");
     cookieStore.delete("organizationRole");
@@ -383,16 +526,23 @@ export async function selectOrganizationSubscriptionPlan(formData) {
 }
 
 
+function getApiErrorMessage(data, fallback) {
+  const message = data?.message ?? data?.error ?? data?.details;
+  if (Array.isArray(message)) return message.filter(Boolean).join(". ");
+  if (typeof message === "string" && message.trim()) return message;
+  return fallback;
+}
+
 export async function handleSignup(userData, referralCode) {
   const payload = {
-    firstName: userData.firstname,
-    lastName: userData.lastname,
-    phone: userData.phoneNumber,
+    firstName: userData.firstname ?? userData.firstName,
+    lastName: userData.lastname ?? userData.lastName,
+    phone: userData.phoneNumber ?? userData.phone,
     email: userData.email,
     password: userData.password,
-  }
-  //const response = await safeFetch(`${URL}/user/register?referralCode=${referralCode}`, {
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/auth/register`, {
+  };
+  const query = referralCode ? `?referralCode=${encodeURIComponent(referralCode)}` : "";
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/auth/register${query}`, {
 
     method: "POST",
     headers: {
@@ -402,24 +552,15 @@ export async function handleSignup(userData, referralCode) {
   })
   const data = await response.json();
 
-  if (!response.ok) return { success: false, message: data.message }
+  if (!response.ok) return { success: false, message: getApiErrorMessage(data, "We could not create your account. Please try again.") }
 
-  return { success: true, message: data.message, user: data.user }
+  return { success: true, message: data.message || "Account created. Check your email to verify your address.", user: data.user }
 }
 
 export async function handlePropertyOwnerSignup(userData, referralCode) {
-  const response = await safeFetch(`${URL}/property-owner/register?referralCode=${referralCode}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ ...userData })
-  })
-  const data = await response.json();
-
-  if (!response.ok) return { success: false, message: data.message }
-
-  return { success: true, message: data.message, user: data.user }
+  // The dedicated /property-owner/register endpoint was retired with the legacy API.
+  // Owner accounts are created through the shared auth register endpoint.
+  return handleSignup(userData, referralCode);
 }
 
 // ...existing imports...
@@ -2663,5 +2804,112 @@ export async function markAllAsRead() {
     return data;
   } catch (error) {
     console.warn("Error marking all notifications as read:", error);
+  }
+}
+
+export async function saveSubscriptionPlan(formData) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const role = normalizeRole(cookieStore.get("userRole")?.value);
+  if (!token || !["admin", "administrator", "superadmin", "superadministrator"].includes(role)) {
+    return { success: false, message: "Only an administrator can manage subscription plans." };
+  }
+
+  const id = String(formData.get("id") || "").trim();
+  const priceValue = String(formData.get("price") || "").trim();
+  const isActive = formData.get("isActive") === "on";
+  let features;
+  try {
+    features = JSON.parse(String(formData.get("features") || "{}"));
+  } catch {
+    return { success: false, message: "Features must be a valid JSON object." };
+  }
+  if (!features || typeof features !== "object" || Array.isArray(features)) {
+    return { success: false, message: "Features must be a JSON object." };
+  }
+
+  const payload = {
+    name: String(formData.get("name") || "").trim(),
+    slug: String(formData.get("slug") || "").trim().toLowerCase(),
+    description: String(formData.get("description") || "").trim(),
+    currency: String(formData.get("currency") || "NGN").trim().toUpperCase(),
+    price: priceValue === "" ? null : Number(priceValue),
+    interval: String(formData.get("interval") || "MONTHLY").trim().toUpperCase(),
+    features,
+    maxOrganizations: Number(formData.get("maxOrganizations") || 0),
+    maxProperties: Number(formData.get("maxProperties") || 0),
+    isActive,
+    sortOrder: Number(formData.get("sortOrder") || 0),
+  };
+
+  if (!payload.name || !payload.slug) return { success: false, message: "Enter a name and slug for this plan." };
+  if (!Number.isFinite(payload.price) || payload.price < 0) {
+    return { success: false, message: "Plan price must be a valid non-negative number." };
+  }
+  if (!Number.isInteger(payload.maxOrganizations) || payload.maxOrganizations < 0 ||
+      !Number.isInteger(payload.maxProperties) || payload.maxProperties < 0 ||
+      !Number.isInteger(payload.sortOrder) || payload.sortOrder < 0) {
+    return { success: false, message: "Limits and sort order must be non-negative whole numbers." };
+  }
+  if (!["MONTHLY", "YEARLY"].includes(payload.interval)) {
+    return { success: false, message: "Choose a valid billing interval." };
+  }
+
+  try {
+    const endpoint = "https://services.xpacy.com/api/v1/admin/subscription-plans";
+    const response = await fetch(id ? `${endpoint}/${encodeURIComponent(id)}` : endpoint, {
+      method: id ? "PUT" : "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result?.success === false || result?.error) {
+      return { success: false, message: result?.message || result?.error || "The subscription plan could not be saved." };
+    }
+    revalidatePath("/dashboard/admin/subscriptions");
+    revalidatePath("/subscriptions");
+    return { success: true };
+  } catch {
+    return { success: false, message: "The subscription service could not be reached. Try again." };
+  }
+}
+
+export async function searchAdminBlogsBySlug(slug) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const role = normalizeRole(cookieStore.get("userRole")?.value);
+  if (!token || !["admin", "administrator", "superadmin", "superadministrator"].includes(role)) {
+    return { success: false, message: "Only an administrator can search blogs." };
+  }
+
+  const normalizedSlug = String(slug || "").trim().replace(/^\/+|\/+$/g, "");
+  if (!normalizedSlug) return { success: false, message: "Enter a blog slug to search." };
+
+  try {
+    const query = new URLSearchParams({ slug: normalizedSlug });
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/blogs/s?${query.toString()}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result?.success === false || result?.error) {
+      return { success: false, message: result?.message || result?.error || "Could not search blogs by slug." };
+    }
+
+    const data = result?.data ?? result?.blog ?? result?.result ?? result;
+    const nestedBlogs = data?.blogs ?? data?.items ?? data?.results;
+    const blogs = Array.isArray(data) ? data : Array.isArray(nestedBlogs) ? nestedBlogs : data ? [data] : [];
+    return { success: true, blogs };
+  } catch {
+    return { success: false, message: "The blog service could not be reached. Try again." };
   }
 }

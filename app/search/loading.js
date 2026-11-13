@@ -1,4 +1,5 @@
+import { PageSkeleton } from "@/app/_components/LoadingStates";
 
-export default function Loading(){
-    return <div className="spinner"></div>
+export default function Loading() {
+    return <PageSkeleton />;
 }

@@ -1,4 +1,4 @@
-import { FaUsers, FaUserTie, FaUserShield, FaUserCheck, FaUserSlash } from "react-icons/fa";
+import { FaUserTie, FaUserShield, FaUserCheck, FaUserSlash } from "react-icons/fa";
 import { RiUserUnfollowLine } from "react-icons/ri";
 import { BiUser } from "react-icons/bi";
 import { User2, Users, Users2Icon } from "lucide-react";
@@ -54,32 +54,22 @@ export default function UsersSummary({
     ];
 
     return (
-        <div className="p-6 flex flex-col gap-8 border border-primary-200 rounded-lg bg-white">
-            {/* ... Existing Users Summary ... */}
-            <div>
-                <div className="flex justify-between items-center pb-4 border-b border-gray-100 mb-6">
-                    <p className="text-lg font-bold text-gray-800">User Statistics</p>
-                </div>
+        <div className="flex flex-col gap-5 rounded-2xl border border-line bg-white p-4 sm:p-6">
+            <div className="flex items-center justify-between border-b border-line pb-4">
+                <p className="text-lg font-semibold text-ink">User Statistics</p>
+            </div>
 
-                <div className="flex flex-col gap-4">
-                     {/* Main Hero Card */}
-                     <div className="flex flex-col border border-primary-200 rounded-lg px-6 py-7 relative overflow-hidden bg-white mb-4">
-                        <div className="flex gap-2 items-center lg:w-[256px] w-full" >
-                            <span className="w-12 h-12 text-primary-300 bg-yellow-200 rounded-full flex items-center justify-center text-2xl "><FaUsers /></span>
-                            <span className="font-mono text-primary-900 uppercase">Total Users</span>
-                        </div>
-                        <p className="text-center font-bold text-2xl font-mono w-[256px]">{totalUsers}</p>
-                        <div className="w-[220px] h-[220px] rounded-full absolute lg:-right-[7%] -right-[70%] lg:-top-1 -top-10 bg-primary-700 z-10"></div>
-                        <div className="w-[220px] h-[220px] rounded-full absolute lg:right-[4%] -right-[65%] top-2 bg-[#73A0BE]"></div>
-                    </div>
+            <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-mute">Total Users</span>
+                <p className="text-[42px] font-semibold leading-none tracking-[-1.5px] text-ink tabular-nums sm:text-[52px]">{totalUsers}</p>
+                <span className="text-[13.5px] text-mute">Everyone registered on the platform</span>
+            </div>
 
-                    {/* Grid Items */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                        {items.map((item, index) => (
-                            <SummaryItemCard key={index} label={item.title} value={item.count} icon={item.icon} iconBackground={item.color} />
-                        ))}
-                    </div>
-                </div>
+            {/* Grid Items */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {items.map((item, index) => (
+                    <SummaryItemCard key={index} label={item.title} value={item.count} icon={item.icon} iconBackground={item.color} />
+                ))}
             </div>
         </div>
     );

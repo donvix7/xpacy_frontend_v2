@@ -2,6 +2,7 @@ import Link from "next/link";
 import ProfileDisplay from "./ProfileDisplay";
 import { cookies } from "next/headers";
 import { getAdminProfile, getUserProfile } from "../_lib/data-services";
+import { getDashboardRole } from "../_lib/role-routing";
 
 const HeaderCta = async () => {
     const cookieStore = await cookies();
@@ -9,10 +10,14 @@ const HeaderCta = async () => {
     const userProfile = await getUserProfile(token)
     const adminProfile = await getAdminProfile(token)
     const role = adminProfile || userProfile;
+    const dashboardRole = getDashboardRole(
+        cookieStore.get("userRole")?.value || role?.role,
+        cookieStore.get("organizationRole")?.value
+    );
     return (
         <>
             {
-                token ? <ProfileDisplay role={role?.role || "user"} profile={role} /> : (
+                token ? <ProfileDisplay role={dashboardRole || role?.role || "user"} profile={role} /> : (
                     <div className=" hidden md:flex items-center space-x-5">
                         <Link
                             href="/auth/log-in"

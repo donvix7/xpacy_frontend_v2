@@ -1,67 +1,97 @@
 import { getUserNotifications } from "@/app/_lib/data-services";
-import CustomCheckbox from "@/app/_components/CustomCheckbox";
-import DashboardFilter from "@/app/_components/DashboardFilter";
-import SortBy from "@/app/_components/SortBy";
-import MobileDashboardHeader  from '@/app/_components/MobileDashboardHeader';
-import { IoCheckmarkDoneSharp } from "react-icons/io5";
-import MobileSortbyMenu from "@/app/_components/MobileSortbyMenu";
+import MobileDashboardHeader from "@/app/_components/MobileDashboardHeader";
 import MobileNotificationItem from "@/app/_components/MobileNotificationItem";
 import NotificationList from "@/app/_components/NotificationList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import AdminNotificationsSummary from "@/app/_components/AdminNotificationsSummary";
-import { markAllAsRead, markNotificationRead } from "@/app/_lib/action";
-import { Suspense } from "react";
-export default async function Page() {
-            const notifications = await getUserNotifications();
-           
 
-    return (
-        <div className="p-2 flex flex-col gap-4">
-            <MobileDashboardHeader showMenu={false}/>
-             <h1 className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Notifications</h1>
-            <DashboardGridItem title="Summary">
-            <AdminNotificationsSummary notifications={notifications} />
-            </DashboardGridItem>
-            {/* Large screen only */}
-            <div className="px-4 w-full  lg:flex gap-4 hidden items-center justify-end font-mono">
-                {/* Mark as read */}
-                <CustomCheckbox onCheck={markAllAsRead} label={"Mark as read "} />
-                {/*Show only unread */}
-                <CustomCheckbox label={"Show only unread"} />
-                <div className=" relative flex items-center gap-2 ">
-                    <SortBy>
-                        <option>Default</option>
-                        <option>Last 7 days</option>
-                        <option>Last 30 days</option>
-                        <option>Last 90 days</option>
-                    </SortBy>
-                    <Suspense fallback={<div className="h-10 w-32" />}><DashboardFilter /></Suspense>
-                </div>
+function toList(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.notifications)) return payload.notifications;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.notifications)) return payload.data.notifications;
+  return [];
+}
+
+const isRead = (n) => !!(n?.read_at || n?.is_read || n?.read);
+
+export default async function Page() {
+  const notifications = await getUserNotifications();
+  const list = toList(notifications);
+
+  // ---- Hero stats ----------------------------------------------------------
+  const total = list.length;
+  const unread = list.filter((n) => !isRead(n)).length;
+  const read = total - unread;
+  const types = new Set(list.map((n) => n.type).filter(Boolean)).size;
+
+  const heroStats = [
+    { label: "Notifications", value: total, hint: "All messages" },
+    { label: "Unread", value: unread, hint: "Needs attention" },
+    { label: "Read", value: read, hint: "Already seen" },
+    { label: "Types", value: types, hint: "Distinct kinds" },
+  ];
+
+  const today = new Date().toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  return (
+    <div className="space-y-8 p-2">
+      <MobileDashboardHeader showMenu={false} />
+
+      {/* ---------- Hero summary ---------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                Admin console · {today}
+              </p>
+              <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                Notifications
+              </h1>
+              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                Every alert, update and system message in one place — see what needs attention and what's been handled.
+              </p>
             </div>
-            {/* small screen only */}
-            <div className="flex lg:hidden items-center justify-between font-mono">
-                {/* Mark as read */}
-                <button
-                onClick={() => markNotificationRead()}
-                 className="flex items-center gap-2 font-mono text-secondary font-bold">
-                    <span className="text-2xl"><IoCheckmarkDoneSharp/></span>
-                    <span>Mark as read</span>
-                </button>
-                <div className="flex items-center gap-2 relative">
-                <MobileSortbyMenu/>
-                 <Suspense fallback={<div className="h-10 w-32" />}><DashboardFilter /></Suspense>
-                </div>
-            </div>
-            {/* Notification Table for large screens only*/}
-                <DashboardGridItem title={"Notifications"} >
-                    <NotificationList notifications={notifications}/>
-                </DashboardGridItem>
-            {/* Notification List For small screens only */}
-            {notifications?.map((notification, i) => <MobileNotificationItem notification={notification} key={i} />)}
-            {/* Clear all button */}
-            <div className="flex justify-end font-mono">
-                <button className="p-4 font-bold cursor-pointer text-base underline text-primary">Clear All Notificaitons</button>
-            </div>
+          </div>
+
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+              >
+                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                  {typeof stat.value === "number"
+                    ? stat.value.toLocaleString()
+                    : stat.value}
+                </dd>
+                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                  {stat.hint}
+                </p>
+              </div>
+            ))}
+          </dl>
         </div>
-    )
+      </section>
+
+      {/* ---------- Notification table (large screens) ---------- */}
+      <DashboardGridItem title="Notifications">
+        <NotificationList notifications={notifications} />
+      </DashboardGridItem>
+
+      {/* ---------- Notification list (small screens) ---------- */}
+      {list.map((notification, i) => (
+        <MobileNotificationItem notification={notification} key={i} />
+      ))}
+    </div>
+  );
 }

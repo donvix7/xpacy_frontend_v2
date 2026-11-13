@@ -5,9 +5,9 @@ import { Suspense } from "react";
 export default function Page() {
 
     return (
-        <div className="flex min-h-dvh">
+        <div className="xp-auth flex min-h-dvh w-full bg-canvas">
             <Suspense fallback={<div className="w-full md:w-1/2" />}><LoginForm role={"facility-manager"}/></Suspense>
-            <div className="w-1/2 hidden md:block">
+            <div className="relative hidden w-1/2 overflow-hidden p-3 md:block">
                 <AuthCarousel />
             </div>
         </div>

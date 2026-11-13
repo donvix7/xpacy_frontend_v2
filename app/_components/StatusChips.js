@@ -26,7 +26,7 @@ export default function StatusChips({ status }) {
     const normalizedStatus = label.toLowerCase();
 
     return (
-        <span className={`${statusBg[normalizedStatus] || "bg-gray-100 text-gray-600"} px-4 py-1 flex items-center justify-center rounded-full text-xs font-bold font-mono capitalize`}>
+        <span className={`${statusBg[normalizedStatus] || "bg-gray-100 text-gray-600"} px-2.5 py-0.5 flex items-center justify-center rounded-full text-[12.5px] font-medium capitalize`}>
             {label}
         </span>
     );

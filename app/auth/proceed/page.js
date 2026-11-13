@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAllOrganization } from "@/app/_lib/data-services";
+import { attachCurrentUserRolesToOrganizations } from "@/app/_lib/action";
 import ProceedSelection from "./ProceedSelection";
 
 const getOrganizations = (response) => {
@@ -10,9 +11,14 @@ const getOrganizations = (response) => {
         response?.organizations,
         response?.docs,
         response?.results,
+        response?.items,
+        response?.list,
         response?.data?.organizations,
         response?.data?.docs,
         response?.data?.results,
+        response?.data?.items,
+        response?.data?.list,
+        response?.data?.data,
     ];
     return candidates.find(Array.isArray) || [];
 };
@@ -25,13 +31,13 @@ export default async function ProceedPage({ searchParams }) {
 
     if (!token || !role) redirect("/auth/log-in");
 
-    if (["admin", "administrator", "superadmin"].includes(String(role).toLowerCase().replace(/[\s_-]/g, ""))) {
+    if (["admin", "administrator", "superadmin", "superadministrator"].includes(String(role).toLowerCase().replace(/[\s_-]/g, ""))) {
         redirect("/dashboard/admin");
     }
 
     let organizations = [];
     try {
-        organizations = getOrganizations(await getAllOrganization())
+        const listedOrganizations = getOrganizations(await getAllOrganization())
             .filter((organization) => organization && typeof organization === "object")
             .map((organization) => ({
                 ...organization,
@@ -39,6 +45,7 @@ export default async function ProceedPage({ searchParams }) {
                 name: organization.name || organization.organizationName || organization.organization_name || organization.displayName || "Organization",
             }))
             .filter((organization) => organization.id);
+        organizations = await attachCurrentUserRolesToOrganizations(listedOrganizations);
     } catch {
         organizations = [];
     }

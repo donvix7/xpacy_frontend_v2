@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Copy, ExternalLink, Link2, Share2, Sparkles, X } from "lucide-react";
+import { Check, Copy, ExternalLink, Link2, Share2, X } from "lucide-react";
 
 export default function ShareOrganizationListings({ organizationId, inHeader = false }) {
     const [message, setMessage] = useState("");
@@ -216,7 +216,7 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
 
                 {isOpen && (
                     <div
-                        className="fixed inset-0 z-[11000] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm animate-[fadeIn_180ms_ease-out]"
+                        className="xp-surface fixed inset-0 z-[11000] flex items-center justify-center bg-side/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
                         onMouseDown={(event) => {
                             if (event.target === event.currentTarget) setIsOpen(false);
                         }}
@@ -225,17 +225,85 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
                             role="dialog"
                             aria-modal="true"
                             aria-label="Share organization listings"
-                            className="relative w-full max-w-2xl animate-[scaleIn_200ms_ease-out]"
+                            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-in zoom-in-95 duration-200"
                         >
                             <button
                                 type="button"
                                 onClick={() => setIsOpen(false)}
                                 aria-label="Close sharing dialog"
-                                className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur-sm transition-all hover:rotate-90 hover:bg-white/25"
+                                title="Close"
+                                className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-lg text-mute transition-colors hover:bg-soft hover:text-ink"
                             >
-                                <X size={18} />
+                                <X className="h-4 w-4" />
                             </button>
-                            {invitePanel}
+
+                            <div className="flex flex-col items-center gap-4 p-5 text-center sm:p-6">
+                                <span className="grid h-12 w-12 place-items-center rounded-xl bg-soft text-side-active">
+                                    <Share2 className="h-6 w-6" aria-hidden="true" />
+                                </span>
+
+                                <div className="max-w-xs">
+                                    <h2 className="text-[17px] font-semibold leading-tight text-ink">
+                                        Share your listings
+                                    </h2>
+                                    <p className="mt-1.5 text-[13px] leading-6 text-mute">
+                                        Send this link to let people explore properties listed by your organization.
+                                    </p>
+                                </div>
+
+                                <div className="w-full rounded-xl border border-line bg-soft/50 p-3">
+                                    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-left">
+                                        <Link2 size={15} className="shrink-0 text-mute" aria-hidden="true" />
+                                        <code className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink">
+                                            {getListingsUrl()}
+                                        </code>
+                                    </div>
+                                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <Link
+                                            href={listingsPath}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex items-center justify-center gap-1.5 text-[13px] font-medium text-side-active transition-colors hover:text-ink"
+                                        >
+                                            Preview listings <ExternalLink size={14} aria-hidden="true" />
+                                        </Link>
+                                        <div className="flex shrink-0 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={copyInviteLink}
+                                                aria-label="Copy invite link"
+                                                className={`xp-btn flex-1 px-3 py-2 font-mono text-[12.5px] sm:flex-initial ${
+                                                    copied ? "border-up bg-up-bg text-up hover:bg-up-bg" : ""
+                                                }`}
+                                            >
+                                                {copied ? <Check size={15} /> : <Copy size={15} />}
+                                                {copied ? "Copied" : "Copy"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={shareInviteLink}
+                                                disabled={sharing}
+                                                aria-label="Share listings link"
+                                                className="xp-btn flex-1 px-3 py-2 font-mono text-[12.5px] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-initial"
+                                            >
+                                                <Share2 size={15} aria-hidden="true" />
+                                                {sharing ? "Sharing…" : "Share"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {message && (
+                                    <p
+                                        role="status"
+                                        className={`w-full text-left text-[12.5px] leading-5 ${
+                                            messageType === "success" ? "text-up" : messageType === "error" ? "text-down" : "text-mute"
+                                        }`}
+                                    >
+                                        {message}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

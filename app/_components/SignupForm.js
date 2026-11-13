@@ -1,7 +1,7 @@
 "use client"
 import { useState, useRef } from "react"
 import { useForm } from "react-hook-form"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { handleSignup, handlePropertyOwnerSignup } from '@/app/_lib/action';
 import FormInput from "./FormInput"
@@ -13,6 +13,7 @@ import ReCAPTCHA from "react-google-recaptcha"
 
 export default function SignupForm({ cities, role = "user" }) {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const { setUserData } = useUser()
     const referralCode = searchParams.get("referralCode")
     const [pending, setPending] = useState(false);
@@ -37,10 +38,11 @@ export default function SignupForm({ cities, role = "user" }) {
 
             if (response.success) {
                 toast.success(response.message);
-                if (role !== "property-owner") setUserData(response.user);
+                setUserData({ ...(response.user || {}), email: response.user?.email || data.email });
                 reset();
                 setCaptchaValue(null);
                 recaptchaRef.current?.reset();
+                router.push("/auth/verify-email");
             } else {
                 toast.error(response.message);
             }
@@ -52,8 +54,8 @@ export default function SignupForm({ cities, role = "user" }) {
     }
 
     return (
-        <form className="space-y-6 flex flex-col" onSubmit={handleSubmit(onSubmit)}>
-            <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
+        <form className="flex flex-col gap-5" onSubmit={handleSubmit(onSubmit)}>
+            <div className="flex flex-col items-start gap-5 md:flex-row md:items-center">
                 <FormInput register={register} errors={errors} label={"First Name"} id={"firstname"}>
                     <input
                         {...register("firstname", { required: "Please enter your first name" })}
@@ -61,7 +63,7 @@ export default function SignupForm({ cities, role = "user" }) {
                         name="firstname"
                         id="firstname"
                         placeholder="Enter your first name"
-                        className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${errors.firstname ? "border-error" : "border-primary-200"}`}
+                        className={`xp-field ${errors.firstname ? "xp-field-error" : ""}`}
                     />
                     {errors.firstname && <span className="-mt-2 text-xs text-error">{errors.firstname.message}</span>}
                 </FormInput>
@@ -72,13 +74,13 @@ export default function SignupForm({ cities, role = "user" }) {
                         name="lastname"
                         id="lastname"
                         placeholder="Enter your last name"
-                        className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${errors.lastname ? "border-error" : "border-primary-200"}`}
+                        className={`xp-field ${errors.lastname ? "xp-field-error" : ""}`}
                     />
                     {errors.lastname && <span className="-mt-2 text-xs text-error">{errors.lastname.message}</span>}
                 </FormInput>
             </div>
 
-            <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
+            <div className="flex flex-col items-start gap-5 md:flex-row md:items-center">
                 <FormInput register={register} errors={errors} label={"Email address"} id={"email"}>
                     <input
                         {...register("email", {
@@ -92,7 +94,7 @@ export default function SignupForm({ cities, role = "user" }) {
                         name="email"
                         id="email"
                         placeholder="Enter your email address"
-                        className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${errors.email ? "border-error" : "border-primary-200"}`}
+                        className={`xp-field ${errors.email ? "xp-field-error" : ""}`}
                     />
                     {errors.email && <span className="-mt-2 text-xs text-error">{errors.email.message}</span>}
                 </FormInput>
@@ -109,13 +111,13 @@ export default function SignupForm({ cities, role = "user" }) {
                         name="phoneNumber"
                         id="phoneNumber"
                         placeholder="Enter your phone number"
-                        className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${errors.phoneNumber ? "border-error" : "border-primary-200"}`}
+                        className={`xp-field ${errors.phoneNumber ? "xp-field-error" : ""}`}
                     />
                     {errors.phoneNumber && <span className="-mt-2 text-xs text-error">{errors.phoneNumber.message}</span>}
                 </FormInput>
             </div>
 
-            <div className="flex md:items-center items-start gap-6 flex-col md:flex-row">
+            <div className="flex flex-col items-start gap-5 md:flex-row md:items-center">
                 <FormInput register={register} errors={errors} label={"Password"} id={"password"}>
                     <input
                         {...register("password", {
@@ -129,7 +131,7 @@ export default function SignupForm({ cities, role = "user" }) {
                         name="password"
                         id="password"
                         placeholder="Enter your password"
-                        className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${errors.password ? "border-error" : "border-primary-200"}`}
+                        className={`xp-field ${errors.password ? "xp-field-error" : ""}`}
                     />
                     {errors.password && <span className="-mt-2 text-xs text-error">{errors.password.message}</span>}
                 </FormInput>
@@ -143,7 +145,7 @@ export default function SignupForm({ cities, role = "user" }) {
                         name="confirmPassword"
                         id="confirmPassword"
                         placeholder="Confirm your password"
-                        className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${errors.confirmPassword ? "border-error" : "border-primary-200"}`}
+                        className={`xp-field ${errors.confirmPassword ? "xp-field-error" : ""}`}
                     />
                     {errors.confirmPassword && <span className="-mt-2 text-xs text-error">{errors.confirmPassword.message}</span>}
                 </FormInput>
@@ -154,22 +156,22 @@ export default function SignupForm({ cities, role = "user" }) {
                 <SelectCity cities={cities} register={register} errors={errors} />
             </div>*/}
 
-            <div className="flex flex-col gap-1 font-mono -mt-2">
-                <div className="flex items-center gap-1">
+            <div className="flex flex-col gap-1 font-mono">
+                <div className="flex items-start gap-2">
                     <input
                         type="checkbox"
                         id="terms"
-                        className="w-6 h-6"
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-side"
                         {...register("terms", { required: "You must agree to the Terms & Conditions" })}
                     />
-                    <label htmlFor="terms" className="text-base text-black">
+                    <label htmlFor="terms" className="text-[13.5px] leading-snug text-mute">
                         I agree to Xpacy’s Terms & Conditions and Privacy Policy.
                     </label>
                 </div>
                 {errors.terms && <span className="text-xs text-error">{errors.terms.message}</span>}
             </div>
 
-            <div className="flex justify-start w-full my-4">
+            <div className="flex w-full justify-start">
                 <ReCAPTCHA
                     ref={recaptchaRef}
                     sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
@@ -180,7 +182,7 @@ export default function SignupForm({ cities, role = "user" }) {
             <button
                 type="submit"
                 disabled={pending}
-                className="bg-primary text-white cursor-pointer px-5 py-3 font-semibold flex space-x-2.5 font-mono items-center justify-center rounded-md hover:shadow-md disabled:bg-gray-900 disabled:cursor-not-allowed"
+                className="xp-btn xp-btn-fill w-full py-3.5 font-mono text-[15px] disabled:cursor-not-allowed disabled:opacity-60"
             >
                 <span>Sign Up</span>
                 <span>{pending && <SpinnerMini />}</span>

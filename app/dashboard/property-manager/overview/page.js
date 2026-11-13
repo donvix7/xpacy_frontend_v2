@@ -83,7 +83,7 @@ const summaryCards = [
 
     return (
         <div className="space-y-8 p-4">
-            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">
+            <p className="text-[22px] font-semibold capitalize tracking-[-0.4px] text-ink lg:text-[26px]">
                 Welcome {profile?.first_name || profile?.firstname || profile?.name || profile?.full_name || "Manager"},
             </p>
             <SummaryCards cards={summaryCards} title="Overview" />

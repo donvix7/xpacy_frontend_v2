@@ -8,7 +8,7 @@ import ServiceOptionsMenu from "./ServiceOptionsMenu";
 import EmptyState from "./EmptyState";
 import { format } from "date-fns";
 
-export default function AdminServiceList({ services = [] }) {
+export default function AdminServiceList({ services = [], embedded = false }) {
     const [searchTerm, setSearchTerm] = useState("");
 
     const filteredServices = services.filter(service => {
@@ -25,12 +25,12 @@ export default function AdminServiceList({ services = [] }) {
     if (!services || services.length <= 0) return <EmptyState message={"Oops!... You have no booked services yet."} cta={"Book A Service"} />;
 
     return (
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className={embedded ? "overflow-hidden" : "bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden"}>
             {/* Top Bar */}
-            <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <p className="text-xl font-bold text-primary-900 font-mono">Service Requests List</p>
+            <div className={`${embedded ? "pb-4" : "p-6"} flex flex-col md:flex-row md:items-center justify-between gap-4`}>
+                {!embedded && <p className="text-xl font-bold text-primary-900 font-mono">Service Requests List</p>}
                 
-                <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4 md:ml-auto">
                     {/* Search */}
                     <div className="relative w-full md:w-[340px]">
                         <input 

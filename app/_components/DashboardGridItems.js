@@ -4,10 +4,17 @@ import Link from "next/link";
 export default function DashboardGridItem({ children, viewAllLink, title }) {
 
     return (
-        <div className={`${title === "Saved Properties" ? "lg:border-[1.5px] lg:border-primary-200 lg:p-6" : "border-[1.5px] border-primary-200 p-4 sm:p-6"} flex min-w-0 flex-col gap-4 rounded-xl`}>
-            <div className="flex items-center justify-between">
-                <p className="lg:text-md min-w-0 text-black text-base font-sans font-medium">{title}</p>
-                {viewAllLink && <Link href={viewAllLink} className="p-2 border-b border-primary text-primary font-mono font-semibold text-sm lg:text-base">View All</Link>}
+        <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-line bg-white p-4 sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+                <p className="min-w-0 truncate text-lg font-semibold text-ink">{title}</p>
+                {viewAllLink && (
+                    <Link
+                        href={viewAllLink}
+                        className="shrink-0 rounded-lg border-[1.5px] border-ink px-3 py-1.5 text-[13px] font-medium text-ink transition-colors hover:bg-soft"
+                    >
+                        View all
+                    </Link>
+                )}
             </div>
             {title === "Saved Properties" ? <div className="overflow-x-scroll no-scrollbar">{children}</div> : children}
         </div>

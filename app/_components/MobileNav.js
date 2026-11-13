@@ -44,9 +44,9 @@ const MobileNavBtns = ({ isOpen, open }) => {
 
         <>
             {isOpen ? (
-                <button onClick={open} className="text-2xl lg:hidden"><IoCloseSharp /></button>
+                <button onClick={open} aria-label="Close menu" className="-mr-2 grid h-10 w-10 place-items-center rounded-lg text-2xl lg:hidden"><IoCloseSharp /></button>
             ) : (
-                <button onClick={open} className="text-2xl lg:hidden"><FaBarsStaggered /></button>
+                <button onClick={open} aria-label="Open menu" className="-mr-2 grid h-10 w-10 place-items-center rounded-lg text-2xl lg:hidden"><FaBarsStaggered /></button>
             )
             }
             
@@ -61,8 +61,8 @@ const MainAppWindow = ({ children, pathname, links }) => {
             {links.map(({ label, href }) => {
                 const active = isPublicNavigationLinkActive(pathname, href);
                 return (
-                    <li key={href} className={`border-b border-primary-100 py-2 ${active ? "font-semibold text-primary" : "text-gray-700"}`}>
-                        <Link href={href} aria-current={active ? "page" : undefined} className="block">
+                    <li key={href} className={`border-b border-primary-100 ${active ? "font-semibold text-primary" : "text-gray-700"}`}>
+                        <Link href={href} aria-current={active ? "page" : undefined} className="flex min-h-11 items-center justify-center px-2">
                             {label}
                         </Link>
                     </li>
@@ -76,7 +76,7 @@ const MainAppWindow = ({ children, pathname, links }) => {
 
 const MobileSideBarWindow = ({ role, isOrganizationAdmin }) => {
     return (
-        <div className="max-h-max  bg-primary-900 flex flex-col py-8 px-6 w-max items-start gap-8 overflow-y-auto lg:hidden">
+        <div className="max-h-max  bg-side flex flex-col py-8 px-6 w-max items-start gap-8 overflow-y-auto lg:hidden">
             <SidebarNav role={role} isOrganizationAdmin={isOrganizationAdmin} />
         </div>
     )

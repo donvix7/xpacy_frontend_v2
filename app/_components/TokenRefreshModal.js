@@ -150,9 +150,9 @@ export default function TokenRefreshModal() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="xp-surface fixed inset-0 z-[9999] flex items-center justify-center bg-side/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 sm:p-8 flex flex-col items-center text-center animate-in zoom-in-95 duration-200"
+        className="relative flex w-full max-w-md flex-col items-center rounded-2xl border border-line bg-card p-6 text-center shadow-2xl animate-in zoom-in-95 duration-200 sm:p-8"
         role="dialog"
         aria-modal="true"
         aria-labelledby="token-modal-title"
@@ -160,63 +160,64 @@ export default function TokenRefreshModal() {
         {/* Subtle close button if user wishes to temporarily dismiss */}
         <button
           onClick={() => setIsOpen(false)}
-          className="absolute top-4 right-4 p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          aria-label="Dismiss"
           title="Dismiss"
+          className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-mute transition-colors hover:bg-soft hover:text-ink"
         >
-          <X className="w-5 h-5" />
+          <X className="h-4 w-4" />
         </button>
 
         {/* Pulse / Icon Container */}
         <div className="relative mb-4">
-          <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-amber-200 flex items-center justify-center text-amber-600 shadow-inner">
-            <Clock className="w-8 h-8 animate-pulse text-amber-500" />
-          </div>
-          <span className="absolute top-0 right-0 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500"></span>
+          <span className="grid h-14 w-14 place-items-center rounded-xl border border-warn/25 bg-warn-bg text-warn">
+            <Clock className="h-7 w-7" />
+          </span>
+          <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center">
+            <span className="absolute h-full w-full animate-ping rounded-full bg-warn/40" />
+            <span className="relative h-2.5 w-2.5 rounded-full bg-warn" />
           </span>
         </div>
 
         {/* Heading */}
-        <p id="token-modal-title" className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-          Session Expired
+        <p id="token-modal-title" className="text-[19px] font-semibold leading-tight text-ink sm:text-[21px]">
+          Session expired
         </p>
 
         {/* Description */}
-        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-          Your session has expired. Refresh your session now to continue access to site without losing your changes.
+        <p className="mb-6 mt-2 max-w-xs text-[13.5px] leading-6 text-mute">
+          Your session has expired. Refresh it now to continue without losing your changes.
         </p>
 
         {/* Error notification if refresh failed */}
         {errorMessage && (
-          <div className="w-full mb-4 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-left text-xs text-red-700">
-            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+          <div role="alert" className="mb-4 flex w-full items-start gap-2.5 rounded-xl border border-down/30 bg-down-bg/60 p-3 text-left text-[12.5px] leading-5 text-down">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <div className="flex-1">
-              <p className="font-semibold">Refresh Failed</p>
+              <p className="font-semibold">Refresh failed</p>
               <p className="mt-0.5">{errorMessage}</p>
             </div>
           </div>
         )}
 
         {/* Primary Action Button: Refresh Token */}
-        <div className="w-full flex flex-col gap-3">
+        <div className="flex w-full flex-col gap-3">
           {hasRefreshToken ? (
             <button
               onClick={handleRefreshSession}
               disabled={isRefreshing || isPendingLogout}
-              className="w-full py-3.5 px-4 bg-primary text-white rounded-xl font-semibold shadow-md hover:bg-primary-900 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="xp-btn xp-btn-fill w-full py-3 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              <span>{isRefreshing ? "Refreshing Session..." : errorMessage ? "Try Refreshing Again" : "Refresh Session"}</span>
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+              <span>{isRefreshing ? "Refreshing session…" : errorMessage ? "Try refreshing again" : "Refresh session"}</span>
             </button>
           ) : (
             <button
               onClick={handleLogoutClick}
               disabled={isPendingLogout}
-              className="w-full py-3.5 px-4 bg-primary text-white rounded-xl font-semibold shadow-md hover:bg-primary-900 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="xp-btn xp-btn-fill w-full py-3 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <LogOut className="w-4 h-4" />
-              <span>{isPendingLogout ? "Redirecting..." : "Log In Again"}</span>
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              <span>{isPendingLogout ? "Redirecting…" : "Log in again"}</span>
             </button>
           )}
 
@@ -224,10 +225,10 @@ export default function TokenRefreshModal() {
           <button
             onClick={handleLogoutClick}
             disabled={isPendingLogout || isRefreshing}
-            className="w-full py-2.5 px-4 text-sm text-gray-500 hover:text-gray-800 font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg py-2.5 text-[13px] font-medium text-mute transition-colors hover:bg-soft hover:text-ink disabled:opacity-50"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>{isPendingLogout ? "Logging out..." : "Log Out"}</span>
+            <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{isPendingLogout ? "Logging out…" : "Log out"}</span>
           </button>
         </div>
       </div>

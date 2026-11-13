@@ -31,22 +31,22 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50">
-            <div className="w-full max-w-md bg-white rounded-xl shadow-sm p-8 flex flex-col gap-8">
+        <div className="xp-auth flex min-h-dvh w-full items-center justify-center bg-canvas px-4 py-10 md:px-6">
+            <div className="xp-auth-card flex w-full max-w-md flex-col gap-8 p-6 sm:p-9">
                 <div className="self-center">
                     <Logo />
                 </div>
 
                 {!isSent ? (
                     <>
-                        <div className="text-center space-y-2">
-                            <p className="text-2xl font-bold text-gray-900">Forgot Password?</p>
-                            <p className="text-gray-500 text-sm">
-                                Enter your email address and we'll send you a link to reset your password.
+                        <div className="flex flex-col gap-2 text-center">
+                            <p className="font-sans text-[26px] font-bold leading-tight text-ink">Forgot Password?</p>
+                            <p className="font-mono text-[14px] leading-relaxed text-mute">
+                                Enter your email address and we&apos;ll send you a link to reset your password.
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+                        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
                             <FormInput register={register} errors={errors} label={"Email address"} id={"email"}>
                                 <input 
                                     {...register("email", {
@@ -58,15 +58,15 @@ export default function ForgotPasswordPage() {
                                     })} 
                                     type="email" 
                                     placeholder="Enter your email address" 
-                                    className={`w-full rounded-lg border bg-gray-50 px-4 py-3 focus:outline-none focus:border-primary ${errors.email ? "border-red-500" : "border-gray-200"}`} 
+                                    className={`xp-field ${errors.email ? "xp-field-error" : ""}`} 
                                 />
-                                {errors.email && <span className="text-xs text-red-500 mt-1">{errors.email.message}</span>}
+                                {errors.email && <span className="text-xs text-error">{errors.email.message}</span>}
                             </FormInput>
 
                             <button 
                                 type="submit" 
                                 disabled={isLoading} 
-                                className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary-600 transition-colors flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="xp-btn xp-btn-fill w-full py-3.5 font-mono text-[15px] disabled:cursor-not-allowed disabled:opacity-70"
                             >
                                 {isLoading && <FaSpinner className="animate-spin" />}
                                 {isLoading ? "Sending..." : "Send Reset Link"}
@@ -74,19 +74,17 @@ export default function ForgotPasswordPage() {
                         </form>
                     </>
                 ) : (
-                    <div className="text-center space-y-6">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 text-2xl">
-                            ✓
-                        </div>
-                        <div className="space-y-2">
-                            <p className="text-2xl font-bold text-gray-900">Check your email</p>
-                            <p className="text-gray-500 text-sm">
+                    <div className="flex flex-col gap-6 text-center">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-up-bg text-2xl text-up">✓</div>
+                        <div className="flex flex-col gap-2">
+                            <p className="font-sans text-[26px] font-bold leading-tight text-ink">Check your email</p>
+                            <p className="font-mono text-[14px] leading-relaxed text-mute">
                                 We have sent a password reset link to your email address.
                             </p>
                         </div>
                         <button 
                             onClick={() => setIsSent(false)} 
-                            className="text-primary font-medium hover:underline text-sm"
+                            className="font-mono text-[14px] font-medium text-ink hover:underline"
                         >
                             Click to resend
                         </button>
@@ -94,7 +92,7 @@ export default function ForgotPasswordPage() {
                 )}
 
                 <div className="text-center">
-                    <Link href="/auth/log-in" className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-primary transition-colors">
+                    <Link href="/auth/log-in" className="inline-flex items-center gap-2 font-mono text-[14px] text-mute transition-colors hover:text-ink">
                         <FaArrowLeft size={12} /> Back to Log In
                     </Link>
                 </div>

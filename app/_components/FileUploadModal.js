@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from 'react';
+import { ImageUp, LoaderCircle, UploadCloud, X } from 'lucide-react';
 import { compressImages } from '../_lib/image-compression';
 
 const FileUploadModal = ({ isOpen, onClose, onFileUpload }) => {
@@ -114,177 +115,169 @@ const FileUploadModal = ({ isOpen, onClose, onFileUpload }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="xp-surface fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-side/60 p-4 backdrop-blur-sm">
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+      <div
+        className="fixed inset-0"
         onClick={handleClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full">
-          {/* Header */}
-          <div className="flex justify-between items-center p-6 border-b border-gray-200">
-            <p className="text-xl font-semibold text-gray-900">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upload-modal-title"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-line bg-card shadow-2xl"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-4">
+          <div className="min-w-0">
+            <p id="upload-modal-title" className="text-[16px] font-semibold text-ink">
               Upload file
             </p>
-            <button
-              onClick={handleClose}
-              disabled={isUploading}
-              className="text-gray-400 hover:text-gray-500 focus:outline-none disabled:opacity-50"
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <p className="mt-0.5 text-[12.5px] text-mute">JPEG or PNG, up to 100MB.</p>
           </div>
+          <button
+            onClick={handleClose}
+            disabled={isUploading}
+            aria-label="Close dialog"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-mute transition-colors hover:bg-soft hover:text-ink disabled:opacity-50"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
 
-          {/* Body */}
-          <div className="p-6">
-            {/* Drag and Drop Area */}
-            <div
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              className={`
-                relative border-2 border-dashed rounded-lg p-8 text-center
-                transition-colors duration-200
-                ${dragActive 
-                  ? 'border-indigo-500 bg-indigo-50' 
-                  : 'border-gray-300 bg-gray-50 hover:border-gray-400'
-                }
-                ${isUploading ? 'opacity-50 pointer-events-none' : ''}
-              `}
-            >
-              {/* Upload Icon */}
-              <div className="flex justify-center mb-4">
-                <svg 
-                  className={`h-12 w-12 ${dragActive ? 'text-indigo-500' : 'text-gray-400'}`} 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={1.5} 
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
-                  />
-                </svg>
-              </div>
-
-              <p className="text-gray-600 mb-2">
-                Drag file here to upload
-              </p>
-              
-              <div className="flex items-center justify-center my-4">
-                <div className="border-t border-gray-300 flex-grow"></div>
-                <span className="mx-4 text-gray-500 text-sm">or</span>
-                <div className="border-t border-gray-300 flex-grow"></div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleBrowseClick}
-                disabled={isUploading}
-                className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50"
-              >
-                Browse Files
-              </button>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={SUPPORTED_EXTENSIONS}
-                onChange={handleFileInput}
-                className="hidden"
-                disabled={isUploading}
-              />
+        {/* Body */}
+        <div className="p-5">
+          {/* Drag and Drop Area */}
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            className={`
+              relative rounded-xl border-2 border-dashed p-6 text-center
+              transition-colors duration-200
+              ${dragActive
+                ? 'border-side-active bg-soft'
+                : 'border-line bg-soft/50 hover:border-side-active/60'
+              }
+              ${isUploading ? 'pointer-events-none opacity-50' : ''}
+            `}
+          >
+            {/* Upload Icon */}
+            <div className="mb-3 flex justify-center">
+              <span className={`grid h-12 w-12 place-items-center rounded-xl ${dragActive ? "bg-card text-side-active" : "bg-card text-mute"}`}>
+                <UploadCloud className="h-6 w-6" aria-hidden="true" />
+              </span>
             </div>
 
-            {/* Selected File Preview */}
-            {selectedFile && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {/* File Icon based on type */}
-                    {selectedFile.type.startsWith('image/') ? (
-                      <img 
-                        src={URL.createObjectURL(selectedFile)} 
-                        alt="Preview" 
-                        className="h-10 w-10 object-cover rounded"
-                      />
-                    ) : (
-                      <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
-                    </div>
+            <p className="text-[13.5px] text-mute">
+              Drag a file here to upload
+            </p>
+
+            <div className="my-4 flex items-center justify-center">
+              <div className="h-px flex-grow bg-line"></div>
+              <span className="mx-4 text-[12px] uppercase tracking-[0.14em] text-mute">or</span>
+              <div className="h-px flex-grow bg-line"></div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleBrowseClick}
+              disabled={isUploading}
+              className="xp-btn px-4 py-2.5 font-mono text-[13px] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Browse files
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={SUPPORTED_EXTENSIONS}
+              onChange={handleFileInput}
+              className="hidden"
+              disabled={isUploading}
+            />
+          </div>
+
+          {/* Selected File Preview */}
+          {selectedFile && (
+            <div className="mt-4 rounded-xl border border-line bg-soft/50 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  {/* File Icon based on type */}
+                  {selectedFile.type.startsWith('image/') ? (
+                    <img
+                      src={URL.createObjectURL(selectedFile)}
+                      alt="Preview"
+                      className="h-10 w-10 rounded-lg border border-line object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-10 w-10 place-items-center rounded-lg bg-card text-mute">
+                      <ImageUp className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-[13.5px] font-medium text-ink">{selectedFile.name}</p>
+                    <p className="text-[12px] text-mute">{formatFileSize(selectedFile.size)}</p>
                   </div>
-                  <button
-                    onClick={() => setSelectedFile(null)}
-                    disabled={isUploading}
-                    className="text-gray-400 hover:text-gray-500"
-                  >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
                 </div>
+                <button
+                  onClick={() => setSelectedFile(null)}
+                  disabled={isUploading}
+                  aria-label="Remove selected file"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-mute transition-colors hover:bg-card hover:text-ink"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
               </div>
-            )}
-
-            {/* Error Message */}
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            )}
-
-            {/* File Requirements */}
-            <div className="mt-6 text-center">
-              <p className="text-xs text-gray-500">
-                Maximum file size: 100MB
-                <br />
-                Supported file type: JPEG, PNG
-              </p>
             </div>
-          </div>
+          )}
 
-          {/* Footer */}
-          <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isUploading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleUpload}
-              disabled={!selectedFile || isUploading}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUploading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Uploading...
-                </span>
-              ) : (
-                'Upload'
-              )}
-            </button>
+          {/* Error Message */}
+          {error && (
+            <div role="alert" className="mt-4 rounded-xl border border-down/30 bg-down-bg/60 p-3">
+              <p className="text-[12.5px] leading-5 text-down">{error}</p>
+            </div>
+          )}
+
+          {/* File Requirements */}
+          <div className="mt-5 text-center">
+            <p className="text-[12px] leading-5 text-mute">
+              Maximum file size: 100MB
+              <br />
+              Supported file type: JPEG, PNG
+            </p>
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex flex-col-reverse gap-2 border-t border-line px-5 py-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isUploading}
+            className="xp-btn px-4 py-2.5 font-mono text-[13px] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleUpload}
+            disabled={!selectedFile || isUploading}
+            className="xp-btn xp-btn-fill px-4 py-2.5 font-mono text-[13px] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isUploading ? (
+              <>
+                <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                Uploading…
+              </>
+            ) : (
+              'Upload'
+            )}
+          </button>
         </div>
       </div>
     </div>

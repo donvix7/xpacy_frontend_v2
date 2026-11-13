@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { FaNairaSign } from "react-icons/fa6";
+import { X } from "lucide-react";
 
 // Billing cycle options (enum values expected by the backend)
 const billingCycleOptions = [
@@ -39,11 +40,11 @@ const formatDate = (value) => {
 
 // Read-only row used inside the preview modal
 const PreviewRow = ({ label, value }) => (
-    <div className="flex items-start justify-between gap-6 py-3 border-b border-primary-100 last:border-b-0">
-        <span className="text-xs font-mono uppercase tracking-wider text-gray-500">
+    <div className="flex items-start justify-between gap-6 border-b border-line py-3 last:border-b-0">
+        <span className="font-mono text-[11.5px] uppercase tracking-[0.1em] text-mute">
             {label}
         </span>
-        <span className="text-sm text-right text-black whitespace-pre-wrap break-words max-w-[60%]">
+        <span className="max-w-[60%] break-words text-right text-[13.5px] text-ink whitespace-pre-wrap">
             {value || "—"}
         </span>
     </div>
@@ -494,22 +495,25 @@ const AddNewLeaseForm = ({
             {/* ---------- Preview Modal ---------- */}
             {isPreviewOpen && previewPayload && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                    className="xp-surface fixed inset-0 z-50 flex items-center justify-center bg-side/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
                     onClick={() => !isPending && setIsPreviewOpen(false)}
                 >
                     <div
-                        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="lease-preview-title"
+                        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-primary-100">
-                            <div className="flex flex-col gap-1">
-                                <p className="text-xl font-bold text-primary">
+                        <div className="flex items-start justify-between gap-4 border-b border-line p-5 sm:p-6">
+                            <div className="flex min-w-0 flex-col gap-1">
+                                <p id="lease-preview-title" className="text-[17px] font-semibold text-ink">
                                     {isEditMode
                                         ? "Review Lease Changes"
                                         : "Review New Lease"}
                                 </p>
-                                <p className="text-xs font-mono text-gray-500">
+                                <p className="text-[12.5px] leading-5 text-mute">
                                     Please confirm the details below before
                                     submitting.
                                 </p>
@@ -518,10 +522,10 @@ const AddNewLeaseForm = ({
                                 type="button"
                                 disabled={isPending}
                                 onClick={() => setIsPreviewOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+                                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-mute transition-colors hover:bg-soft hover:text-ink disabled:opacity-50"
                                 aria-label="Close preview"
                             >
-                                ✕
+                                <X className="h-4 w-4" aria-hidden="true" />
                             </button>
                         </div>
 
@@ -589,12 +593,12 @@ const AddNewLeaseForm = ({
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-end gap-3 p-6 border-t border-primary-100">
+                        <div className="flex flex-col-reverse gap-2 border-t border-line p-5 sm:flex-row sm:items-center sm:justify-end sm:p-6">
                             <button
                                 type="button"
                                 disabled={isPending}
                                 onClick={() => setIsPreviewOpen(false)}
-                                className="px-4 py-2 font-mono text-primary rounded-lg hover:bg-primary-100/80 cursor-pointer transition disabled:opacity-50"
+                                className="xp-btn px-4 py-2.5 font-mono text-[13px] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Cancel
                             </button>
@@ -602,7 +606,7 @@ const AddNewLeaseForm = ({
                                 type="button"
                                 disabled={isPending}
                                 onClick={onConfirm}
-                                className="px-4 py-2 bg-primary-200 font-mono text-primary rounded-lg hover:bg-primary-200/80 cursor-pointer transition flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="xp-btn xp-btn-fill px-4 py-2.5 font-mono text-[13px] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <span>
                                     {isEditMode

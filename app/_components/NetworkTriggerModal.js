@@ -1,5 +1,5 @@
 "use client"
-import { createContext, useContext } from "react";
+import { createContext, useCallback, useContext, useEffect } from "react";
 import { HiMiniXMark } from "react-icons/hi2";
 import { useCloseModal } from "../_hooks/useCloseModal";
 const ModalContext = createContext();
@@ -12,12 +12,36 @@ const Modal = ({ open, onOpen, children }) => {
 
 const Window = ({ children }) => {
     const { open, onOpen } = useContext(ModalContext);
-    const ref = useCloseModal(() => onOpen(false));
+    const close = useCallback(() => onOpen(false), [onOpen]);
+    const ref = useCloseModal(close);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") close();
+        };
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [open, close]);
+
     if (!open) return null;
+
     return (
-        <div className="fixed top-0 w-full left-0 bottom-0 h-screen bg-gray-0 backdrop-blur-xs z-40 transition-all duration-300 ease-in overflow-hidden">
-            <div ref={ref} className="fixed top-1/2 left-1/2 -translate-x-[50%] -translate-y-[50%] mt-10 bg-gray-50 rounded-lg px-3 py-2.5 shadow-lg transition-all duration-300">
-                <button onClick={() => onOpen(false)} className="bg-none p-1 text-2xl cursor-pointer text-gray-900 rounded-full absolute top-2 right-2.5 transition-all duration-300 ease-in hover:bg-gray-100">
+        <div className="xp-surface fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-side/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div ref={ref} className="relative w-full max-w-md overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-in zoom-in-95 duration-200">
+                <button
+                    onClick={close}
+                    aria-label="Close dialog"
+                    className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-lg border border-line bg-card text-lg text-mute transition-colors hover:bg-soft hover:text-ink"
+                >
                     <HiMiniXMark />
                 </button>
                 {children}
@@ -28,4 +52,4 @@ const Window = ({ children }) => {
 
 Modal.Window = Window;
 
-export default Modal
+export default Modal;

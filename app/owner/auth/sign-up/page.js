@@ -56,9 +56,9 @@ function SignUpForm() {
     if (!token) {
         return (
              <div className="text-center">
-                <p className="text-xl font-bold text-red-600 mb-4">Invalid Link</p>
-                <p className="text-gray-600 mb-6">This registration link is missing a valid token.</p>
-                <Link href="/" className="text-primary hover:underline">Return Home</Link>
+                <p className="mb-4 font-sans text-xl font-bold text-error">Invalid Link</p>
+                <p className="mb-6 font-mono text-[14.5px] text-mute">This registration link is missing a valid token.</p>
+                <Link href="/" className="font-mono text-[14px] font-medium text-ink hover:underline">Return Home</Link>
             </div>
         )
     }
@@ -66,12 +66,12 @@ function SignUpForm() {
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700">Create Password</label>
+                <label className="font-mono text-[13px] font-medium text-mute">Create Password</label>
                 <div className="relative">
                     <input
                         type={showPassword ? "text" : "password"}
                         required
-                        className="w-full p-4 border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors pr-12"
+                        className="xp-field pr-12"
                         placeholder="••••••••"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -79,7 +79,7 @@ function SignUpForm() {
                      <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-mute transition-colors hover:text-ink"
                     >
                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                     </button>
@@ -87,12 +87,12 @@ function SignUpForm() {
             </div>
 
             <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700">Confirm Password</label>
+                <label className="font-mono text-[13px] font-medium text-mute">Confirm Password</label>
                 <div className="relative">
                     <input
                         type={showPassword ? "text" : "password"}
                         required
-                        className="w-full p-4 border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors pr-12"
+                        className="xp-field pr-12"
                         placeholder="••••••••"
                         value={formData.confirmPassword}
                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
@@ -104,14 +104,14 @@ function SignUpForm() {
                 type="button" // preventing default for now until connected
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="bg-primary text-white p-4 rounded-lg font-bold hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 mt-2"
+                className="xp-btn xp-btn-fill mt-2 w-full py-3.5 font-mono text-[15px] disabled:cursor-not-allowed disabled:opacity-60"
             >
                 {isLoading && <FaSpinner className="animate-spin" />}
                 {isLoading ? "Setting up..." : "Complete Setup"}
             </button>
             
-            <p className="text-center text-sm text-gray-500 mt-4">
-                Already have an account? <Link href="/property-owner/log-in" className="text-primary font-bold hover:underline">Log in</Link>
+            <p className="mt-2 text-center font-mono text-[14px] text-mute">
+                Already have an account? <Link href="/property-owner/log-in" className="font-bold text-ink hover:underline">Log in</Link>
             </p>
         </form>
     );
@@ -119,28 +119,31 @@ function SignUpForm() {
 
 export default function Page() {
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-             {/* Left Text / Branding Side (Optional, matching typical auth layouts) */}
-             <div className="bg-primary-900 hidden lg:flex flex-col items-center justify-center p-12 text-white relative overflow-hidden">
-                <div className="relative z-10 max-w-md text-center">
-                     <p className="text-4xl font-bold mb-6">Welcome to Xpacy</p>
-                     <p className="text-primary-100 text-lg">
+        <div className="xp-auth grid min-h-dvh grid-cols-1 bg-canvas lg:grid-cols-2">
+             {/* Left Text / Branding Side */}
+             <div className="relative hidden flex-col justify-center overflow-hidden bg-side p-12 text-white lg:flex">
+                <div className="relative z-10 max-w-md">
+                     <span className="mb-6 inline-block w-max rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11.5px] font-medium uppercase tracking-[0.18em] text-white/80">
+                        Xpacy
+                     </span>
+                     <p className="mb-6 font-sans text-4xl font-bold">Welcome to Xpacy</p>
+                     <p className="font-mono text-[15px] leading-relaxed text-side-mute">
                         Complete your property owner account setup to start managing your listings and services.
                      </p>
                 </div>
-                {/* Decorative circles/elements if needed */}
-                <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('/pattern.png')] bg-cover"></div>
+                <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-side-active/30 blur-2xl" />
+                <div className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-side-2/80 blur-2xl" />
              </div>
 
             {/* Right Form Side */}
-            <div className="flex flex-col justify-center items-center p-6 lg:p-12 bg-white">
-                <div className="w-full max-w-md flex flex-col gap-8">
-                     <div className="text-center lg:text-left">
-                        <p className="text-3xl font-bold text-gray-900 mb-2">Finalize Your Account</p>
-                        <p className="text-gray-500">Set a secure password to access your dashboard.</p>
+            <div className="flex flex-col items-center justify-center px-4 py-10 md:px-6 md:py-12">
+                <div className="xp-auth-card flex w-full max-w-md flex-col gap-8 p-6 sm:p-9">
+                     <div className="flex flex-col gap-2 text-center lg:text-left">
+                        <p className="font-sans text-[28px] font-bold leading-tight text-ink">Finalize Your Account</p>
+                        <p className="font-mono text-[14.5px] leading-relaxed text-mute">Set a secure password to access your dashboard.</p>
                     </div>
 
-                    <Suspense fallback={<div className="flex justify-center p-8"><FaSpinner className="animate-spin text-primary text-2xl"/></div>}>
+                    <Suspense fallback={<div className="flex justify-center p-8"><FaSpinner className="animate-spin text-2xl text-ink"/></div>}>
                         <SignUpForm />
                     </Suspense>
                 </div>

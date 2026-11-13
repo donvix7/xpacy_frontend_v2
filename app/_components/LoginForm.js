@@ -31,6 +31,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
   const router = useRouter();
 
   const requestedRedirectUrl = customRedirectUrl ?? searchParams.get("redirectUrl");
+  const signUpPath = initialRole === "property-owner" ? "/auth/sign-up?role=property-owner" : "/auth/sign-up";
 
   async function onSubmit(data) {
     if (!captchaValue) {
@@ -40,7 +41,7 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
 
     startTransition(async () => {
       try {
-        const response = await handleUserLogin(data);
+        const response = await handleUserLogin(data, requestedRedirectUrl);
         if (response.success) {
           toast.success(response.message);
           if (response.redirectTo) {
@@ -57,104 +58,104 @@ export default function LoginForm({ role: initialRole = "user", customRedirectUr
   }
 
   return (
-    <div className="flex-1 py-8 md:py-12 flex flex-col items-center justify-center p-2 px-4 md:px-6 w-full">
-      <div className="flex flex-col gap-8 w-full max-w-[500px]">
+    <div className="flex w-full flex-1 items-center justify-center px-4 py-10 md:px-6 md:py-14">
+      <div className="xp-auth-card flex w-full max-w-[460px] flex-col gap-7 p-6 sm:p-9">
         <div className="self-center">
           <Logo />
         </div>
 
-        <div className="space-y-8">
-          <div className="space-y-2 text-center flex flex-col items-center">
-            <p className="text-3xl md:text-4xl text-primary font-bold">
-              Welcome back!
-            </p>
-            
-            <p className="text-base text-black font-mono text-center">
-              Enter your email address and password to log in.
-            </p>
-          </div>
-
-          <form className="space-y-6 flex flex-col w-full" onSubmit={handleSubmit(onSubmit)}>
-            <FormInput register={register} errors={errors} label="Email address" id="email">
-              <input
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /\S+@\S+\.\S+/,
-                    message: "Provide a valid email address",
-                  },
-                })}
-                type="email"
-                name="email"
-                id="email"
-                placeholder="Enter your email address"
-                className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none w-full ${
-                  errors.email ? "border-error" : "border-primary-200"
-                }`}
-              />
-              {errors.email && (
-                <span className="-mt-2 text-xs text-error">{errors.email.message}</span>
-              )}
-            </FormInput>
-
-            <FormInput label="Password" id="password">
-              <input
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters",
-                  },
-                })}
-                type="password"
-                name="password"
-                id="password"
-                placeholder="Enter your password"
-                className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none w-full ${
-                  errors.password ? "border-error" : "border-primary-200"
-                }`}
-              />
-              {errors.password && (
-                <span className="-mt-2 text-xs text-error">{errors.password.message}</span>
-              )}
-            </FormInput>
-
-            <div className="flex-1 flex justify-between items-center w-full">
-              <div className="flex items-center gap-1 font-mono -mt-2">
-                <input type="checkbox" id="checkbox" className="w-5 h-5 accent-primary" />
-                <label htmlFor="checkbox" className="text-base text-black">
-                  Remember me
-                </label>
-              </div>
-              <Link href="/auth/forgot-password" className="font-mono text-base text-primary hover:underline">
-                Forgot Password?
-              </Link>
-            </div>
-
-            <div className="flex justify-start w-full my-4">
-              <ReCAPTCHA
-                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
-                onChange={setCaptchaValue}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={pending}
-              className="bg-primary text-white w-full cursor-pointer px-5 py-3.5 font-semibold flex space-x-2.5 font-mono items-center justify-center rounded-xl hover:shadow-lg transition-all duration-200 hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              <span>Log In</span>
-              <span>{pending && <SpinnerMini />}</span>
-            </button>
-          </form>
-
-          <p className="text-base text-black font-mono -mt-4 text-center">
-            Don&apos;t have an account?{" "}
-            <Link href={"/auth/sign-up"} className="text-primary text-base font-bold hover:underline">
-              Sign Up
-            </Link>
+        <div className="flex flex-col gap-2 text-center">
+          <h1 className="font-sans text-[28px] font-bold leading-tight text-ink">
+            Welcome back!
+          </h1>
+          <p className="font-mono text-[14.5px] leading-relaxed text-mute">
+            Enter your email address and password to log in.
           </p>
         </div>
+
+        <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit(onSubmit)}>
+          <FormInput register={register} errors={errors} label="Email address" id="email">
+            <input
+              {...register("email", {
+                required: "Email is required",
+                pattern: {
+                  value: /\S+@\S+\.\S+/,
+                  message: "Provide a valid email address",
+                },
+              })}
+              type="email"
+              name="email"
+              id="email"
+              placeholder="Enter your email address"
+              className={`xp-field ${errors.email ? "xp-field-error" : ""}`}
+            />
+            {errors.email && (
+              <span className="-mt-2 text-xs text-error">{errors.email.message}</span>
+            )}
+          </FormInput>
+
+          <FormInput label="Password" id="password">
+            <input
+              {...register("password", {
+                required: "Password is required",
+                minLength: {
+                  value: 6,
+                  message: "Password must be at least 6 characters",
+                },
+              })}
+              type="password"
+              name="password"
+              id="password"
+              placeholder="Enter your password"
+              className={`xp-field ${errors.password ? "xp-field-error" : ""}`}
+            />
+            {errors.password && (
+              <span className="-mt-2 text-xs text-error">{errors.password.message}</span>
+            )}
+          </FormInput>
+
+          <div className="flex w-full items-center justify-between gap-4">
+            <div className="flex items-center gap-2 font-mono">
+              <input
+                type="checkbox"
+                id="checkbox"
+                className="h-4 w-4 shrink-0 accent-side"
+              />
+              <label htmlFor="checkbox" className="text-[13.5px] text-mute">
+                Remember me
+              </label>
+            </div>
+            <Link
+              href="/auth/forgot-password"
+              className="font-mono text-[13.5px] font-medium text-ink hover:underline"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
+          <div className="flex w-full justify-start">
+            <ReCAPTCHA
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
+              onChange={setCaptchaValue}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={pending}
+            className="xp-btn xp-btn-fill w-full py-3.5 font-mono text-[15px] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span>Log In</span>
+            <span>{pending && <SpinnerMini />}</span>
+          </button>
+        </form>
+
+        <p className="text-center font-mono text-[14px] text-mute">
+          Don&apos;t have an account?{" "}
+          <Link href={signUpPath} className="font-bold text-ink hover:underline">
+            Sign Up
+          </Link>
+        </p>
       </div>
     </div>
   );

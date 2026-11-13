@@ -2,7 +2,7 @@
 export default function SelectCity({ cities, register, errors }) {
     return (
         <>
-            <select {...register("state", { required: "Please choose a city" })} className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${errors.state ? "border-error" : "border-primary-200"}`}>
+            <select {...register("state", { required: "Please choose a city" })} className={`xp-field ${errors.state ? "xp-field-error" : ""}`}>
                 <option value={""}>Choose a city</option>
                 {
                     cities?.map((city) => {

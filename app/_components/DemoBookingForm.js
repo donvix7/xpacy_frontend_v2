@@ -39,7 +39,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
     return (
       <div 
   id="demo-form-card" 
-  className="relative overflow-hidden rounded-2xl p-8 text-center text-gray-900 shadow-2xl border border-white/40 bg-gradient-to-br from-white via-primary-50/60 to-primary-100/80 backdrop-blur-xl"
+  className="relative overflow-hidden rounded-2xl p-5 text-center text-gray-900 shadow-2xl border border-white/40 bg-gradient-to-br from-white via-primary-50/60 to-primary-100/80 backdrop-blur-xl sm:p-8"
 >
   {/* Decorative gradient blobs */}
   <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-gradient-to-br from-primary-300/40 to-primary-500/20 blur-3xl" />
@@ -77,7 +77,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
 
   if (submitted) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-2xl border border-primary-100 text-center flex flex-col items-center justify-center min-h-[460px] animate-fade-in">
+      <div className="bg-white rounded-2xl p-5 shadow-2xl border border-primary-100 text-center flex flex-col items-center justify-center sm:min-h-[460px] sm:p-8 animate-fade-in">
         <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
           <CalendarCheck className="w-8 h-8" />
         </div>
@@ -125,7 +125,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
               placeholder="First Name"
               value={formData.firstName}
               onChange={handleChange}
-              className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-900 bg-white"
+              className="w-full text-base sm:text-sm px-3.5 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-900 bg-white"
             />
           </div>
           <div>
@@ -139,7 +139,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
               placeholder="Last name"
               value={formData.lastName}
               onChange={handleChange}
-              className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-900 bg-white"
+              className="w-full text-base sm:text-sm px-3.5 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-900 bg-white"
             />
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
             placeholder="your@company.com"
             value={formData.email}
             onChange={handleChange}
-            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-900 bg-white"
+            className="w-full text-base sm:text-sm px-3.5 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-900 bg-white"
           />
         </div>
 
@@ -172,7 +172,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
             placeholder="e.g. Xpacy, Apex Real Estate"
             value={formData.company}
             onChange={handleChange}
-            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-900 bg-white"
+            className="w-full text-base sm:text-sm px-3.5 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-900 bg-white"
           />
         </div>
 
@@ -192,7 +192,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
               placeholder="801 234 5678"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full text-xs sm:text-sm px-3 py-2.5 focus:outline-none text-gray-900"
+              className="w-full text-base sm:text-sm px-3 py-3 focus:outline-none text-gray-900"
             />
           </div>
         </div>
@@ -207,7 +207,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
             required
             value={formData.units}
             onChange={handleChange}
-            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-800 bg-white cursor-pointer"
+            className="w-full text-base sm:text-sm px-3.5 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-800 bg-white cursor-pointer"
           >
             <option value="">Please select one...</option>
             <option value="1-20">1 - 20 units</option>
@@ -227,7 +227,7 @@ export default function DemoBookingForm({ isAuthenticated = false }) {
             required
             value={formData.challenge}
             onChange={handleChange}
-            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-800 bg-white cursor-pointer"
+            className="w-full text-base sm:text-sm px-3.5 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-gray-800 bg-white cursor-pointer"
           >
             <option value="">Please select one...</option>
             <option value="Tenant screening & leasing">Tenant screening & digital leasing</option>

@@ -17,32 +17,30 @@ export default async function Page({ searchParams }) {
     const cities = await getCities();
 
     return (
-        <div className="flex flex-col md:flex-row min-h-dvh px-6">
-            <div className="w-full md:flex-1 py-16 flex md:justify-center flex-col md:flex-row">
-                <div className="flex flex-col gap-12">
+        <div className="xp-auth flex min-h-dvh w-full flex-col bg-canvas md:flex-row">
+            <div className="flex w-full flex-1 justify-center px-4 py-10 md:h-dvh md:overflow-y-auto md:px-6 md:py-14">
+                <div className="xp-auth-card flex h-max w-full max-w-[560px] flex-col gap-7 p-6 sm:p-9">
                     <div className="self-center">
                         <Logo />
                     </div>
-                    <div className="space-y-11">
-                        <div className="space-y-2 text-center">
-                            <p className="text-4xl text-primary font-bold">Accept Your Invitation</p>
-                            <p className="text-base text-black font-mono">
-                                {token
-                                    ? "Set your password to activate your property owner account."
-                                    : "Create your property owner account to get started."}
-                            </p>
-                        </div>
-                        <AcceptInviteForm
-                            token={token}
-                            initialEmail={ownerInfo?.email || initialEmail}
-                            initialName={ownerInfo ? `${ownerInfo.first_name || ""} ${ownerInfo.last_name || ""}`.trim() : initialName}
-                            cities={cities}
-                        />
+                    <div className="flex flex-col gap-2 text-center">
+                        <h1 className="font-sans text-[28px] font-bold leading-tight text-ink">Accept Your Invitation</h1>
+                        <p className="font-mono text-[14.5px] leading-relaxed text-mute">
+                            {token
+                                ? "Set your password to activate your property owner account."
+                                : "Create your property owner account to get started."}
+                        </p>
                     </div>
+                    <AcceptInviteForm
+                        token={token}
+                        initialEmail={ownerInfo?.email || initialEmail}
+                        initialName={ownerInfo ? `${ownerInfo.first_name || ""} ${ownerInfo.last_name || ""}`.trim() : initialName}
+                        cities={cities}
+                    />
                 </div>
             </div>
-            <div className="w-1/2 hidden md:block">
-                <AuthCarousel position="top-30" />
+            <div className="relative hidden w-1/2 overflow-hidden p-3 md:block">
+                <AuthCarousel />
             </div>
         </div>
     )

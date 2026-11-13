@@ -207,6 +207,19 @@ export async function getBlogs() {
     return [];
   }
 }
+export async function getAdminBlogs(){
+  const token = await getRawToken();
+  try{
+    const response = await fetch(`https://services.xpacy.com/api/v1/blogs?page=1&limit=20&sortBy=createdAt&sortOrder=desc `);
+
+
+    const { data } = await response.json();
+    return data || [];
+  }catch(error){
+    console.warn("Error fetching blogs:", error);
+    return 
+  }
+}
 
 export async function getBlog(id) {
   try {
@@ -988,8 +1001,8 @@ export async function getAllAdminOrganization(){
         cache: "no-store",
       }
     );
-    const { data } = await response.json();
-    
+    const  data  = await response.json();
+    console.log(data)   
     return data || [];
   } catch (err) {
     console.warn(err);
@@ -1129,6 +1142,7 @@ export async function getOrganizationMembers(id) {
         cache: "no-store",
       }
     );
+    console.log(response)
     const { data } = await response.json();
     return data || [];
   } catch (err) {
@@ -2025,6 +2039,10 @@ export async function getSubscriptionList(){
 export async function getActiveOrganizationRole() {
   try {
     const cookieStore = await cookies();
+    const members = await getOrganizationMembers()
+    console.log(members)
+    
+    console.log(cookieStore)
     return cookieStore.get("organizationRole")?.value || "";
   } catch {
     return "";

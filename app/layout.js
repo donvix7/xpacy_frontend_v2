@@ -1,5 +1,6 @@
 import "@/app/_styles/global.css";
 import {Toaster} from "react-hot-toast";
+import Script from "next/script";
 import { UserProvider } from "./_context/UserContext";
 import TokenRefreshModal from "./_components/TokenRefreshModal";
 export const metadata = {
@@ -13,7 +14,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script id="xpacy-theme-init" strategy="beforeInteractive">
+          {`(function(){try{var t=localStorage.getItem("xpacy-theme");if(!t){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.dataset.theme=t;}catch(e){}})();`}
+        </Script>
+      </head>
       <body className="text-primary flex flex-col">
         <UserProvider>
           {children}

@@ -50,10 +50,10 @@ export default function BuiltForPropertyManagers() {
   ];
 
   return (
-    <section className="py-20 md:py-28 px-6 md:px-[7%] bg-gray-50/70 border-b border-gray-200/60">
-      <div className="max-w-7xl mx-auto">
+    <section className="border-b border-gray-200/60 bg-gray-50/70 px-5 py-14 sm:px-6 sm:py-20 md:px-[7%] md:py-28">
+      <div className="mx-auto max-w-7xl">
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+        <div className="mx-auto mb-10 max-w-2xl space-y-3 text-center md:mb-14">
           
           <h2 className="text-2xl font-bold font-sans text-primary tracking-tight">
             Built for Property Managers
@@ -64,60 +64,66 @@ export default function BuiltForPropertyManagers() {
         </div>
 
         {/* Expanding Cards Row - Matching "Our Services" layout & interaction */}
-        <div className="md:h-[400px] lg:h-[430px] flex md:space-x-2.5 md:flex-row flex-col space-y-4 md:space-y-0">
+        <div className="flex flex-col space-y-3 sm:space-y-4 md:h-[400px] md:flex-row md:space-x-2.5 md:space-y-0 lg:h-[430px]">
           {pmServices.map((service, idx) => (
             <div
               key={idx}
-              className="group md:flex-1 md:h-full h-[380px] relative md:hover:flex-2 transition-all duration-300 rounded-xl overflow-hidden cursor-pointer shadow-md hover:shadow-2xl border border-primary-100"
+              className="group relative h-[300px] w-full overflow-hidden rounded-xl border border-primary-100 shadow-md transition-all duration-300 md:h-full md:flex-1 md:hover:flex-2 md:hover:shadow-2xl"
             >
               {/* Background & Default Content View */}
               <div
-                className="h-full w-full bg-cover bg-center flex flex-col justify-between p-5 relative"
+                className="relative flex h-full w-full flex-col bg-cover bg-center"
                 style={{ backgroundImage: `url(${service.bg})` }}
               >
                 {/* Dark Gradient Overlay for Readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/30 z-0" />
+                <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/90 via-black/50 to-black/25" />
 
-              
-
-                {/* Center Icon */}
-                <div className="relative z-10 flex items-center justify-center my-auto">
-                  <div className="w-16 h-16 rounded-2xl bg-black/40 border border-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    {service.icon}
-                  </div>
+                {/* Mobile: always-on readable summary (no hover on touch) */}
+                <div className="relative z-10 flex h-full flex-col justify-end gap-2 p-5 md:hidden">
+                  <span className="w-fit rounded-full border border-secondary/30 bg-secondary/15 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-secondary">
+                    {service.tag}
+                  </span>
+                  <p className="font-sans text-lg font-bold leading-snug text-white">
+                    {service.title}
+                  </p>
+                  <p className="line-clamp-3 font-mono text-[12.5px] leading-relaxed text-gray-200">
+                    {service.body}
+                  </p>
+                  <a
+                    href="#demo-form-card"
+                    className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-lg bg-secondary px-3.5 py-2 font-mono text-xs font-bold text-primary-900"
+                  >
+                    <span>Book a Demo</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </a>
                 </div>
 
-                {/* Bottom Title (Default view) */}
-                <div className="relative z-10 text-center">
-                
-                  {/* Mobile-only CTA */}
-                  <div className="md:hidden mt-3">
-                    <a
-                      href="#demo-form-card"
-                      className="inline-flex items-center gap-1 px-3 py-1.5 font-mono rounded-lg font-bold bg-secondary text-primary-900 text-xs"
-                    >
-                      <span>Explore</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </a>
+                {/* Desktop: centered icon + title until hover */}
+                <div className="relative z-10 hidden h-full flex-col items-center justify-center p-5 md:flex">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-black/40 shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+                    {service.icon}
                   </div>
+                  <p className="absolute inset-x-0 bottom-5 px-4 text-center font-sans text-base font-bold text-white">
+                    {service.title}
+                  </p>
                 </div>
               </div>
 
-              {/* Hover / Active Expansion Overlay - Exact "Our Services" style */}
-              <div className="hidden h-full bg-primary/95 absolute inset-0 group-active:flex group-active:flex-col group-active:items-center group-active:justify-center group-hover:flex group-hover:flex-col group-hover:items-center group-hover:justify-center space-y-4 text-white text-center p-6 font-mono z-20 backdrop-blur-xs transition-all duration-300">
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-secondary/20 text-secondary border border-secondary/30">
+              {/* Desktop hover / active expansion overlay - "Our Services" style */}
+              <div className="absolute inset-0 z-20 hidden flex-col items-center justify-center gap-3 bg-primary/95 p-6 text-center font-mono text-white opacity-0 backdrop-blur-xs transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 md:flex">
+                <span className="rounded-full border border-secondary/30 bg-secondary/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-secondary">
                   {service.tag}
                 </span>
-                <p className="text-lg md:text-xl font-bold font-sans text-white">
+                <p className="font-sans text-lg font-bold text-white md:text-xl">
                   {service.title}
                 </p>
-                <p className="text-xs sm:text-sm text-gray-200 leading-relaxed max-w-xs">
+                <p className="max-w-xs text-xs leading-relaxed text-gray-200 sm:text-sm">
                   {service.body}
                 </p>
                 <div className="pt-2">
                   <a
                     href="#demo-form-card"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 font-mono rounded-lg font-bold bg-secondary hover:bg-secondary-500 text-primary-900 text-xs transition-colors shadow-sm"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 font-mono text-xs font-bold text-primary-900 shadow-sm transition-colors hover:bg-secondary-500"
                   >
                     <span>Book a Demo</span>
                     <ArrowRight className="w-3.5 h-3.5" />

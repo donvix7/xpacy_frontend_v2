@@ -4,12 +4,12 @@ export default function SectionLayout({children, heading, subheading, bgColor, f
 
     return (
       <section
-        className={`px-6 py-12 space-y-8 md:py-[120px] md:px-[7%] flex flex-col md:space-y-16 ${featured ? "relative": ""}  ${
+        className={`px-5 py-12 space-y-8 sm:px-6 md:py-[120px] md:px-[7%] flex flex-col md:space-y-16 ${featured ? "relative": ""}  ${
           bgColor ? "bg-linear-180 from-primary-100 to-[#FCFCFC] overflow-hidden" : ""
         }`}
       >
-        <div className="flex flex-col text-center space-y-4">
-          <p className="font-bold text-primary md:text-2xl">{heading}</p>
+        <div className="flex flex-col text-center space-y-3 md:space-y-4">
+          <p className="font-bold text-primary text-xl md:text-2xl">{heading}</p>
           <p className="font-normal md:text-md text-black text-base font-mono md:font-sans">{subheading}</p>
         </div>
         {children}

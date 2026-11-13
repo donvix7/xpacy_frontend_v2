@@ -1,10 +1,5 @@
+import { DashboardPageSkeleton } from "@/app/_components/LoadingStates";
 
-
-export default function Loading(){
-
-    return (
-        <div>
-            <div className="spinner"></div>
-        </div>
-    )
+export default function Loading() {
+    return <DashboardPageSkeleton />;
 }

@@ -1,36 +1,49 @@
 import Carousel from "./Carousel";
-import img01 from "@/public/carousel-photo01.png";
 import Image from "next/image";
 import { getBanners } from "../_lib/data-services";
 
-export default async function AuthCarousel({ position = "top-2/3"}){
+const FALLBACK = {
+    id: "default",
+    image_url: null,
+    title: "Welcome to Xpacy",
+};
+
+export default async function AuthCarousel() {
     let banners = await getBanners();
     if (!banners || banners.length === 0) {
-        banners = [{
-            id: 'default',
-            image_url: 'default-banner.jpg', // Ensure you have a default image or handle this path
-            title: 'Welcome to Xpacy'
-        }];
+        banners = [FALLBACK];
     }
-    const slides = banners.map((banner) => {
-        return(
-        <div className="h-full relative" key={banner.id}>
+
+    const slides = banners.map((banner) => (
+        <div className="relative h-full w-full" key={banner.id}>
             <Image
                 fill
                 unoptimized
-                    src={`https://app.xpacy.com/src/upload/homepage_slider/${banner.image_url}`}
+                sizes="(max-width: 767px) 0px, 50vw"
+                src={banner.image_url
+                    ? `https://app.xpacy.com/src/upload/homepage_slider/${banner.image_url}`
+                    : "/carousel-photo01.png"}
                 alt="Xpacy Hero"
                 className="object-cover"
             />
-            <div className={`absolute flex flex-col space-y-8 z-20 w-10/12 text-white text-center translate-x-[-50%] translate-y-[-50%] ${position} left-[50%]`}>
-                <p className="leading-15  md:text-3xl font-bold">{banner.title}</p>
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#0f1c27]/85 via-[#1f3a52]/40 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-3 px-8 pb-16 text-white sm:px-10">
+                <span className="w-max rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11.5px] font-medium uppercase tracking-[0.18em] backdrop-blur-sm">
+                    Xpacy
+                </span>
+                <p className="max-w-md font-sans text-[28px] font-semibold leading-[1.15] tracking-[-0.4px] sm:text-[34px]">
+                    {banner.title}
+                </p>
+                <p className="max-w-sm font-mono text-[13.5px] leading-relaxed text-white/80">
+                    Find, book and manage properties in one calm, considered workspace.
+                </p>
             </div>
-            <div className="absolute top-0 right-0 left-0 bottom-0 opacity-30 bg-gray-700 z-10" />
         </div>
-        )
-    })
+    ));
 
     return (
-        <Carousel slides={slides} indicators={true}/>
-    )
+        <div className="relative h-full w-full overflow-hidden rounded-2xl bg-side">
+            <Carousel slides={slides} indicators={true} indicatorTone="light" />
+        </div>
+    );
 }

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import EmptyState from "../_components/EmptyState";
 import SectionLayout from "../_components/SectionLayout";
 
 import image1 from "@/public/image1.png";
@@ -13,6 +12,10 @@ import image3 from "@/public/image3.png";
 /* -------------------------------------------------------------------------- */
 /*                                  DATA                                      */
 /* -------------------------------------------------------------------------- */
+// Fallback plans — used only if API returns nothing or a malformed response
+const fallbackPlans = [
+];
+
 const comparisonFeatures = [
   ];
 
@@ -48,7 +51,7 @@ function ComparisonCell({ value }) {
  */
 function normalizePlans(rawPlans) {
   if (!Array.isArray(rawPlans) || rawPlans.length === 0) {
-    return [];
+    return fallbackPlans;
   }
 
   return rawPlans.map((p, idx) => ({
@@ -71,6 +74,7 @@ function normalizePlans(rawPlans) {
 export default function SubscriptionClient({ subscriptionPlans, header, footer, faqSection }) {
   const [billing, setBilling] = useState("monthly");
 
+  // Use API data if present, otherwise fall back to defaults
   const plans = normalizePlans(subscriptionPlans);
 
   return (
@@ -144,11 +148,8 @@ export default function SubscriptionClient({ subscriptionPlans, header, footer, 
            
           </div>
 
-          {plans.length === 0 ? (
-            <EmptyState message="No subscription plans are available right now." />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {plans.map((plan) => {
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {plans.map((plan) => {
               const price = billing === "monthly" ? plan.monthly : plan.yearly;
               const period = billing === "monthly" ? "/month" : "/year";
 
@@ -229,9 +230,8 @@ export default function SubscriptionClient({ subscriptionPlans, header, footer, 
                   </Link>
                 </div>
               );
-              })}
-            </div>
-          )}
+            })}
+          </div>
         </section>
 
        

@@ -118,6 +118,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             icon: <IoCardOutline />
         },
         {
+            text: "Subscriptions",
+            link: "/dashboard/admin/subscriptions",
+            icon: <IoDocumentOutline />
+        },
+        {
             text: "Reports & Analytics",
             link: "/dashboard/admin/reports-analytics",
             icon: <RiUserSettingsLine />
@@ -439,30 +444,19 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
     ];
     let navList = [];
     if (role?.toLowerCase() === "admin") navList = adminNavList;
-    else if (role?.toLowerCase() === "property-owner" || role?.toLowerCase() === "propertyowner") {
-        navList = isOrganizationAdmin
-            ? propertyOwnerNavList
-            : propertyOwnerNavList.filter((item) => item.text === "Bookings");
-        if (isOrganizationAdmin) {
-            navList = [
-                ...navList,
-                { text: "Create Property", link: "/admin/add-new-property", icon: <BiBuildingHouse className="w-5 h-5" /> },
-                { text: "Add Manager", link: "/property-owner/invite-manager", icon: <IoPeopleOutline className="w-5 h-5" /> },
-            ];
-        }
-    }
     else if (role?.toLowerCase() === "facility-manager") navList = facilityManagerNavList;
+    else if (role?.toLowerCase() === "property-owner") navList = propertyOwnerNavList;
     else if (role?.toLowerCase() === "property-manager") navList = propertyManagerNavList;
     else navList = userNavList;
 
     const pathname = usePathname();
     return (
-        <ul className="flex flex-col gap-4 h-full border-red-500 z-10000">
+        <ul className="flex flex-col gap-1.5 h-full z-10">
             {navList.map((list, index) => (
-                <li key={index} className={`${pathname === list.link && "bg-primary-700"} px-4 py-2 rounded-lg hover:bg-primary-700 group transition-all duration-300`}>
-                    <Link href={list.link} className="flex gap-4 items-center ">
-                        <span className={`${pathname === list.link ? "text-secondary" : "text-white"} text-2xl group-hover:text-secondary`}>{list.icon}</span>
-                        <span className="text-base text-white font-mono">{list.text}</span>
+                <li key={index} className={`group rounded-lg transition-colors duration-200 ${pathname === list.link ? "bg-side-active" : "hover:bg-side-2"}`}>
+                    <Link href={list.link} className="flex gap-3.5 items-center px-3 py-3">
+                        <span className={`text-[22px] transition-colors ${pathname === list.link ? "text-white" : "text-side-ink/80 group-hover:text-white"}`}>{list.icon}</span>
+                        <span className="text-[15px] font-medium text-side-ink">{list.text}</span>
                     </Link>
                 </li>
                 

@@ -8,6 +8,7 @@ function Carousel({
   interval = 5000,
   currentSlideIndex: controlledIndex,
   onSlideChange,
+  indicatorTone = "secondary",
   className = "",
 }) {
   const [internalIndex, setInternalIndex] = useState(0);
@@ -48,17 +49,21 @@ function Carousel({
       </div>
 
       {indicators && (
-        <div className="flex justify-center items-center absolute top-4/5 w-full">
+        <div className="absolute top-19/20 z-30 flex w-full items-center justify-center">
           <div className="flex items-center gap-2">
             {Array.from({ length: slides?.length }, (_, i) => (
               <button
                 key={i}
                 onClick={() => goTo(i)}
                 aria-label={`Go to slide ${i + 1}`}
-                className={`h-3 rounded-full transition-all duration-300 ${
+                className={`h-2.5 rounded-full transition-all duration-300 ${
                   currentSlideIndex === i
-                    ? "w-6.5 bg-secondary"
-                    : "w-3 bg-secondary-100"
+                    ? indicatorTone === "light"
+                      ? "w-6.5 bg-white"
+                      : "w-6.5 bg-secondary"
+                    : indicatorTone === "light"
+                      ? "w-2.5 bg-white/40 hover:bg-white/70"
+                      : "w-3 bg-secondary-100"
                 }`}
               />
             ))}

@@ -6,21 +6,21 @@ import { FaTiktok } from "react-icons/fa6";
 import SubscribeForm from "./SubscribeForm";
 export default function Footer() {
   return (
-    <footer className="px-6 py-12 md:px-[7%] md:pt-[120px] md:pb-6 md:py-0 flex flex-col gap-8 bg-primary-900">
-      <div className="md:flex md:justify-between md:gap-y-0 grid grid-cols-2 gap-y-16 ">
-        <div className="flex flex-col gap-8 w-[338px] col-span-full ">
-          <div className="space-y-2 w-[294px]">
+    <footer className="flex flex-col gap-8 bg-primary-900 px-5 py-12 sm:px-6 md:px-[7%] md:pb-6 md:pt-[120px] md:py-0">
+      <div className="grid grid-cols-2 gap-y-10 md:flex md:justify-between md:gap-y-0">
+        <div className="col-span-full flex w-full max-w-[338px] flex-col gap-6 sm:gap-8">
+          <div className="w-full max-w-[294px] space-y-2">
             <img
               src={"/xpacy-footer-logo.png"}
               alt="xpacy logo"
-              className="w-[294px]"
+              className="w-full max-w-[294px]"
             />
             <p className="text-white text-md">
               Experience Ease,
               <br /> Find Your Dream Property
             </p>
           </div>
-          <div className="flex flex-col gap-2 font-mono text-base text-white">
+          <div className="flex flex-col gap-2 font-mono text-[15px] text-white sm:text-base">
             <p>
               <span className="font-bold">Address:</span> No. 1 Joe Akonobi
               Street, Ojodu Berger.
@@ -47,9 +47,9 @@ export default function Footer() {
             </Link>
           </div>
         </div>
-        <div className="flex flex-col w-[130px] gap-4">
+        <div className="flex w-full flex-col gap-3 md:w-[130px] md:gap-4">
           <p className="font-normal text-lg text-white uppercase">Company</p>
-          <div className=" flex flex-col space-y-6 font-mono text-base font-bold text-white">
+          <div className=" flex flex-col space-y-4 font-mono text-base font-bold text-white sm:space-y-6">
             <Link href={"#"}>Home</Link>
             <Link href={"#"}>Buy</Link>
             <Link href={"#"}>Rent</Link>
@@ -57,15 +57,15 @@ export default function Footer() {
             <Link href={"#"}>Contact</Link>
           </div>
         </div>
-        <div className="flex flex-col w-[152px] gap-4">
+        <div className="flex w-full flex-col gap-3 md:w-[152px] md:gap-4">
           <p className="font-normal text-lg text-white uppercase">Help</p>
-          <div className=" flex flex-col space-y-6 font-mono text-base font-bold text-white">
+          <div className=" flex flex-col space-y-4 font-mono text-base font-bold text-white sm:space-y-6">
             <Link href={"#"}>Company Support</Link>
             <Link href={"#"}>Terms & Conditions</Link>
             <Link href={"#"}>Privacy Policy</Link>
           </div>
         </div>
-        <div className="flex flex-col md:w-[302px] w-full gap-4 col-span-full">
+        <div className="col-span-full flex w-full flex-col gap-4 md:w-[302px]">
           <p className="font-normal text-lg text-white uppercase">Newsletter</p>
           
            <SubscribeForm/>

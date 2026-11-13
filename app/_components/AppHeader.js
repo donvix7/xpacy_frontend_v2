@@ -9,7 +9,7 @@ import MobileHeaderCta from "./MobileHeaderCta";
 export default async function AppHeader() {
 
   return (
-    <header className="flex items-center justify-between px-[7%] py-6 sticky top-0 z-50 bg-white border-b border-gray-200 shadow-lg ">
+    <header className="flex items-center justify-between px-5 py-4 sm:px-6 md:px-[7%] md:py-6 sticky top-0 z-50 bg-white border-b border-gray-200 shadow-lg ">
       <Logo />
       <Suspense fallback={<SpinnerMini />}>
         <Navigation>

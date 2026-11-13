@@ -42,10 +42,10 @@ export default function PMLifecycleSection() {
   ];
 
   return (
-    <section className="py-20 md:py-28 px-6 md:px-[7%] bg-white border-b border-gray-100">
+    <section className="border-b border-gray-100 bg-white px-5 py-14 sm:px-6 sm:py-20 md:px-[7%] md:py-28">
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
+        <div className="mx-auto mb-10 max-w-2xl space-y-3 text-center md:mb-16">
          
           <h2 className="text-2xl font-bold font-sans text-primary tracking-tight">
             The Complete PM Lifecycle
@@ -56,30 +56,30 @@ export default function PMLifecycleSection() {
         </div>
 
         {/* 4-Step Flow */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 lg:gap-4 relative">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-4 lg:gap-4 relative">
           {steps.map((step, idx) => (
             <div key={step.title} className="relative flex flex-col items-center text-center group">
               {/* Card Container - Solid bg-primary when hovered just like Built for PM card */}
-              <div className="w-full h-full p-6 sm:p-7 rounded-2xl bg-primary border border-gray-200/80 hover:border-primary transition-all duration-300 flex flex-col items-center cursor-pointer">
+              <div className="flex h-full w-full cursor-pointer flex-col items-center rounded-2xl border border-gray-200/80 bg-primary p-5 transition-all duration-300 hover:border-primary sm:p-6 md:p-7">
                 {/* Stage Badge */}
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono px-2.5 py-1 rounded-full text-secondary border border-secondary/30 mb-4 transition-all duration-300">
+                <span className="mb-4 rounded-full border border-secondary/30 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-secondary transition-all duration-300">
                   {step.badge}
                 </span>
 
                 {/* Icon Container */}
                 <div
-                  className={`w-14 h-14 rounded-2xl ${step.bgColor} group-hover:bg-white/10 group-hover:border group-hover:border-white/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-all duration-300 shadow-2xs`}
+                  className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl sm:mb-5 sm:h-14 sm:w-14 ${step.bgColor} shadow-2xs transition-all duration-300 group-hover:scale-110 group-hover:border group-hover:border-white/20 group-hover:bg-white/10`}
                 >
                   {step.icon}
                 </div>
 
                 {/* Title */}
-                <h3 className="text-lg sm:text-xl font-bold font-sans text-white mb-2 transition-colors duration-300">
+                <h3 className="mb-2 font-sans text-lg font-bold text-white transition-colors duration-300 sm:text-xl">
                   {step.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-xs sm:text-sm  text-gray-200 font-mono leading-relaxed transition-colors duration-300">
+                <p className="font-mono text-[12.5px] leading-relaxed text-gray-200 transition-colors duration-300 sm:text-sm">
                   {step.description}
                 </p>
               </div>

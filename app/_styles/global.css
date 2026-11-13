@@ -1,14 +1,21 @@
 @import url("https://fonts.cdnfonts.com/css/sf-florencesans");
 @import url("https://db.onlinewebfonts.com/c/8e38c9cc931e43e959d8341ad03741ab?family=Unitext+Regular");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
   --color-base-500: #333;
-  --color-primary: #203645;
-  --color-primary-100: #E3ECF2;
-  --color-primary-200: #c7d9e5;
-  --color-primary-700: #477899;
-  --color-primary-900: #2d4c61;
+  --color-primary: #1f3a52;
+  --color-primary-50: #f5f8fb;
+  --color-primary-100: #e8f0f6;
+  --color-primary-200: #dde6ee;
+  --color-primary-300: #b9cad9;
+  --color-primary-400: #8fa9bf;
+  --color-primary-500: #6b8093;
+  --color-primary-600: #234058;
+  --color-primary-700: #4a7396;
+  --color-primary-800: #24405a;
+  --color-primary-900: #2b4a63;
   --color-secondary: #c2a269;
   --color-secondary-100: #F5F0E7; 
   --color-secondary-500: #cdb385;
@@ -18,6 +25,28 @@
   --color-error: #F44336;
   --font-sans: "SF Florencesans Exp", sans-serif;
   --font-mono: "Unitext Regular", sans-serif;
+  /* Executive dashboard palette */
+  --font-outfit: "Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-canvas: #f5f8fb;
+  --color-ink: #1f3a52;
+  --color-mute: #6b8093;
+  --color-line: #dde6ee;
+  --color-soft: #e8f0f6;
+  --color-card: #ffffff;
+  --color-side: #2b4a63;
+  --color-side-2: #234058;
+  --color-side-active: #4a7396;
+  --color-side-ink: #f2f6fa;
+  --color-side-mute: #a9bccc;
+  --color-up: #10a47a;
+  --color-up-bg: #d8f4ea;
+  --color-down: #e5502a;
+  --color-down-bg: #fde3da;
+  --color-warn: #e8890c;
+  --color-warn-bg: #fdebcb;
+  --color-accent: #7c3aed;
+  --color-accent-bg: #ede9fe;
+
   --text-md: 1.125rem;
   --text-s: 0.875rem;
   --animate-scroll: scroll 30s ease-in-out infinite;
@@ -86,3 +115,274 @@
       transform: rotate(1turn);
     }
   }
+/* ---------------------------------------------------------------------------
+   Executive dashboard system (reference: xpacy-executive-dashboard.html)
+   Applied by adding `xp-dashboard` to each dashboard layout root.
+--------------------------------------------------------------------------- */
+@layer base {
+  .xp-dashboard {
+    font-family: var(--font-outfit);
+    color: var(--color-ink);
+    background-color: var(--color-canvas);
+    -webkit-font-smoothing: antialiased;
+    /* Component-level `font-mono` / `font-sans` keep the original brand
+       typefaces; unclassed text follows the executive Outfit face. */
+  }
+
+  .xp-dashboard :where(h1, h2, h3) {
+    color: var(--color-ink);
+  }
+
+  .xp-dashboard :where(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+  }
+
+  .xp-dashboard :where(table th) {
+    background: var(--color-canvas);
+    color: var(--color-mute);
+    font-weight: 500;
+    font-size: 13.5px;
+    text-align: left;
+    padding: 10px 12px;
+  }
+
+  .xp-dashboard :where(table th:first-child) {
+    border-radius: 8px 0 0 8px;
+  }
+
+  .xp-dashboard :where(table th:last-child) {
+    border-radius: 0 8px 8px 0;
+  }
+
+  .xp-dashboard :where(table td) {
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .xp-dashboard :where(table tr:last-child td) {
+    border-bottom: 0;
+  }
+}
+
+@layer components {
+  .xp-dashboard-container {
+    padding: 1.25rem 1rem 3rem;
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    min-width: 0;
+  }
+  @media (min-width: 640px) {
+    .xp-dashboard-container {
+      padding: 1.5rem 1.5rem 3.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .xp-dashboard-container {
+      padding: 2rem 2rem 4rem;
+    }
+  }
+
+  /* Eliminate nested edge padding on immediate root div of dashboard pages */
+  .xp-dashboard-container > :is(.p-2, .p-4, .p-2\.5, .p-3, .p-1) {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .xp-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    min-width: 0;
+  }
+
+  .xp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6875rem 1.25rem;
+    border: 1.5px solid var(--color-ink);
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--color-ink);
+    font-family: var(--font-outfit);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .xp-btn:hover {
+    background: var(--color-soft);
+  }
+
+  .xp-btn-fill {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: #fff;
+  }
+
+  .xp-btn-fill:hover {
+    background: var(--color-side);
+    border-color: var(--color-side);
+    color: #fff;
+  }
+
+  .xp-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Executive auth system (log in / sign up / accept invite)
+   Applied by adding `xp-auth` to each auth page root.
+--------------------------------------------------------------------------- */
+@layer base {
+  .xp-auth {
+    color: var(--color-ink);
+    background-color: var(--color-canvas);
+    -webkit-font-smoothing: antialiased;
+    /* Auth keeps the original brand typefaces (font-sans / font-mono);
+       only layout, surfaces and colors follow the executive system. */
+  }
+
+  .xp-auth :where(h1, h2, h3) {
+    color: var(--color-ink);
+  }
+
+  .xp-auth ::selection {
+    background: var(--color-soft);
+    color: var(--color-ink);
+  }
+}
+
+@layer components {
+  .xp-auth-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: 1.25rem;
+    box-shadow: 0 30px 70px -55px rgba(31, 58, 82, 0.55);
+  }
+
+  .xp-field {
+    width: 100%;
+    border: 1px solid var(--color-line);
+    border-radius: 0.75rem;
+    background: var(--color-card);
+    padding: 0.8125rem 1rem;
+    font-size: 0.9375rem;
+    line-height: 1.25rem;
+    color: var(--color-ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+
+  .xp-field::placeholder {
+    color: #9db0c0;
+  }
+
+  .xp-field:focus {
+    outline: none;
+    border-color: var(--color-side-active);
+    box-shadow: 0 0 0 3px rgba(74, 115, 150, 0.16);
+  }
+
+  .xp-field:disabled {
+    background: var(--color-canvas);
+    color: var(--color-mute);
+    cursor: not-allowed;
+  }
+
+  .xp-field-error,
+  .xp-field-error:focus {
+    border-color: var(--color-down);
+    box-shadow: 0 0 0 3px rgba(229, 80, 42, 0.12);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Dark mode
+   Toggled from the dashboard navbar; stored in localStorage as `xpacy-theme`
+   and mirrored onto <html data-theme="dark">.
+--------------------------------------------------------------------------- */
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) {
+  color-scheme: dark;
+  --color-canvas: #13202c;
+  --color-card: #1a2a39;
+  --color-ink: #e8f0f6;
+  --color-mute: #93a8ba;
+  --color-line: #2a3d4f;
+  --color-soft: #223445;
+  --color-side: #142433;
+  --color-side-2: #1c3145;
+  --color-side-active: #3f688c;
+  --color-side-ink: #eef4fa;
+  --color-side-mute: #a9bccc;
+  --color-primary-50: #16283a;
+  --color-primary-100: #1d3247;
+  --color-primary-200: #2a3d4f;
+  --color-primary-300: #3b5568;
+  --color-primary-400: #5a7891;
+  --color-primary-700: #6f9bbd;
+  --color-primary-800: #24405a;
+  --color-primary-900: #142433;
+  --color-up-bg: #123f36;
+  --color-down-bg: #4a1f16;
+  --color-warn-bg: #4a3410;
+  --color-accent-bg: #2e2552;
+}
+
+/* Surfaces and text that legacy components hard-code. */
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) :where(.bg-white) {
+  background-color: var(--color-card);
+}
+
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) :where(.bg-gray-50, .bg-gray-100) {
+  background-color: var(--color-soft);
+}
+
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) :where(.bg-gray-200) {
+  background-color: var(--color-line);
+}
+
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) :where(.text-black, .text-gray-900, .text-gray-800) {
+  color: var(--color-ink);
+}
+
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) :where(.text-gray-700, .text-gray-600) {
+  color: var(--color-mute);
+}
+
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) :where(.text-gray-500, .text-gray-400) {
+  color: #7f95a8;
+}
+
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) :where(.border-gray-100, .border-gray-200, .border-gray-300) {
+  border-color: var(--color-line);
+}
+
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) :where(.text-primary, .text-primary-700, .text-primary-800, .text-primary-900) {
+  color: var(--color-side-ink);
+}
+
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) .xp-btn-fill {
+  background: var(--color-side-active);
+  border-color: var(--color-side-active);
+  color: #fff;
+}
+
+[data-theme="dark"] :is(.xp-dashboard, .xp-auth, .xp-surface) .xp-btn-fill:hover {
+  background: #4d7ba1;
+  border-color: #4d7ba1;
+  color: #fff;
+}

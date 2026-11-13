@@ -5,12 +5,19 @@ import Link from "next/link"
 export default function Page(){
     const {userData} = useUser()
     return (
-        <div className="py-[120px] flex flex-col items-center justify-center">
-            <Logo/>
-            <p className="mb-16 mt-6 text-4xl text-primary">Almost done!</p>
-            <p className="text-base font-mono mb-20">We have sent an email to <strong>{userData?.email}.</strong>
-Kindly click the link in the email to complete your registration.</p>
-            <p className="text-base font-mono">Already have an account? <Link href={"/auth/log-in"} className="font-bold font-mono text-base">Log In</Link></p>
+        <div className="xp-auth flex min-h-dvh w-full items-center justify-center bg-canvas px-4 py-10 md:px-6">
+            <div className="xp-auth-card flex w-full max-w-lg flex-col items-center gap-6 p-6 text-center sm:p-9">
+                <Logo/>
+                <p className="font-sans text-[30px] font-bold leading-tight text-ink">Almost done!</p>
+                <p className="font-mono text-[14.5px] leading-relaxed text-mute">
+                    We have sent an email to <strong className="text-ink">{userData?.email}.</strong>{" "}
+                    Kindly click the link in the email to complete your registration.
+                </p>
+                <p className="font-mono text-[14px] text-mute">
+                    Already have an account?{" "}
+                    <Link href={"/auth/log-in"} className="font-bold text-ink hover:underline">Log In</Link>
+                </p>
+            </div>
         </div>
     )
 

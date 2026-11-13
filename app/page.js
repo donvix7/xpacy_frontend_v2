@@ -68,9 +68,9 @@ export default async function Home({ searchParams }) {
 
 
         {/* Want To List Your Property Section (Retained & Polished) */}
-        <div className="py-16 md:py-24 px-6 md:px-[7%] max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
-            <div className="md:w-1/2 w-full h-[360px] sm:h-[420px] md:h-[460px] relative shrink-0 rounded-2xl overflow-hidden shadow-xl border border-primary-100">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:px-6 sm:py-16 md:px-[7%] md:py-24">
+          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
+            <div className="md:w-1/2 w-full h-[260px] sm:h-[380px] md:h-[460px] relative shrink-0 rounded-2xl overflow-hidden shadow-xl border border-primary-100">
               <Image
                 src={image4}
                 fill
@@ -78,12 +78,12 @@ export default async function Home({ searchParams }) {
                 className="object-cover"
               />
             </div>
-            <div className="md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left justify-center space-y-6">
+            <div className="md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left justify-center space-y-5 sm:space-y-6">
             
-              <h2 className="font-bold font-sans text-primary md:text-4xl text-3xl leading-tight tracking-tight">
+              <h2 className="font-bold font-sans text-primary md:text-4xl text-[26px] leading-tight tracking-tight sm:text-3xl">
                 Want To List Your Property?
               </h2>
-              <p className="text-base font-mono text-gray-600 leading-relaxed max-w-lg">
+              <p className="text-[15px] sm:text-base font-mono text-gray-600 leading-relaxed max-w-lg">
                 At Xpacy, we manage your property listings from start to finish,
                 ensuring you enjoy peace of mind while maximizing your returns.
               </p>
@@ -110,9 +110,9 @@ export default async function Home({ searchParams }) {
           subheading={"Everything you need to know about the Xpacy platform."}
           bgColor={true}
         >
-          <div className="space-y-16">
+          <div className="space-y-10 md:space-y-16">
             <FaqSection />
-            <section className="flex flex-col p-8 gap-6 bg-primary rounded-2xl shadow-md">
+            <section className="flex flex-col p-6 sm:p-8 gap-6 bg-primary rounded-2xl shadow-md">
               <div className="flex items-center justify-center">
                 <div className="flex -space-x-2">
                   <Image src={image1} alt="" className="rounded-full w-12 h-12 border-2 border-white" />
@@ -152,7 +152,7 @@ export default async function Home({ searchParams }) {
               "Expert Advice, Tips, and Trends to Make the Most of Your Property Journey"
             }
           >
-            <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
+            <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center justify-center">
               {blogs.slice(0, 3).map((blog) => (
                 <BlogCard key={blog.id} blog={blog} />
               ))}
