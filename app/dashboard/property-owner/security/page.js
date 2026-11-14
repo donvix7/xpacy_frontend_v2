@@ -1,70 +1,103 @@
 import { cookies } from "next/headers";
 import {
-    getPropertyOwnerProfile,
-    getPropertyOwnerProperties,
+  getPropertyOwnerProfile,
+  getPropertyOwnerProperties,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
-import { FaBuilding, FaUserShield } from "react-icons/fa6";
-import { FaExclamationTriangle, FaShieldAlt } from "react-icons/fa";
 
 export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
 
-    const results = await Promise.allSettled([
-        getPropertyOwnerProfile(token),
-        getPropertyOwnerProperties(token, { limit: 10000 }),
-    ]);
+  const results = await Promise.allSettled([
+    getPropertyOwnerProfile(token),
+    getPropertyOwnerProperties(token, { limit: 10000 }),
+  ]);
 
-    const profile = results[0].status === "fulfilled" ? results[0].value : null;
-    const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
+  const profile = results[0].status === "fulfilled" ? results[0].value : null;
+  const propertiesData =
+    results[1].status === "fulfilled" ? results[1].value : [];
 
-    const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
+  const allProperties = Array.isArray(propertiesData?.[0])
+    ? propertiesData[0]
+    : Array.isArray(propertiesData)
+      ? propertiesData
+      : [];
+  const properties = allProperties.filter(
+    (p) => p.property_owner_id === profile?.id,
+  );
 
-   
-const summaryCards = [
+  // ---- Hero stats ----------------------------------------------------------
+  // Placeholders for Secured / Incidents / Active Guards — swap when wired up.
+  const heroStats = [
     {
-        title: "Total Properties",
-        count: properties.length,
-        icon: <FaBuilding className="text-blue-700" size={20} />,
-        color: "bg-blue-100 border-blue-800",
-        bgColor: "bg-blue-100"
+      label: "Total Properties",
+      value: properties.length,
+      hint: "Under management",
     },
     {
-        title: "Secured",
-        count: properties.length,
-        icon: <FaShieldAlt className="text-green-700" size={20} />,
-        color: "bg-green-100 border-green-800",
-        bgColor: "bg-green-100"
+      label: "Secured",
+      value: properties.length,
+      hint: "With security coverage",
     },
-    {
-        title: "Incidents",
-        count: 0,
-        icon: <FaExclamationTriangle className="text-red-700" size={20} />,
-        color: "bg-red-100 border-red-800",
-        bgColor: "bg-red-100"
-    },
-    {
-        title: "Active Guards",
-        count: 0,
-        icon: <FaUserShield className="text-purple-700" size={20} />,
-        color: "bg-purple-100 border-purple-800",
-        bgColor: "bg-purple-100"
-    }
-];
+    { label: "Incidents", value: 0, hint: "Reported this period" },
+    { label: "Active Guards", value: 0, hint: "On duty" },
+  ];
 
-    return (
-        <div className="space-y-8 p-2">
-            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Security</p>
+  const today = new Date().toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
-            <SummaryCards cards={summaryCards} />
+  return (
+    <div className="space-y-8 p-2">
+      {/* ---------- Hero summary ---------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                Security console · {today}
+              </p>
+              <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                Security
+              </h1>
+              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                Security personnel, access control and incident reports across your properties — all in one place.
+              </p>
+            </div>
+          </div>
 
-            <DashboardGridItem title="Security Overview">
-                <EmptyState message="Security management is coming soon. You will be able to manage security personnel, access control, and incident reports for your properties." />
-            </DashboardGridItem>
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+              >
+                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                  {typeof stat.value === "number"
+                    ? stat.value.toLocaleString()
+                    : stat.value}
+                </dd>
+                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                  {stat.hint}
+                </p>
+              </div>
+            ))}
+          </dl>
         </div>
-    );
+      </section>
+
+      {/* ---------- Existing content ---------- */}
+      <DashboardGridItem title="Security Overview">
+        <EmptyState message="Security management is coming soon. You will be able to manage security personnel, access control, and incident reports for your properties." />
+      </DashboardGridItem>
+    </div>
+  );
 }

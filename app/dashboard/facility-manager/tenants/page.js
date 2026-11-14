@@ -2,138 +2,155 @@ import Link from "next/link";
 import { Plus, ChevronLeft } from "lucide-react";
 import AdminUsersList from "@/app/_components/AdminUsersList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import SummaryCards from "@/app/_components/SummaryCards";
-import {
-    getAllTenants,
-    getPropertyById,
-} from "@/app/_lib/data-services";
-import {
-    FaFileSignature,
-    FaUserCheck,
-    
-    FaUsers,
-    
-    FaUserSlash,
-} from "react-icons/fa6";
-import { FaUserTimes } from "react-icons/fa";
+import { getAllTenants, getPropertyById } from "@/app/_lib/data-services";
 
 export default async function Page({ params }) {
-    // propertyId comes straight from the URL
-    const { id: propertyId } = await params;
+  // propertyId comes straight from the URL
+  const { id: propertyId } = await params;
 
-    // Fetch the property and its tenants in parallel
-    const [property, rawUsers] = await Promise.all([
-        getPropertyById(propertyId).catch(() => null),
-        getAllTenants().catch(() => []),
-    ]);
+  // Fetch the property and its tenants in parallel
+  const [property, rawUsers] = await Promise.all([
+    getPropertyById(propertyId).catch(() => null),
+    getAllTenants().catch(() => []),
+  ]);
 
-    const propertyName =
-        property?.name ||
-        property?.property_name ||
-        property?.title ||
-        "Property";
+  const propertyName =
+    property?.name ||
+    property?.property_name ||
+    property?.title ||
+    "Property";
 
-    const allUsers = Array.isArray(rawUsers) ? rawUsers : [];
+  const allUsers = Array.isArray(rawUsers) ? rawUsers : [];
 
-    // Keep only tenants (exclude owners/admins even if the API returns them)
-    const tenantsList = allUsers
-        .filter((u) => {
-            const role = (u.role || "").toLowerCase();
-            // If the API marks tenants explicitly, keep those.
-            // Otherwise treat anyone without an elevated role as a tenant.
-            return (
-                role === "tenant" ||
-                role === "user" ||
-                role === "" ||
-                role === undefined
-            );
-        })
-        .map((u) => ({ ...u, role: "tenant" }));
+  // Keep only tenants (exclude owners/admins even if the API returns them)
+  const tenantsList = allUsers
+    .filter((u) => {
+      const role = (u.role || "").toLowerCase();
+      return (
+        role === "tenant" ||
+        role === "user" ||
+        role === "" ||
+        role === undefined
+      );
+    })
+    .map((u) => ({ ...u, role: "tenant" }));
 
-    const stats = {
-        totalTenants: tenantsList.length,
-        processedKyc: tenantsList.filter(
-            (u) => u.kyc_status === "processing"
-        ).length,
-        activeTenants: tenantsList.filter((u) => u.status === "active").length,
-        inactiveTenants: tenantsList.filter((u) => u.status === "inactive")
-            .length,
-        unverifiedTenants: tenantsList.filter((u) => !u.email_verified_at)
-            .length,
-    };
+  const stats = {
+    totalTenants: tenantsList.length,
+    processedKyc: tenantsList.filter(
+      (u) => u.kyc_status === "processing",
+    ).length,
+    activeTenants: tenantsList.filter((u) => u.status === "active").length,
+    inactiveTenants: tenantsList.filter((u) => u.status === "inactive").length,
+    unverifiedTenants: tenantsList.filter((u) => !u.email_verified_at).length,
+  };
 
-    const summaryCards = [
-        {
-            label: "Total Tenants",
-            value: stats.totalTenants,
-            color: "bg-primary-100",
-            icon: <FaUsers className="w-5 h-5 text-primary" />,
-        },
-        {
-            label: "KYC Processing",
-            value: stats.processedKyc,
-            color: "bg-orange-100",
-            icon: <FaFileSignature className="w-5 h-5 text-orange-600" />,
-        },
-        {
-            label: "Active Tenants",
-            value: stats.activeTenants,
-            color: "bg-emerald-100",
-            icon: <FaUserCheck className="w-5 h-5 text-emerald-600" />,
-        },
-        {
-            label: "Inactive Tenants",
-            value: stats.inactiveTenants,
-            color: "bg-red-100",
-            icon: <FaUserTimes className="w-5 h-5 text-red-600" />,
-        },
-        {
-            label: "Unverified",
-            value: stats.unverifiedTenants,
-            color: "bg-gray-100",
-            icon: <FaUserSlash className="w-5 h-5 text-gray-600" />,
-        },
-    ];
+  // ---- Hero stats (top 4) -------------------------------------------------
+  const heroStats = [
+    {
+      label: "Total Tenants",
+      value: stats.totalTenants,
+      hint: "For this property",
+    },
+    {
+      label: "Active Tenants",
+      value: stats.activeTenants,
+      hint: "Currently active",
+    },
+    {
+      label: "Inactive Tenants",
+      value: stats.inactiveTenants,
+      hint: "Deactivated accounts",
+    },
+    {
+      label: "KYC Processing",
+      value: stats.processedKyc,
+      hint: "Under review",
+    },
+  ];
 
-    return (
-        <div className="space-y-6 p-2 sm:p-4">
-            <div>
-                <Link
-                    href={`/dashboard/user/my-properties/${propertyId}`}
-                    className="mb-2 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Back to property
-                </Link>
+  // ---- Secondary strip (remaining) ----------------------------------------
+  const secondaryStats = [
+    {
+      label: "Unverified",
+      value: stats.unverifiedTenants,
+      hint: "Email not verified",
+    },
+  ];
 
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <p className="text-[28px] font-bold capitalize text-primary lg:text-4xl">
-                            Tenants
-                        </p>
-                        <p className="mt-1 text-sm text-gray-500">
-                            Tenants for {propertyName}.
-                        </p>
-                    </div>
-                    <Link
-                        href={`/admin/add-new-tenant`}
-                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Add tenant
-                    </Link>
-                </div>
+  const today = new Date().toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  return (
+    <div className="space-y-6 p-2 sm:p-4">
+      {/* ---------- Hero summary ---------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0">
+              <Link
+                href={`/dashboard/user/my-properties/${propertyId}`}
+                className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute transition-colors hover:text-white"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                Back to property
+              </Link>
+              <h1 className="mt-1 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                Tenants
+              </h1>
+              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                Tenants for {propertyName}. · {today}
+              </p>
             </div>
 
-            <SummaryCards cards={summaryCards} title="Tenant Summary" />
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/admin/add-new-tenant"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add tenant
+              </Link>
+            </div>
+          </div>
 
-            <DashboardGridItem title="All Tenants">
-                <AdminUsersList
-                    users={tenantsList}
-                    title="All Tenants"
-                    variant="tenant"
-                />
-            </DashboardGridItem>
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+              >
+                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                  {typeof stat.value === "number"
+                    ? stat.value.toLocaleString()
+                    : stat.value}
+                </dd>
+                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                  {stat.hint}
+                </p>
+              </div>
+            ))}
+          </dl>
+
+         
         </div>
-    );
+      </section>
+
+      {/* ---------- Existing content ---------- */}
+      <DashboardGridItem title="All Tenants">
+        <AdminUsersList
+          users={tenantsList}
+          title="All Tenants"
+          variant="tenant"
+        />
+      </DashboardGridItem>
+    </div>
+  );
 }

@@ -1,83 +1,138 @@
 import { getManagedProperties, getMyBookings } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
 import ScheduleInspection from "@/app/_components/ScheduleInspection";
 import InspectionsTable from "@/app/_components/InspectionsTable";
-import { FaBuilding, FaCheckDouble, FaClipboardList, FaClock } from "react-icons/fa6";
 import { isInspectionBooking, parseBookingDate } from "@/app/_lib/utils";
 
 export default async function Page() {
-    const results = await Promise.allSettled([
-        getManagedProperties(10000),
-        getMyBookings(),
-    ]);
+  const results = await Promise.allSettled([
+    getManagedProperties(10000),
+    getMyBookings(),
+  ]);
 
-    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
-    const bookingsData = results[1].status === "fulfilled" ? results[1].value : [];
+  const propertiesData =
+    results[0].status === "fulfilled" ? results[0].value : [];
+  const bookingsData =
+    results[1].status === "fulfilled" ? results[1].value : [];
 
-    const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties;
+  const allProperties = Array.isArray(propertiesData?.[0])
+    ? propertiesData[0]
+    : Array.isArray(propertiesData)
+      ? propertiesData
+      : [];
+  const properties = allProperties;
 
-    const allBookings = Array.isArray(bookingsData?.[0]) ? bookingsData[0] : Array.isArray(bookingsData) ? bookingsData : [];
-    const inspections = allBookings.filter(isInspectionBooking);
+  const allBookings = Array.isArray(bookingsData?.[0])
+    ? bookingsData[0]
+    : Array.isArray(bookingsData)
+      ? bookingsData
+      : [];
+  const inspections = allBookings.filter(isInspectionBooking);
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    const scheduledCount = inspections.filter(i => {
-        const date = parseBookingDate(i.start_date);
-        return date && date >= today;
-    }).length;
-    const completedCount = inspections.filter(i => {
-        const date = parseBookingDate(i.start_date);
-        return date && date < today;
-    }).length;
-    const pendingCount = Math.max(0, inspections.length - scheduledCount - completedCount);
+  const scheduledCount = inspections.filter((i) => {
+    const date = parseBookingDate(i.start_date);
+    return date && date >= today;
+  }).length;
+  const completedCount = inspections.filter((i) => {
+    const date = parseBookingDate(i.start_date);
+    return date && date < today;
+  }).length;
+  const pendingCount = Math.max(
+    0,
+    inspections.length - scheduledCount - completedCount,
+  );
 
-    const summaryCards = [
-        {
-            label: "Total Properties",
-            value: properties.length,
-            color: "bg-primary-100",
-            icon: <FaBuilding className="w-5 h-5 text-primary-700" />
-        },
-        {
-            label: "Scheduled",
-            value: scheduledCount,
-            color: "bg-blue-100",
-            icon: <FaClipboardList className="w-5 h-5 text-blue-700" />
-        },
-        {
-            label: "Completed",
-            value: completedCount,
-            color: "bg-green-100",
-            icon: <FaCheckDouble className="w-5 h-5 text-green-700" />
-        },
-        {
-            label: "Pending",
-            value: pendingCount,
-            color: "bg-amber-100",
-            icon: <FaClock className="w-5 h-5 text-amber-700" />
-        },
-    ];
+  // ---- Hero stats ----------------------------------------------------------
+  const heroStats = [
+    {
+      label: "Total Properties",
+      value: properties.length,
+      hint: "Under management",
+    },
+    {
+      label: "Scheduled",
+      value: scheduledCount,
+      hint: "Upcoming inspections",
+    },
+    {
+      label: "Completed",
+      value: completedCount,
+      hint: "Past inspections",
+    },
+    {
+      label: "Pending",
+      value: pendingCount,
+      hint: "Unresolved",
+    },
+  ];
 
-    return (
-        <div className="space-y-6 p-2">
-            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Inspections</p>
-            <SummaryCards cards={summaryCards} title="Property Inspections Overview" />
+  const formattedDate = new Date().toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
-            <DashboardGridItem title="Property Inspections">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
-                    <p className="text-sm text-gray-500 font-mono">Schedule and track inspections for managed properties.</p>
-                    <ScheduleInspection properties={properties} />
-                </div>
-                {inspections.length > 0 ? (
-                    <InspectionsTable inspections={inspections} />
-                ) : (
-                    <EmptyState message="No inspections scheduled yet. Click &quot;Schedule Inspection&quot; to book an inspection date for a property." />
-                )}
-            </DashboardGridItem>
+  return (
+    <div className="space-y-6 p-2">
+      {/* ---------- Hero summary ---------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                Inspection console · {formattedDate}
+              </p>
+              <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                Inspections
+              </h1>
+              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                Schedule and track inspections for managed properties — see what's upcoming, completed and pending.
+              </p>
+            </div>
+          </div>
+
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+              >
+                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                  {typeof stat.value === "number"
+                    ? stat.value.toLocaleString()
+                    : stat.value}
+                </dd>
+                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                  {stat.hint}
+                </p>
+              </div>
+            ))}
+          </dl>
         </div>
-    );
+      </section>
+
+      {/* ---------- Existing content ---------- */}
+      <DashboardGridItem title="Property Inspections">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
+          <p className="font-mono text-sm text-gray-500">
+            Schedule and track inspections for managed properties.
+          </p>
+          <ScheduleInspection properties={properties} />
+        </div>
+        {inspections.length > 0 ? (
+          <InspectionsTable inspections={inspections} />
+        ) : (
+          <EmptyState message='No inspections scheduled yet. Click "Schedule Inspection" to book an inspection date for a property.' />
+        )}
+      </DashboardGridItem>
+    </div>
+  );
 }

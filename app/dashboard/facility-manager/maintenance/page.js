@@ -1,113 +1,190 @@
 import { cookies } from "next/headers";
 import {
-    getManagedProperties,
-    getBookedServices,
+  getManagedProperties,
+  getBookedServices,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
-import { FaCheckCircle } from "react-icons/fa";
-import { FaClipboardList, FaClock } from "react-icons/fa6";
-import { PiSpinner } from "react-icons/pi";
 
 export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
 
-    const results = await Promise.allSettled([
-        getManagedProperties(10000),
-        getBookedServices(token),
-    ]);
+  const results = await Promise.allSettled([
+    getManagedProperties(10000),
+    getBookedServices(token),
+  ]);
 
-    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
-    const services = results[1].status === "fulfilled" ? results[1].value : [];
+  const propertiesData =
+    results[0].status === "fulfilled" ? results[0].value : [];
+  const services = results[1].status === "fulfilled" ? results[1].value : [];
 
-    const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties;
-    const myServices = Array.isArray(services) ? services : [];
+  const allProperties = Array.isArray(propertiesData?.[0])
+    ? propertiesData[0]
+    : Array.isArray(propertiesData)
+      ? propertiesData
+      : [];
+  const properties = allProperties;
+  const myServices = Array.isArray(services) ? services : [];
 
-    const maintenanceServices = myServices.filter(s =>
-        ["maintenance", "repair", "plumbing", "electrical", "cleaning", "hvac", "painting", "general"].includes(
-            (s.service_type || s.category || "").toLowerCase()
-        )
-    );
-    const pendingMaintenance = maintenanceServices.filter(s => (s.status || "").toLowerCase() === "pending");
-    const inProgressMaintenance = maintenanceServices.filter(s => (s.status || "").toLowerCase() === "in-progress");
-    const completedMaintenance = maintenanceServices.filter(s => (s.status || "").toLowerCase() === "completed");
+  const maintenanceServices = myServices.filter((s) =>
+    [
+      "maintenance",
+      "repair",
+      "plumbing",
+      "electrical",
+      "cleaning",
+      "hvac",
+      "painting",
+      "general",
+    ].includes((s.service_type || s.category || "").toLowerCase()),
+  );
+  const pendingMaintenance = maintenanceServices.filter(
+    (s) => (s.status || "").toLowerCase() === "pending",
+  );
+  const inProgressMaintenance = maintenanceServices.filter(
+    (s) => (s.status || "").toLowerCase() === "in-progress",
+  );
+  const completedMaintenance = maintenanceServices.filter(
+    (s) => (s.status || "").toLowerCase() === "completed",
+  );
 
-const summaryCards = [
+  // ---- Hero stats ----------------------------------------------------------
+  const heroStats = [
     {
-        title: "Total Requests",
-        count: maintenanceServices.length,
-        icon: <FaClipboardList className="text-blue-700" size={20} />,
-        color: "bg-blue-100 border-blue-700",
-        bgColor: "bg-blue-100"
+      label: "Total Requests",
+      value: maintenanceServices.length,
+      hint: "All work orders",
     },
     {
-        title: "Pending",
-        count: pendingMaintenance.length,
-        icon: <FaClock className="text-amber-700" size={20} />,
-        color: "bg-amber-100 border-amber-700",
-        bgColor: "bg-amber-100"
+      label: "Pending",
+      value: pendingMaintenance.length,
+      hint: "Awaiting action",
     },
     {
-        title: "In Progress",
-        count: inProgressMaintenance.length,
-        icon: <PiSpinner className="text-blue-700" size={20} animate-spin />,
-        color: "bg-blue-100 border-blue-700",
-        bgColor: "bg-blue-100"
+      label: "In Progress",
+      value: inProgressMaintenance.length,
+      hint: "Being worked on",
     },
     {
-        title: "Completed",
-        count: completedMaintenance.length,
-        icon: <FaCheckCircle className="text-green-700" size={20} />,
-        color: "bg-green-100 border-green-700",
-        bgColor: "bg-green-100"
-    }
-];
+      label: "Completed",
+      value: completedMaintenance.length,
+      hint: "Resolved",
+    },
+  ];
 
-    return (
-        <div className="space-y-8 p-2">
-            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Maintenance & Work Orders</p>
+  const today = new Date().toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
-            <SummaryCards cards={summaryCards} />
+  return (
+    <div className="space-y-8 p-2">
+      {/* ---------- Hero summary ---------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                Maintenance console · {today}
+              </p>
+              <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                Maintenance & Work Orders
+              </h1>
+              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                Track every maintenance request from submission to completion — spot bottlenecks and see what needs attention.
+              </p>
+            </div>
+          </div>
 
-            <DashboardGridItem title="Work Orders">
-                {maintenanceServices.length === 0 ? (
-                    <EmptyState message="No work orders found. Maintenance requests will appear here when submitted." />
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-primary-200">
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Request</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Type</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Date</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {maintenanceServices.slice(0, 20).map((service, i) => (
-                                    <tr key={service.id || service._id || i} className="border-b border-primary-100 hover:bg-gray-50">
-                                        <td className="py-3 px-4 text-sm font-medium">{service.title || service.description || `Request ${i + 1}`}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600 capitalize">{service.service_type || service.category || "General"}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">{service.created_at ? new Date(service.created_at).toLocaleDateString() : "—"}</td>
-                                        <td className="py-3 px-4">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                (service.status || "").toLowerCase() === "completed" ? "bg-green-100 text-green-700"
-                                                : (service.status || "").toLowerCase() === "in-progress" ? "bg-blue-100 text-blue-700"
-                                                : "bg-yellow-100 text-yellow-700"
-                                            }`}>
-                                                {service.status || "Pending"}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </DashboardGridItem>
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+              >
+                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                  {typeof stat.value === "number"
+                    ? stat.value.toLocaleString()
+                    : stat.value}
+                </dd>
+                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                  {stat.hint}
+                </p>
+              </div>
+            ))}
+          </dl>
         </div>
-    );
+      </section>
+
+      {/* ---------- Existing content ---------- */}
+      <DashboardGridItem title="Work Orders">
+        {maintenanceServices.length === 0 ? (
+          <EmptyState message="No work orders found. Maintenance requests will appear here when submitted." />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-primary-200">
+                  <th className="px-4 py-3 text-sm font-semibold text-gray-600">
+                    Request
+                  </th>
+                  <th className="px-4 py-3 text-sm font-semibold text-gray-600">
+                    Type
+                  </th>
+                  <th className="px-4 py-3 text-sm font-semibold text-gray-600">
+                    Date
+                  </th>
+                  <th className="px-4 py-3 text-sm font-semibold text-gray-600">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {maintenanceServices.slice(0, 20).map((service, i) => (
+                  <tr
+                    key={service.id || service._id || i}
+                    className="border-b border-primary-100 hover:bg-gray-50"
+                  >
+                    <td className="px-4 py-3 text-sm font-medium">
+                      {service.title ||
+                        service.description ||
+                        `Request ${i + 1}`}
+                    </td>
+                    <td className="px-4 py-3 text-sm capitalize text-gray-600">
+                      {service.service_type || service.category || "General"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {service.created_at
+                        ? new Date(service.created_at).toLocaleDateString()
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs font-medium ${
+                          (service.status || "").toLowerCase() === "completed"
+                            ? "bg-green-100 text-green-700"
+                            : (service.status || "").toLowerCase() ===
+                                "in-progress"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {service.status || "Pending"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </DashboardGridItem>
+    </div>
+  );
 }

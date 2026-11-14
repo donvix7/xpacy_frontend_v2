@@ -1,58 +1,86 @@
-import {
-    getManagedProperties,
-} from "@/app/_lib/data-services";
+import { getManagedProperties } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
-import { FaBolt, FaBuilding, FaMoneyBillWave } from "react-icons/fa6";
-import { FiBarChart2 } from "react-icons/fi";
 
 export default async function Page() {
-    const results = await Promise.allSettled([
-        getManagedProperties(10000),
-    ]);
+  const results = await Promise.allSettled([getManagedProperties(10000)]);
 
-    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
+  const propertiesData =
+    results[0].status === "fulfilled" ? results[0].value : [];
 
-    const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties;
+  const allProperties = Array.isArray(propertiesData?.[0])
+    ? propertiesData[0]
+    : Array.isArray(propertiesData)
+      ? propertiesData
+      : [];
+  const properties = allProperties;
 
-   
-const summaryCards = [
-    { 
-        label: "Total Properties", 
-        value: properties.length, 
-        color: "bg-primary-100", 
-        icon: <FaBuilding className="w-5 h-5 text-primary-700" /> // Building represents properties
+  // ---- Hero stats ----------------------------------------------------------
+  // Placeholder values — swap for real data when utility endpoints are wired up.
+  const heroStats = [
+    {
+      label: "Total Properties",
+      value: properties.length,
+      hint: "Assigned to you",
     },
-    { 
-        label: "Meters", 
-        value: 0, 
-        color: "bg-gray-100", 
-        icon: <FaBolt className="w-5 h-5 text-gray-700" /> // Bolt represents electrical meters
-    },
-    { 
-        label: "Total Usage", 
-        value: "0 kWh", 
-        color: "bg-blue-100", 
-        icon: <FiBarChart2 className="w-5 h-5 text-blue-700" /> // Chart represents usage/consumption
-    },
-    { 
-        label: "Outstanding", 
-        value: "$0", 
-        color: "bg-red-100", 
-        icon: <FaMoneyBillWave className="w-5 h-5 text-red-700" /> // Money represents outstanding payments
-    },
-];
+    { label: "Meters", value: 0, hint: "Registered meters" },
+    { label: "Total Usage", value: "0 kWh", hint: "This cycle" },
+    { label: "Outstanding", value: "$0", hint: "Awaiting payment" },
+  ];
 
-    return (
-        <div className="space-y-6 p-2">
-            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Utility Management</p>
-            <SummaryCards cards={summaryCards} title="Utility Overview" />
+  const today = new Date().toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
-            <DashboardGridItem title="Utility Overview">
-                <EmptyState message="Utility management is coming soon. You will be able to track meter readings, utility usage, and billing for assigned properties." />
-            </DashboardGridItem>
+  return (
+    <div className="space-y-6 p-2">
+      {/* ---------- Hero summary ---------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                Utility console · {today}
+              </p>
+              <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                Utility Management
+              </h1>
+              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                Track meter readings, utility usage and billing across properties assigned to you — all in one place.
+              </p>
+            </div>
+          </div>
+
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+              >
+                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                  {typeof stat.value === "number"
+                    ? stat.value.toLocaleString()
+                    : stat.value}
+                </dd>
+                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                  {stat.hint}
+                </p>
+              </div>
+            ))}
+          </dl>
         </div>
-    );
+      </section>
+
+      {/* ---------- Existing content ---------- */}
+      <DashboardGridItem title="Utility Overview">
+        <EmptyState message="Utility management is coming soon. You will be able to track meter readings, utility usage, and billing for assigned properties." />
+      </DashboardGridItem>
+    </div>
+  );
 }

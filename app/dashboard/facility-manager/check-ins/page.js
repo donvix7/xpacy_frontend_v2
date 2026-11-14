@@ -1,113 +1,220 @@
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
 import { getMyBookings } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
-import { FaCalendarCheck, FaDoorOpen, FaPeopleRoof } from "react-icons/fa6";
-import { FiLogIn } from "react-icons/fi";
 import DashboardMobileCards from "@/app/_components/DashboardMobileCards";
 
 const statusKey = (s) => (s || "").toLowerCase();
 
 export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    const bookings = await getMyBookings() || [];
-    const myBookings = Array.isArray(bookings) ? bookings : [];
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const bookings = (await getMyBookings()) || [];
+  const myBookings = Array.isArray(bookings) ? bookings : [];
 
-    const expectedCheckIns = myBookings.filter(b => ["confirmed", "pending", "approved", "accepted"].includes(statusKey(b.status)));
-    const inHouseGuests = myBookings.filter(b => ["checked-in", "in-house", "inhouse", "active"].includes(statusKey(b.status)));
-    const checkedOutGuests = myBookings.filter(b => ["completed", "checked-out", "checkout", "departed"].includes(statusKey(b.status)));
+  const expectedCheckIns = myBookings.filter((b) =>
+    ["confirmed", "pending", "approved", "accepted"].includes(
+      statusKey(b.status),
+    ),
+  );
+  const inHouseGuests = myBookings.filter((b) =>
+    ["checked-in", "in-house", "inhouse", "active"].includes(
+      statusKey(b.status),
+    ),
+  );
+  const checkedOutGuests = myBookings.filter((b) =>
+    ["completed", "checked-out", "checkout", "departed"].includes(
+      statusKey(b.status),
+    ),
+  );
 
-    const summaryCards = [
-        {
-            label: "Total Bookings",
-            value: myBookings.length,
-            color: "bg-primary-100",
-            icon: <FaCalendarCheck className="w-5 h-5 text-primary-700" />
-        },
-        {
-            label: "Expected Check-ins",
-            value: expectedCheckIns.length,
-            color: "bg-blue-100",
-            icon: <FiLogIn className="w-5 h-5 text-blue-700" />
-        },
-        {
-            label: "In-house Guests",
-            value: inHouseGuests.length,
-            color: "bg-amber-100",
-            icon: <FaPeopleRoof className="w-5 h-5 text-amber-700" />
-        },
-        {
-            label: "Completed Stays",
-            value: checkedOutGuests.length,
-            color: "bg-green-100",
-            icon: <FaDoorOpen className="w-5 h-5 text-green-700" />
-        },
-    ];
+  // ---- Hero stats ----------------------------------------------------------
+  const heroStats = [
+    {
+      label: "Total Bookings",
+      value: myBookings.length,
+      hint: "All guest stays",
+    },
+    {
+      label: "Expected Check-ins",
+      value: expectedCheckIns.length,
+      hint: "Confirmed & pending",
+    },
+    {
+      label: "In-house Guests",
+      value: inHouseGuests.length,
+      hint: "Currently staying",
+    },
+    {
+      label: "Completed Stays",
+      value: checkedOutGuests.length,
+      hint: "Checked out",
+    },
+  ];
 
-    const badge = (status) => {
-        const key = statusKey(status);
-        const className = key === "completed" || key === "checked-out" || key === "departed"
-            ? "bg-green-100 text-green-700"
-            : key === "checked-in" || key === "in-house" || key === "active"
-            ? "bg-blue-100 text-blue-700"
-            : key === "cancelled" || key === "canceled"
+  const today = new Date().toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  const badge = (status) => {
+    const key = statusKey(status);
+    const className =
+      key === "completed" || key === "checked-out" || key === "departed"
+        ? "bg-green-100 text-green-700"
+        : key === "checked-in" || key === "in-house" || key === "active"
+          ? "bg-blue-100 text-blue-700"
+          : key === "cancelled" || key === "canceled"
             ? "bg-red-100 text-red-700"
             : "bg-yellow-100 text-yellow-700";
-        return <span className={`px-2 py-1 text-xs font-medium rounded-full ${className}`}>{status || "Pending"}</span>;
-    };
-
-    const formatDate = (value) => value ? new Date(value).toLocaleDateString() : "—";
-
     return (
-        <div className="space-y-6 p-2">
-            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Guest Check-in & Check-out</p>
-
-            <SummaryCards cards={summaryCards} title="Check-in Overview" />
-
-            <DashboardGridItem title="Guest Stays">
-                {myBookings.length === 0 ? (
-                    <EmptyState message="No guest stays found. Bookings will appear here for check-in and check-out management." />
-                ) : (
-                    <>
-                    <DashboardMobileCards items={myBookings.slice(0, 20).map((b, i) => ({
-                        key: b.id || b._id || i,
-                        title: b.guest_name || b.customer_name || b.user_name || b.client_name || `Guest ${i + 1}`,
-                        fields: [
-                            { label: "Property", value: b.property_name || b.property_id || "—" },
-                            { label: "Check-in", value: formatDate(b.check_in_date || b.checkin_date || b.start_date) },
-                            { label: "Check-out", value: formatDate(b.check_out_date || b.checkout_date || b.end_date) },
-                            { label: "Status", value: badge(b.status) },
-                        ],
-                    }))} />
-                    <div className="hidden overflow-x-auto lg:block">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-primary-200">
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Guest</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Property</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Check-in</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Check-out</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {myBookings.slice(0, 20).map((b, i) => (
-                                    <tr key={b.id || b._id || i} className="border-b border-primary-100 hover:bg-gray-50">
-                                        <td className="py-3 px-4 text-sm font-medium">{b.guest_name || b.customer_name || b.user_name || b.client_name || `Guest ${i + 1}`}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">{b.property_name || b.property_id || "—"}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">{formatDate(b.check_in_date || b.checkin_date || b.start_date)}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">{formatDate(b.check_out_date || b.checkout_date || b.end_date)}</td>
-                                        <td className="py-3 px-4">{badge(b.status)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    </>
-                )}
-            </DashboardGridItem>
-        </div>
+      <span
+        className={`rounded-full px-2 py-1 text-xs font-medium ${className}`}
+      >
+        {status || "Pending"}
+      </span>
     );
+  };
+
+  const formatDate = (value) =>
+    value ? new Date(value).toLocaleDateString() : "—";
+
+  return (
+    <div className="space-y-6 p-2">
+      {/* ---------- Hero summary ---------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                Front desk console · {today}
+              </p>
+              <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                Guest Check-in & Check-out
+              </h1>
+              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                Manage guest arrivals and departures across your properties — who's expected, who's in-house and who's checked out.
+              </p>
+            </div>
+          </div>
+
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+              >
+                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                  {typeof stat.value === "number"
+                    ? stat.value.toLocaleString()
+                    : stat.value}
+                </dd>
+                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                  {stat.hint}
+                </p>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* ---------- Existing content ---------- */}
+      <DashboardGridItem title="Guest Stays">
+        {myBookings.length === 0 ? (
+          <EmptyState message="No guest stays found. Bookings will appear here for check-in and check-out management." />
+        ) : (
+          <>
+            <DashboardMobileCards
+              items={myBookings.slice(0, 20).map((b, i) => ({
+                key: b.id || b._id || i,
+                title:
+                  b.guest_name ||
+                  b.customer_name ||
+                  b.user_name ||
+                  b.client_name ||
+                  `Guest ${i + 1}`,
+                fields: [
+                  {
+                    label: "Property",
+                    value: b.property_name || b.property_id || "—",
+                  },
+                  {
+                    label: "Check-in",
+                    value: formatDate(
+                      b.check_in_date || b.checkin_date || b.start_date,
+                    ),
+                  },
+                  {
+                    label: "Check-out",
+                    value: formatDate(
+                      b.check_out_date || b.checkout_date || b.end_date,
+                    ),
+                  },
+                  { label: "Status", value: badge(b.status) },
+                ],
+              }))}
+            />
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-primary-200">
+                    <th className="px-4 py-3 text-sm font-semibold text-gray-600">
+                      Guest
+                    </th>
+                    <th className="px-4 py-3 text-sm font-semibold text-gray-600">
+                      Property
+                    </th>
+                    <th className="px-4 py-3 text-sm font-semibold text-gray-600">
+                      Check-in
+                    </th>
+                    <th className="px-4 py-3 text-sm font-semibold text-gray-600">
+                      Check-out
+                    </th>
+                    <th className="px-4 py-3 text-sm font-semibold text-gray-600">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myBookings.slice(0, 20).map((b, i) => (
+                    <tr
+                      key={b.id || b._id || i}
+                      className="border-b border-primary-100 hover:bg-gray-50"
+                    >
+                      <td className="px-4 py-3 text-sm font-medium">
+                        {b.guest_name ||
+                          b.customer_name ||
+                          b.user_name ||
+                          b.client_name ||
+                          `Guest ${i + 1}`}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {b.property_name || b.property_id || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {formatDate(
+                          b.check_in_date || b.checkin_date || b.start_date,
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {formatDate(
+                          b.check_out_date || b.checkout_date || b.end_date,
+                        )}
+                      </td>
+                      <td className="px-4 py-3">{badge(b.status)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </DashboardGridItem>
+    </div>
+  );
 }
