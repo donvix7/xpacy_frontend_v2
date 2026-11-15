@@ -10,6 +10,8 @@ import EmptyState from "@/app/_components/EmptyState";
 import { FaBroom, FaBuilding, FaUsersGear } from "react-icons/fa6";
 import { FaCheckCircle } from "react-icons/fa";
 import { PiSpinner } from "react-icons/pi";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -20,6 +22,7 @@ export default async function Page() {
         getPropertyOwnerProperties(token, { limit: 10000 }),
         getPropertyOwnerServices(token),
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
 
     const profile = results[0].status === "fulfilled" ? results[0].value : null;
     const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
@@ -66,6 +69,7 @@ export default async function Page() {
 
     return (
         <div className="space-y-6 p-2">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Housekeeping</p>
 
             <SummaryCards cards={summaryCards} title="Housekeeping Overview" />

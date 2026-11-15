@@ -8,6 +8,8 @@ import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
 import { FaBuilding, FaBullhorn, FaUsers } from "react-icons/fa6";
 import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -17,6 +19,7 @@ export default async function Page() {
         getPropertyOwnerProfile(token),
         getPropertyOwnerProperties(token, { limit: 10000 }),
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
 
     const profile = results[0].status === "fulfilled" ? results[0].value : null;
     const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
@@ -54,6 +57,7 @@ const summaryCards = [
 
     return (
         <div className="space-y-6 p-2">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Community Forum</p>
 
             <SummaryCards cards={summaryCards} title="Overview" />

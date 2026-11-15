@@ -21,6 +21,8 @@ import {
   getReportStatus,
   toReportArray,
 } from "@/app/_lib/report-utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const chartBox =
   "bg-white p-3 sm:p-6 rounded-lg border border-primary-100 shadow-sm min-h-[320px] min-w-0";
@@ -35,6 +37,7 @@ export default async function Page() {
     getMyBookings(),
     getInvoiceList(),
   ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
 
   const propertiesData =
     results[0].status === "fulfilled" ? results[0].value : [];
@@ -131,6 +134,7 @@ export default async function Page() {
 
   return (
     <div className="flex flex-col gap-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

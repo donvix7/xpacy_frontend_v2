@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import BackBtn from "../../../_components/BackBtn";
-import Logo from "../../../_components/Logo";
+import AdminHeader from "../../../_components/AdminHeader";
 import { useParams } from "next/navigation";
 
 export default function ProviderDetailsPage() {

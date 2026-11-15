@@ -9,6 +9,8 @@ import EmptyState from "@/app/_components/EmptyState";
 import ScheduleInspection from "@/app/_components/ScheduleInspection";
 import InspectionsTable from "@/app/_components/InspectionsTable";
 import { isInspectionBooking, parseBookingDate } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
   const cookieStore = await cookies();
@@ -19,6 +21,7 @@ export default async function Page() {
     getPropertyOwnerProperties(token, { limit: 10000 }),
     getPropertyOwnerBookings(token),
   ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
 
   const profile = results[0].status === "fulfilled" ? results[0].value : null;
   const propertiesData =
@@ -91,6 +94,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

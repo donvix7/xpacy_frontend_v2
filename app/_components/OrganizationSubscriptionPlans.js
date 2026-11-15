@@ -1,33 +1,15 @@
 import Link from "next/link";
 import { Check, CreditCard, Building2, Sparkles, Users } from "lucide-react";
 import { selectOrganizationSubscriptionPlan } from "@/app/_lib/action";
+import { getSubscriptionList } from "../_lib/data-services";
 
-const plans = [
-  {
-    id: "core",
-    name: "Core",
-    summary: "A clear starting point for organizing your property business.",
-    icon: Building2,
-    features: ["Organization profile", "Property and listing management", "Booking overview"],
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    summary: "For teams managing a growing portfolio and daily operations.",
-    icon: Users,
-    featured: true,
-    features: ["Everything in Core", "Manager collaboration", "Multi-property operations"],
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    summary: "A flexible option for larger or more complex organizations.",
-    icon: Sparkles,
-    features: ["Everything in Growth", "Organization-level insights", "Tailored onboarding"],
-  },
-];
 
-export default function OrganizationSubscriptionPlans({ returnTo, selectedPlan, showBackToDashboard = false, hasError = false }) {
+
+
+export default async function OrganizationSubscriptionPlans({ returnTo, selectedPlan, showBackToDashboard = false, hasError = false }) {
+
+  const plans = await getSubscriptionList();
+  console.log(plans)
   const selectedPlanName = plans.find((plan) => plan.id === selectedPlan)?.name;
 
   return (

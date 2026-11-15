@@ -6,12 +6,15 @@ import ScheduleInspection from "@/app/_components/ScheduleInspection";
 import InspectionsTable from "@/app/_components/InspectionsTable";
 import { FaBuilding, FaCheckDouble, FaClipboardList, FaClock } from "react-icons/fa6";
 import { isInspectionBooking, parseBookingDate } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
     const results = await Promise.allSettled([
         getManagedProperties(10000),
         getMyBookings(),
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
 
     const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
     const bookingsData = results[1].status === "fulfilled" ? results[1].value : [];
@@ -64,6 +67,7 @@ export default async function Page() {
 
     return (
         <div className="space-y-6 p-2">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Inspections</p>
             <SummaryCards cards={summaryCards} title="Property Inspections Overview" />
 

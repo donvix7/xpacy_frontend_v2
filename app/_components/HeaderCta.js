@@ -3,6 +3,7 @@ import ProfileDisplay from "./ProfileDisplay";
 import { cookies } from "next/headers";
 import { getAdminProfile, getUserProfile } from "../_lib/data-services";
 import { getDashboardRole } from "../_lib/role-routing";
+import ThemeToggle from "./ThemeToggle";
 
 const HeaderCta = async () => {
     const cookieStore = await cookies();
@@ -16,6 +17,8 @@ const HeaderCta = async () => {
     );
     return (
         <>
+                        <ThemeToggle />
+        
             {
                 token ? <ProfileDisplay role={dashboardRole || role?.role || "user"} profile={role} /> : (
                     <div className=" hidden md:flex items-center space-x-5">

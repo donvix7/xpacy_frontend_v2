@@ -7,8 +7,8 @@ import toast from "react-hot-toast";
 import SpinnerMini from "@/app/_components/SpinnerMini";
 import { createBuilding } from "@/app/_lib/action";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import AdminHeader from "@/app/_components/AdminHeader";
 
 const CreateBuildingForm = ({
     initialData = null,
@@ -66,128 +66,127 @@ const CreateBuildingForm = ({
     };
 
     const backHref = propertyId
-        ? `/dashboard/user/my-properties/${propertyId}/buildings`
-        : "/admin";
+        ? `/dashboard/admin/properties/${propertyId}`
+        : "/dashboard/admin/properties";
 
     return (
-        <div className="flex flex-col gap-12 w-[796px] mx-auto pb-12">
-            <Link
-                href={backHref}
-                className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary self-start"
-            >
-                <ChevronLeft className="h-4 w-4" />
-                Back to buildings
-            </Link>
+        <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
+            <AdminHeader
+                title={isEditMode ? "Edit Building" : "Add Building"}
+                backHref={backHref}
+            />
 
-            <header className="flex flex-col items-center justify-center gap-4">
-                <p className="text-3xl font-bold text-primary">
-                    {isEditMode ? "Edit Building" : "Create Building"}
-                </p>
-                {!isEditMode && (
-                    <p className="font-mono">
-                        Fill in the correct detailed information for the new building.
-                    </p>
-                )}
-            </header>
+            <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 sm:px-6 sm:py-10 flex flex-col gap-6">
+                <header className="flex flex-col items-center justify-center text-center gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold font-sans text-ink">
+                        {isEditMode ? "Edit Building" : "Create Building"}
+                    </h1>
+                    {!isEditMode && (
+                        <p className="font-mono text-sm text-mute">
+                            Fill in the details for the building under this property.
+                        </p>
+                    )}
+                </header>
 
-            <form
-                className="p-6 flex flex-col gap-8"
-                onSubmit={handleSubmit(onSubmit)}
-            >
-                <p className="text-lg">Building Information</p>
-                <div className="flex flex-col gap-6">
-                    <FormInput label="Building Name" id="name">
-                        <input
-                            disabled={isReadOnly}
-                            {...register("name", {
-                                required: "Building name is required",
-                            })}
-                            type="text"
-                            id="name"
-                            placeholder="e.g. Block A"
-                            className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                errors.name
-                                    ? "border-error"
-                                    : "border-primary-200"
-                            }`}
-                        />
-                        {errors.name && (
-                            <span className="-mt-2 text-xs text-error">
-                                {errors.name.message}
-                            </span>
-                        )}
-                    </FormInput>
+                <form
+                    className="p-6 sm:p-8 flex flex-col gap-8 rounded-2xl border border-line bg-card shadow-sm"
+                    onSubmit={handleSubmit(onSubmit)}
+                >
+                    <p className="text-base font-semibold text-ink border-b border-line pb-3">Building Information</p>
+                    <div className="flex flex-col gap-6">
+                        <FormInput label="Building Name" id="name">
+                            <input
+                                disabled={isReadOnly}
+                                {...register("name", {
+                                    required: "Building name is required",
+                                })}
+                                type="text"
+                                id="name"
+                                placeholder="e.g. Block A"
+                                className={`rounded-lg border px-4 py-3 focus:outline-none bg-card text-ink ${
+                                    errors.name
+                                        ? "border-error"
+                                        : "border-line"
+                                }`}
+                            />
+                            {errors.name && (
+                                <span className="-mt-2 text-xs text-error">
+                                    {errors.name.message}
+                                </span>
+                            )}
+                        </FormInput>
 
-                    <FormInput label="Total Floors" id="totalFloors">
-                        <input
-                            disabled={isReadOnly}
-                            {...register("totalFloors", {
-                                min: {
-                                    value: 0,
-                                    message: "Must be 0 or greater",
-                                },
-                                max: {
-                                    value: 500,
-                                    message: "Value looks too large",
-                                },
-                            })}
-                            type="number"
-                            min="0"
-                            id="totalFloors"
-                            placeholder="e.g. 4"
-                            className={`rounded-lg border bg-[#FCFEFF] px-4.5 py-3 focus:outline-none ${
-                                errors.totalFloors
-                                    ? "border-error"
-                                    : "border-primary-200"
-                            }`}
-                        />
-                        {errors.totalFloors && (
-                            <span className="-mt-2 text-xs text-error">
-                                {errors.totalFloors.message}
-                            </span>
-                        )}
-                    </FormInput>
+                        <FormInput label="Total Floors" id="totalFloors">
+                            <input
+                                disabled={isReadOnly}
+                                {...register("totalFloors", {
+                                    min: {
+                                        value: 0,
+                                        message: "Must be 0 or greater",
+                                    },
+                                    max: {
+                                        value: 500,
+                                        message: "Value looks too large",
+                                    },
+                                })}
+                                type="number"
+                                min="0"
+                                id="totalFloors"
+                                placeholder="e.g. 4"
+                                className={`rounded-lg border px-4 py-3 focus:outline-none bg-card text-ink ${
+                                    errors.totalFloors
+                                        ? "border-error"
+                                        : "border-line"
+                                }`}
+                            />
+                            {errors.totalFloors && (
+                                <span className="-mt-2 text-xs text-error">
+                                    {errors.totalFloors.message}
+                                </span>
+                            )}
+                        </FormInput>
 
-                    <div className="w-full flex flex-col space-y-2 font-mono">
-                        <label
-                            htmlFor="description"
-                            className="text-sm text-black"
-                        >
-                            Description
-                        </label>
-                        <textarea
-                            disabled={isReadOnly}
-                            {...register("description")}
-                            id="description"
-                            rows={5}
-                            className="rounded-lg border bg-[#FCFEFF] px-4.5 py-3 resize-none focus:outline-none border-primary-200"
-                            placeholder="Enter a short description of the building..."
-                        />
+                        <div className="w-full flex flex-col space-y-2 font-mono">
+                            <label
+                                htmlFor="description"
+                                className="text-sm font-medium text-ink"
+                            >
+                                Description
+                            </label>
+                            <textarea
+                                disabled={isReadOnly}
+                                {...register("description")}
+                                id="description"
+                                rows={5}
+                                className="rounded-lg border px-4 py-3 resize-none focus:outline-none border-line bg-card text-ink"
+                                placeholder="Enter a short description of the building..."
+                            />
+                        </div>
                     </div>
-                </div>
 
-                {/* ---------- Actions ---------- */}
-                {!isReadOnly && (
-                    <div className="flex items-center justify-end gap-3">
-                        <Link
-                            href={backHref}
-                            className="bg-white px-4 py-2 font-mono text-primary rounded-lg hover:bg-primary-100/80 cursor-pointer transition flex items-center gap-2"
-                        >
-                            Cancel
-                        </Link>
-                        <button
-                            disabled={isPending}
-                            type="submit"
-                            className="px-4 py-2 bg-primary-200 font-mono text-primary rounded-lg hover:bg-primary-200/80 cursor-pointer transition flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <span>
-                                {isEditMode ? "Save Changes" : "Create Building"}
-                            </span>
-                            {isPending && <SpinnerMini />}
-                        </button>
-                    </div>
-                )}
-            </form>
+                    {/* ---------- Actions ---------- */}
+                    {!isReadOnly && (
+                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
+                            <Link
+                                href={backHref}
+                                className="xp-btn px-4 py-2 font-mono text-sm"
+                            >
+                                Cancel
+                            </Link>
+                            <button
+                                disabled={isPending}
+                                type="submit"
+                                className="xp-btn xp-btn-fill px-5 py-2 font-mono text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <span>
+                                    {isEditMode ? "Save Changes" : "Create Building"}
+                                </span>
+                                {isPending && <SpinnerMini />}
+                            </button>
+                        </div>
+                    )}
+                </form>
+            </main>
         </div>
     );
 };

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getAllOrganization } from "@/app/_lib/data-services";
-import { attachCurrentUserRolesToOrganizations } from "@/app/_lib/action";
+import { getAllOrganization, getOrganizationMembers } from "@/app/_lib/data-services";
+import { toDataServiceError } from "@/app/_lib/api-error";
 import ProceedSelection from "./ProceedSelection";
 
 const getOrganizations = (response) => {
@@ -31,30 +31,42 @@ export default async function ProceedPage({ searchParams }) {
 
     if (!token || !role) redirect("/auth/log-in");
 
-    if (["admin", "administrator", "superadmin", "superadministrator"].includes(String(role).toLowerCase().replace(/[\s_-]/g, ""))) {
+    const normalizedRole = String(role).toLowerCase().replace(/[\s_-]/g, "");
+    if (["admin", "administrator", "superadmin", "superadministrator"].includes(normalizedRole)) {
         redirect("/dashboard/admin");
     }
 
     let organizations = [];
+    let listedOrganizations = [];
+    let loadError = "";
+
     try {
-        const listedOrganizations = getOrganizations(await getAllOrganization())
-            .filter((organization) => organization && typeof organization === "object")
-            .map((organization) => ({
-                ...organization,
-                id: organization.id || organization._id || organization.organizationId || organization.organization_id,
-                name: organization.name || organization.organizationName || organization.organization_name || organization.displayName || "Organization",
-            }))
-            .filter((organization) => organization.id);
-        organizations = await attachCurrentUserRolesToOrganizations(listedOrganizations);
-    } catch {
+        const response = await getAllOrganization();
+        organizations = getOrganizations(response);
+
+        listedOrganizations = await Promise.all(
+            organizations.map(async (item) => {
+                const members = await getOrganizationMembers(item.id);
+                return {
+                    id: item.id,
+                    name: item.name,
+                    members,
+                };
+            })
+        );
+        console.log(listedOrganizations)
+    } catch (error) {
         organizations = [];
+        listedOrganizations = [];
+        loadError = toDataServiceError(error, "Unable to load organizations").message;
     }
 
     return (
         <ProceedSelection
-            organizations={organizations}
+            organizations={listedOrganizations}
             role={role}
             returnTo={typeof params?.returnTo === "string" ? params.returnTo : ""}
+            errorMessage={loadError}
         />
     );
 }

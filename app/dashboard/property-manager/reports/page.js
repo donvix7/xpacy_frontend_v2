@@ -21,6 +21,8 @@ import { MdWarning } from "react-icons/md";
 import { FaBuilding, FaChartPie, FaFileContract, FaMoneyBillWave } from "react-icons/fa6";
 import { formatCurrency } from "@/app/_lib/utils";
 import { getReportAmount, getReportPaidAmount, getReportStatus, toReportArray } from "@/app/_lib/report-utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const chartBox = "bg-white p-3 sm:p-6 rounded-lg border border-primary-100 shadow-sm min-h-[320px] min-w-0";
 
@@ -34,6 +36,7 @@ export default async function Page() {
         getPropertyOwnerBookings(token),
         getPropertyOwnerInvoices(token),
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
 
     const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
     const services = results[1].status === "fulfilled" ? results[1].value : [];
@@ -89,6 +92,7 @@ const summaryCards = [
 
     return (
         <div className="space-y-8 p-2">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <div className="flex items-center justify-between mb-8">
                 <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Reports & Analytics</p>
                 <div className="flex gap-2">

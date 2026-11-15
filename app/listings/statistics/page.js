@@ -6,6 +6,8 @@ import ListingInsightsClient from "./ListingInsightsClient";
 import { filterPropertiesByOrganization, getListingById, getOrganizationProperties, getPublicOrganizationById, getMyProperties, getManagedProperties, getMyRentedProperties } from "@/app/_lib/data-services";
 import { isValidOrganizationId } from "@/app/_lib/public-navigation";
 import EmptyState from "@/app/_components/EmptyState";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 function toListingArray(payload) {
   if (Array.isArray(payload)) return payload;
@@ -71,6 +73,7 @@ export default async function ListingStatisticsPage({ searchParams }) {
     getMyRentedProperties(),
     getOrganizationProperties(organizationId),
   ]);
+  const dataErrorMessages = getSettledErrorMessages(propertyResults);
   const propertySources = propertyResults.flatMap((result) => result.status === "fulfilled" && Array.isArray(result.value) ? result.value : []);
   const uniqueProperties = filterPropertiesByOrganization(propertySources, organizationId).filter((property, index, all) => {
     const id = property.id || property._id || property.propertyId;
@@ -111,6 +114,7 @@ export default async function ListingStatisticsPage({ searchParams }) {
   });
 
   return <><AppHeader /><main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+    {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
     <div className="flex flex-col gap-4 border-b border-primary-100 pb-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="text-sm font-semibold uppercase tracking-wide text-secondary">Organization Insights</p>

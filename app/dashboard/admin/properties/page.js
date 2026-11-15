@@ -9,6 +9,8 @@ import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import { FaHandshake, FaTag } from "react-icons/fa6";
 import { FaHome } from "react-icons/fa";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
     const results = await Promise.allSettled([
@@ -16,6 +18,7 @@ export default async function Page() {
         getManagedProperties(),
         getMyRentedProperties(),
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
 
     const unwrap = (result) =>
         result.status === "fulfilled" && Array.isArray(result.value)
@@ -59,6 +62,7 @@ export default async function Page() {
 
     return (
         <div className="p-2 space-y-6">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">
                 My Properties
             </p>

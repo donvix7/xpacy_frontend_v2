@@ -6,6 +6,8 @@ import {
     AlertTriangle,
 } from "lucide-react";
 import { getAllMaintenanceRequest, getPropertyById } from "@/app/_lib/data-services";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import DataTable from "@/app/_components/DataTable";
@@ -40,10 +42,14 @@ export default async function MaintenancePage({ params }) {
     const { id: propertyId } = await params;
 
     // Fetch the property (for display) and its maintenance requests in parallel
-    const [property, requests] = await Promise.all([
-        getPropertyById(propertyId).catch(() => null),
-        getAllMaintenanceRequest(propertyId).catch(() => []),
+    const [propertyResult, requestsResult] = await Promise.allSettled([
+        getPropertyById(propertyId),
+        getAllMaintenanceRequest(propertyId),
     ]);
+
+    const property = propertyResult.status === "fulfilled" ? propertyResult.value : null;
+    const requests = requestsResult.status === "fulfilled" ? requestsResult.value : [];
+    const dataErrorMessages = getSettledErrorMessages([propertyResult, requestsResult]);
 
     const propertyName =
         property?.name ||
@@ -194,6 +200,7 @@ export default async function MaintenancePage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <div>
                 <p className="text-[28px] font-bold text-primary lg:text-4xl">
                     Maintenance

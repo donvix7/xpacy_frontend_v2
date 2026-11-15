@@ -91,7 +91,7 @@ export default function BuiltForPropertyManagers() {
                   </p>
                   <a
                     href="#demo-form-card"
-                    className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-lg bg-secondary px-3.5 py-2 font-mono text-xs font-bold text-primary-900"
+                    className="mt-1 inline-flex min-h-10 w-fit items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 font-mono text-[12.5px] font-bold text-primary-900"
                   >
                     <span>Book a Demo</span>
                     <ArrowRight className="h-3.5 w-3.5" />

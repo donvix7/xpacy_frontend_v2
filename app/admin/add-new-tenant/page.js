@@ -11,6 +11,7 @@ import { createTenant } from "@/app/_lib/action";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import AdminHeader from "@/app/_components/AdminHeader";
 
 // 4-step flow for tenant creation
 const progressBarSteps = [
@@ -200,40 +201,38 @@ const CreateTenantForm = ({
     };
 
     const backHref = propertyId
-        ? `/dashboard/user/my-properties/${propertyId}/tenants`
-        : "/dashboard/user/tenants";
+        ? `/dashboard/admin/properties/${propertyId}`
+        : "/dashboard/admin/users";
 
     return (
-        <div className="flex flex-col gap-12 w-[796px] mx-auto pb-12">
-            <Link
-                href={backHref}
-                className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary self-start"
-            >
-                <ChevronLeft className="h-4 w-4" />
-                Back to tenants
-            </Link>
-
-            <header className="flex flex-col items-center justify-center gap-4">
-                <p className="text-3xl font-bold text-primary">
-                    {isEditMode ? "Edit Tenant" : "Create Tenant"}
-                </p>
-                {!isEditMode && (
-                    <p className="font-mono">
-                        Fill in the correct detailed information for the new tenant.
-                    </p>
-                )}
-            </header>
-
-            <ProgressBar
-                activeStep={activeStep}
-                setActiveStep={setActiveStep}
-                steps={progressBarSteps}
+        <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
+            <AdminHeader
+                title={isEditMode ? "Edit Tenant" : "Add Tenant"}
+                backHref={backHref}
             />
 
-            <form
-                className="p-6 flex flex-col gap-8"
-                onSubmit={handleFormSubmit}
-            >
+            <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 sm:px-6 sm:py-10 flex flex-col gap-6">
+                <header className="flex flex-col items-center justify-center text-center gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold font-sans text-ink">
+                        {isEditMode ? "Edit Tenant" : "Create Tenant"}
+                    </h1>
+                    {!isEditMode && (
+                        <p className="font-mono text-sm text-mute">
+                            Fill in the detailed information for the tenant.
+                        </p>
+                    )}
+                </header>
+
+                <ProgressBar
+                    activeStep={activeStep}
+                    setActiveStep={setActiveStep}
+                    steps={progressBarSteps}
+                />
+
+                <form
+                    className="p-6 sm:p-8 flex flex-col gap-8 rounded-2xl border border-line bg-card shadow-sm"
+                    onSubmit={handleFormSubmit}
+                >
                 {/* ---------- STEP 1: Personal ---------- */}
                 {activeStep === 1 && (
                     <>
@@ -760,6 +759,7 @@ const CreateTenantForm = ({
                     )}
                 </div>
             </form>
+            </main>
         </div>
     );
 };

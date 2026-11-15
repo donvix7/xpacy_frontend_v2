@@ -32,37 +32,37 @@ export default function Footer() {
               <span className="font-bold">Phone:</span> 09068557780
             </p>
           </div>
-          <div className="flex space-x-6">
-            <Link href={"#"} className="text-white text-2xl">
+          <div className="flex space-x-3">
+            <Link href={"#"} aria-label="Facebook" className="grid h-10 w-10 place-items-center rounded-lg text-white text-2xl">
               <FaFacebook />
             </Link>
-            <Link href={"#"} className="text-white text-2xl">
+            <Link href={"#"} aria-label="X" className="grid h-10 w-10 place-items-center rounded-lg text-white text-2xl">
               <FaXTwitter />
             </Link>
-            <Link href={"#"} className="text-white text-2xl">
+            <Link href={"#"} aria-label="Instagram" className="grid h-10 w-10 place-items-center rounded-lg text-white text-2xl">
               <FaInstagram />
             </Link>
-            <Link href={"#"} className="text-white text-2xl">
+            <Link href={"#"} aria-label="TikTok" className="grid h-10 w-10 place-items-center rounded-lg text-white text-2xl">
               <FaTiktok />
             </Link>
           </div>
         </div>
         <div className="flex w-full flex-col gap-3 md:w-[130px] md:gap-4">
           <p className="font-normal text-lg text-white uppercase">Company</p>
-          <div className=" flex flex-col space-y-4 font-mono text-base font-bold text-white sm:space-y-6">
-            <Link href={"#"}>Home</Link>
-            <Link href={"#"}>Buy</Link>
-            <Link href={"#"}>Rent</Link>
-            <Link href={"#"}>Management</Link>
-            <Link href={"#"}>Contact</Link>
+          <div className=" flex flex-col space-y-1 font-mono text-base font-bold text-white sm:space-y-2">
+            <Link href={"#"} className="flex min-h-10 items-center">Home</Link>
+            <Link href={"#"} className="flex min-h-10 items-center">Buy</Link>
+            <Link href={"#"} className="flex min-h-10 items-center">Rent</Link>
+            <Link href={"#"} className="flex min-h-10 items-center">Management</Link>
+            <Link href={"#"} className="flex min-h-10 items-center">Contact</Link>
           </div>
         </div>
         <div className="flex w-full flex-col gap-3 md:w-[152px] md:gap-4">
           <p className="font-normal text-lg text-white uppercase">Help</p>
-          <div className=" flex flex-col space-y-4 font-mono text-base font-bold text-white sm:space-y-6">
-            <Link href={"#"}>Company Support</Link>
-            <Link href={"#"}>Terms & Conditions</Link>
-            <Link href={"#"}>Privacy Policy</Link>
+          <div className=" flex flex-col space-y-1 font-mono text-base font-bold text-white sm:space-y-2">
+            <Link href={"#"} className="flex min-h-10 items-center">Company Support</Link>
+            <Link href={"#"} className="flex min-h-10 items-center">Terms & Conditions</Link>
+            <Link href={"#"} className="flex min-h-10 items-center">Privacy Policy</Link>
           </div>
         </div>
         <div className="col-span-full flex w-full flex-col gap-4 md:w-[302px]">

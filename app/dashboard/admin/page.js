@@ -18,6 +18,8 @@ import {
     ReceiptText,
     Wrench,
 } from "lucide-react";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const sumAmount = (invoices) => invoices.reduce((sum, invoice) => sum + (parseFloat(invoice?.amount) || 0), 0);
 
@@ -48,6 +50,7 @@ export default async function Page() {
         getAllInvoices(token),
         getUserNotifications(token),
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
 
     const profile = results[0].status === "fulfilled" ? results[0].value : null;
     const propertiesData = results[1].status === "fulfilled" ? results[1].value : { properties: [], pagination: {} };
@@ -190,6 +193,7 @@ export default async function Page() {
 
     return (
         <div className="p-2 flex flex-col gap-5">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             {/* Hero band */}
             <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
                

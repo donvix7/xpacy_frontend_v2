@@ -7,9 +7,17 @@ export default async function PropertySavedIcon({propertyId, isPropertyCard=fals
     const cookiesStore = await cookies();
     const token =  cookiesStore.get("token");
 
-    const {data} = await getSavedProperties(token)
+    // This icon appears on public property cards, so a failed lookup should
+    // only hide the saved state instead of taking down the page.
+    let savedProperties = [];
+    try {
+        const { data } = await getSavedProperties(token);
+        savedProperties = Array.isArray(data) ? data : [];
+    } catch (error) {
+        console.warn("Unable to load saved properties for the save icon:", error?.message || error);
+    }
 
-    const isSaved = data?.map((property) => property.property_id)?.includes(Number(propertyId)) ?? false;
+    const isSaved = savedProperties.map((property) => property.property_id)?.includes(Number(propertyId)) ?? false;
 
     return (
         <PropertySaveBtn isSaved={isSaved} propertyId={propertyId} isPropertyCard={isPropertyCard} />

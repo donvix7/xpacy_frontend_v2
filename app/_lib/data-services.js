@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { safeFetch } from "./safe-fetch";
+import { ensureApiSuccess, logApiFailure, toDataServiceError } from "./api-error";
 
 import { url } from "./constants";
 export { url };
@@ -51,12 +52,6 @@ function toArray(json) {
   return [];
 }
 
-function logUnexpectedResponse(context, response) {
-  if (response.status >= 500 || response.status === 0) {
-    console.warn(`${context}: ${response.status} ${response.statusText}`);
-  }
-}
-
 /* ----------------------------------------------------------------
  * Public / marketing data
  * ---------------------------------------------------------------- */
@@ -64,6 +59,7 @@ function logUnexpectedResponse(context, response) {
 export async function getBanners() {
   try {
     const response = await safeFetch(`${url}/settings/homepage-sliders`);
+    await logApiFailure(response, "getBanners");
     if (!response.ok) return [];
     const { data } = await response.json();
     return data || [];
@@ -76,6 +72,7 @@ export async function getBanners() {
 export async function getFaqs() {
   try {
     const response = await safeFetch(`${url}/faq/get-all-faqs`);
+    await logApiFailure(response, "getFaqs");
     if (!response.ok) return [];
     const { data } = await response.json();
     return data || [];
@@ -88,6 +85,7 @@ export async function getFaqs() {
 export async function getFaqById(id) {
   try {
     const response = await safeFetch(`${url}/faq/get-faq/${id}`);
+    await logApiFailure(response, "getFaqById");
     const { faq } = await response.json();
     return faq || null;
   } catch (error) {
@@ -103,6 +101,7 @@ export async function getFaqById(id) {
 export async function getFeaturedProperties() {
   try {
     const response = await safeFetch(`${url}/property/fetch-featured-properties`);
+    await logApiFailure(response, "getFeaturedProperties");
     if (!response.ok) return [];
     const { data } = await response.json();
     return data || [];
@@ -115,8 +114,9 @@ export async function getFeaturedProperties() {
 export async function getRentProperties() {
   try {
     const response = await safeFetch(`${url}/property/fetch-properties?purpose=rent`);
+    await logApiFailure(response, "getRentProperties");
     const { properties, pagination } = await response.json();
-    return [properties, pagination];
+    return [properties || [], pagination || {}];
   } catch (error) {
     console.warn("Error fetching rent properties:", error);
     return [[], {}];
@@ -127,6 +127,7 @@ export async function getProperties(search = {}) {
   const apiUrl = `${url}/property/fetch-properties?${new URLSearchParams(search)}`;
   try {
     const response = await safeFetch(apiUrl);
+    await logApiFailure(response, "getProperties");
     if (!response.ok) return [[], {}];
     const payload = await response.json();
     const properties = Array.isArray(payload?.properties)
@@ -149,8 +150,9 @@ export async function getProperties(search = {}) {
 export async function getLatestProperties() {
   try {
     const response = await safeFetch(`${url}/property/fetch-properties?limit=5`);
+    await logApiFailure(response, "getLatestProperties");
     const { properties } = await response.json();
-    return properties;
+    return properties || [];
   } catch (error) {
     console.warn("Error fetching latest properties:", error);
     return [];
@@ -160,8 +162,9 @@ export async function getLatestProperties() {
 export async function getProperty(id) {
   try {
     const response = await safeFetch(`${url}/property/fetch-property/${id}`);
+    await logApiFailure(response, "getProperty");
     const { property } = await response.json();
-    return property;
+    return property || null;
   } catch (error) {
     console.warn("Error fetching property:", error);
     return null;
@@ -171,8 +174,9 @@ export async function getProperty(id) {
 export async function getOtherProperties() {
   try {
     const response = await safeFetch(`${url}/property/fetch-properties?limit=6`);
+    await logApiFailure(response, "getOtherProperties");
     const { properties } = await response.json();
-    return properties;
+    return properties || [];
   } catch (error) {
     console.warn("Error fetching other properties:", error);
     return [];
@@ -185,8 +189,9 @@ export async function getCities() {
       method: "GET",
       headers: { Accept: "application/json" },
     });
+    await logApiFailure(response, "getCities");
     const { state } = await response.json();
-    return state;
+    return state || [];
   } catch (error) {
     console.warn("Error fetching states:", error);
     return [];
@@ -200,6 +205,7 @@ export async function getCities() {
 export async function getBlogs() {
   try {
     const response = await safeFetch(`${url}/blog/all-posts`);
+    await logApiFailure(response, "getBlogs");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
@@ -207,23 +213,32 @@ export async function getBlogs() {
     return [];
   }
 }
-export async function getAdminBlogs(){
+export async function getAdminBlogs() {
   const token = await getRawToken();
-  try{
-    const response = await fetch(`https://services.xpacy.com/api/v1/blogs?page=1&limit=20&sortBy=createdAt&sortOrder=desc `);
-
-
+  try {
+    const response = await safeFetch(
+      `${SERVICE_URL}/blogs?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      {
+        method: "GET",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    await ensureApiSuccess(response, "getAdminBlogs");
     const { data } = await response.json();
     return data || [];
-  }catch(error){
-    console.warn("Error fetching blogs:", error);
-    return 
+  } catch (error) {
+    throw toDataServiceError(error, "getAdminBlogs");
   }
 }
 
 export async function getBlog(id) {
   try {
     const response = await safeFetch(`${url}/blog/post/${id}`);
+    await logApiFailure(response, "getBlog");
     const { data } = await response.json();
     return data || null;
   } catch (error) {
@@ -235,6 +250,7 @@ export async function getBlog(id) {
 export async function getBlogCategories() {
   try {
     const response = await safeFetch(`${url}/blog/all-categories`);
+    await logApiFailure(response, "getBlogCategories");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
@@ -259,8 +275,8 @@ export async function getUserProfile(passedToken) {
         "Content-type": "application/json",
       },
     });
+    await logApiFailure(response, "getUserProfile");
     if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch user profile", response);
       return null;
     }
     const profile = await response.json();
@@ -283,8 +299,8 @@ export async function getPropertyOwnerProfile(token) {
         "Content-type": "application/json",
       },
     });
+    await logApiFailure(response, "getPropertyOwnerProfile");
     if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch property owner profile", response);
       return null;
     }
     const data = await response.json();
@@ -301,6 +317,7 @@ export async function getPropertyOwnerInfo(tokenKey) {
     const response = await safeFetch(
       `${url}/property-owner/fetch-owner-information?token=${tokenKey}`
     );
+    await logApiFailure(response, "getPropertyOwnerInfo");
     const { property_owner } = await response.json();
     return property_owner || null;
   } catch (error) {
@@ -322,11 +339,11 @@ export async function getSavedProperties() {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
+    await ensureApiSuccess(response, "getSavedProperties");
     const { data, pagination } = await response.json();
     return { data: data || [], pagination: pagination || {} };
   } catch (error) {
-    console.warn("Error fetching saved properties:", error);
-    return { data: [], pagination: {} };
+    throw toDataServiceError(error, "getSavedProperties");
   }
 }
 
@@ -341,6 +358,7 @@ export async function getUnreadNotificationsCount(passedToken) {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
+    await logApiFailure(response, "getUnreadNotificationsCount");
     if (!response.ok) return 0;
     const resData = await response.json();
     if (typeof resData?.data === "number") return resData.data;
@@ -369,6 +387,7 @@ export async function getUserNotifications() {
                 cache: "no-store",
             }
         );
+        await logApiFailure(response, "getUserNotifications");
         if (!response.ok) return [];
         const json = await response.json();
 
@@ -394,11 +413,11 @@ export async function getBookedServices(token) {
       method: "GET",
       headers: { Authorization: `Bearer ${raw}` },
     });
+    await ensureApiSuccess(response, "getBookedServices");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching user booked services:", error);
-    return [];
+    throw toDataServiceError(error, "getBookedServices");
   }
 }
 
@@ -410,11 +429,11 @@ export async function getRentedProperties() {
       `${SERVICE_URL}/me/rented-properties?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
+    await ensureApiSuccess(response, "getRentedProperties");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching rented properties:", error);
-    return [];
+    throw toDataServiceError(error, "getRentedProperties");
   }
 }
 
@@ -426,17 +445,18 @@ export async function getBookingList() {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
+    await ensureApiSuccess(response, "getBookingList");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching bookings:", error);
-    return [];
+    throw toDataServiceError(error, "getBookingList");
   }
 }
 
 export async function getBookingSlots() {
   try {
     const response = await safeFetch(`${url}/bookings/fetch-slots`);
+    await logApiFailure(response, "getBookingSlots");
     const { slots } = await response.json();
     return slots || [];
   } catch (error) {
@@ -451,11 +471,11 @@ export async function getBookingById(token, id) {
     const response = await safeFetch(`${url}/user/fetch-booking/${id}`, {
       headers: { Authorization: `Bearer ${raw}` },
     });
+    await ensureApiSuccess(response, "getBookingById");
     const { data } = await response.json();
     return data || null;
   } catch (error) {
-    console.warn("Error fetching booking:", error);
-    return null;
+    throw toDataServiceError(error, "getBookingById");
   }
 }
 
@@ -471,12 +491,11 @@ export async function getInvoice(id) {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!response.ok) return null;
+    await ensureApiSuccess(response, "getInvoice");
     const invoice = await response.json();
     return response.ok && invoice?.success !== false ? invoice : null;
   } catch (error) {
-    console.warn("Error fetching invoice:", error);
-    return null;
+    throw toDataServiceError(error, "getInvoice");
   }
 }
 
@@ -493,14 +512,12 @@ export async function getAdminInvoice(passedToken, id) {
       },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getAdminInvoice");
 
-    if (!response.ok) return null;
     const payload = await safeJson(response);
-    if (!response.ok || payload?.success === false) return null;
     return payload?.data?.invoice || payload?.data || payload?.invoice || payload || null;
   } catch (error) {
-    console.warn("Error fetching admin invoice:", error);
-    return null;
+    throw toDataServiceError(error, "getAdminInvoice");
   }
 }
 
@@ -515,16 +532,11 @@ export async function getInvoiceById(id) {
         "Content-type": "application/json",
       },
     });
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch invoice", response);
-      return null;
-    }
+    await ensureApiSuccess(response, "getInvoiceById");
     const data = await safeJson(response);
-    if (!response.ok || data?.success === false) return null;
     return data?.data || data?.invoice || data;
   } catch (error) {
-    console.warn(`Error fetching invoice ${id}:`, error);
-    return null;
+    throw toDataServiceError(error, "getInvoiceById");
   }
 }
 
@@ -541,10 +553,10 @@ export async function getAllInvoices(organizationId, passedToken, limit = 10000)
         headers: { Authorization: `Bearer ${token}` },
       }
     );
+    await ensureApiSuccess(response, "getAllInvoices");
     return await response.json();
   } catch (error) {
-    console.warn("Error fetching all invoices:", error);
-    return [];
+    throw toDataServiceError(error, "getAllInvoices");
   }
 }
 
@@ -556,12 +568,11 @@ export async function getInvoiceList() {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!response.ok) return [];
+    await ensureApiSuccess(response, "getInvoiceList");
     const data = await safeJson(response);
     return toArray(data);
   } catch (error) {
-    console.warn("Error fetching user invoices:", error);
-    return [];
+    throw toDataServiceError(error, "getInvoiceList");
   }
 }
 
@@ -575,11 +586,11 @@ export async function getPaymentById(id) {
         "Content-Type": "application/json",
       },
     });
+    await ensureApiSuccess(response, "getPaymentById");
     const { data } = await response.json();
     return data || null;
   } catch (err) {
-    console.warn("Error fetching payment:", err);
-    return null;
+    throw toDataServiceError(err, "getPaymentById");
   }
 }
 
@@ -593,11 +604,11 @@ export async function getPaymentsForInvoice(invoiceId) {
         "Content-Type": "application/json",
       },
     });
+    await ensureApiSuccess(response, "getPaymentsForInvoice");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn("Error fetching payments for invoice:", err);
-    return [];
+    throw toDataServiceError(err, "getPaymentsForInvoice");
   }
 }
 
@@ -617,11 +628,11 @@ export async function getLeases({propertyId}) {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getLeases");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching user leases:", error);
-    return [];
+    throw toDataServiceError(error, "getLeases");
   }
 }
 
@@ -635,11 +646,11 @@ export async function getAllLeases() {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getAllLeases");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getAllLeases");
   }
 }
 
@@ -650,16 +661,12 @@ export async function getLeaseById(id) {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getLeaseById");
 
-    if (!response.ok) {
-      console.warn(`Failed to fetch lease by ID: ${response.status}`);
-      return null;
-    }
     const { data } = await safeJson(response);
     return data;
   } catch (err) {
-    console.warn("Error in getLeaseById:", err);
-    return null;
+    throw toDataServiceError(err, "getLeaseById");
   }
 }
 
@@ -670,15 +677,12 @@ export async function getSingleLease(leaseId) {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getSingleLease");
 
-    if (!response.ok) {
-      return null;
-    }
     const result = await safeJson(response);
     return result?.data || result?.lease || result || null;
   } catch (err) {
-    console.warn("Error in getSingleLease:", err);
-    return null;
+    throw toDataServiceError(err, "getSingleLease");
   }
 }
 
@@ -696,11 +700,11 @@ export async function getAllTenants() {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getAllTenants");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getAllTenants");
   }
 }
 
@@ -715,12 +719,11 @@ export async function getTenantById(id) {
       },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getTenantById");
     const data = await response.json();
-    
     return data || null;
   } catch (err) {
-    console.warn(err);
-    return null;
+    throw toDataServiceError(err, "getTenantById");
   }
 }
 
@@ -738,11 +741,11 @@ export async function getAllUnits(propertyId) {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getAllUnits");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getAllUnits");
   }
 }
 
@@ -758,12 +761,11 @@ export async function getUnitById(id) {
       },
       cache: "no-store",
     });
-    if (!response.ok) return null;
+    await ensureApiSuccess(response, "getUnitById");
     const  data  = await safeJson(response);
     return data || null;
   } catch (error) {
-    console.warn("Error fetching unit:", error);
-    return null;
+    throw toDataServiceError(error, "getUnitById");
   }
 }
 
@@ -781,12 +783,11 @@ export async function getAllBuildings(propertyId) {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getAllBuildings");
     const { data } = await response.json();
-    
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getAllBuildings");
   }
 }
 
@@ -801,12 +802,11 @@ export async function getBuildingById(propertyId, id) {
       },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getBuildingById");
     const  data  = await response.json();
-    
     return data || null;
   } catch (err) {
-    console.warn(err);
-    return null;
+    throw toDataServiceError(err, "getBuildingById");
   }
 }
 
@@ -824,11 +824,11 @@ export async function getAllPropertyOwners() {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getAllPropertyOwners");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getAllPropertyOwners");
   }
 }
 
@@ -843,11 +843,11 @@ export async function getPropertyOwnerById(id) {
       },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getPropertyOwnerById");
     const { data } = await response.json();
     return data || null;
   } catch (err) {
-    console.warn(err);
-    return null;
+    throw toDataServiceError(err, "getPropertyOwnerById");
   }
 }
 
@@ -869,11 +869,11 @@ export async function getAllMaintenanceRequest(propertyId) {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getAllMaintenanceRequest");
     const data = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getAllMaintenanceRequest");
   }
 }
 
@@ -888,11 +888,11 @@ export async function getMaintenanceById(id) {
       },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getMaintenanceById");
     const { data } = await response.json();
     return data || null;
   } catch (err) {
-    console.warn(err);
-    return null;
+    throw toDataServiceError(err, "getMaintenanceById");
   }
 }
 
@@ -910,11 +910,11 @@ export async function getAllExpenses(organisationId) {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getAllExpenses");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getAllExpenses");
   }
 }
 
@@ -929,11 +929,11 @@ export async function getExpenseById(id) {
       },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getExpenseById");
     const { data } = await response.json();
     return data || null;
   } catch (err) {
-    console.warn(err);
-    return null;
+    throw toDataServiceError(err, "getExpenseById");
   }
 }
 
@@ -952,13 +952,12 @@ export async function getAllDocuments() {
         cache: "no-store",
       }
     );
-    if (!response.ok) return [];
+    await ensureApiSuccess(response, "getAllDocuments");
     const payload = await response.json();
     return [payload, payload?.data, payload?.documents, payload?.data?.documents]
       .find(Array.isArray) || [];
   } catch (error) {
-    console.warn("Error fetching documents:", error);
-    return [];
+    throw toDataServiceError(error, "getAllDocuments");
   }
 }
 
@@ -974,12 +973,11 @@ export async function getDocumentById(id) {
       },
       cache: "no-store",
     });
-    if (!response.ok) return null;
+    await ensureApiSuccess(response, "getDocumentById");
     const payload = await response.json();
     return payload?.data?.document || payload?.data || payload?.document || payload || null;
   } catch (error) {
-    console.warn("Error fetching document:", error);
-    return null;
+    throw toDataServiceError(error, "getDocumentById");
   }
 }
 
@@ -987,7 +985,6 @@ export async function getDocumentById(id) {
  * Organizations, users, members
  * ---------------------------------------------------------------- */
 export async function getAllAdminOrganization(){
-  
  const token = await getRawToken();
   try {
     const response = await safeFetch(
@@ -1001,12 +998,11 @@ export async function getAllAdminOrganization(){
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getAllAdminOrganization");
     const  data  = await response.json();
-    console.log(data)   
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getAllAdminOrganization");
   }  
 }
 
@@ -1021,11 +1017,11 @@ export async function getAdminOrganizationById(id) {
       },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getAdminOrganizationById");
     const data = await response.json();
     return data || null;
   } catch (err) {
-    console.warn(err);
-    return null;
+    throw toDataServiceError(err, "getAdminOrganizationById");
   }
 }
 
@@ -1043,14 +1039,14 @@ export async function getAdminOrganizationMembers(id) {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getAdminOrganizationMembers");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getAdminOrganizationMembers");
   }
 }
-export async function getAllOrganization() {
+export async function getAllOrganization({ throwOnError = false } = {}) {
   const token = await getRawToken();
   try {
     const response = await safeFetch(
@@ -1064,10 +1060,15 @@ export async function getAllOrganization() {
         cache: "no-store",
       }
     );
+    if (throwOnError) {
+      await ensureApiSuccess(response, "getAllOrganization");
+    } else {
+      await logApiFailure(response, "getAllOrganization");
+    }
     const { data } = await response.json();
-    
     return data || [];
   } catch (err) {
+    if (throwOnError) throw toDataServiceError(err, "getAllOrganization");
     console.warn(err);
     return [];
   }
@@ -1084,11 +1085,11 @@ export async function getOrganizationById(id) {
       },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getOrganizationById");
     const data = await response.json();
     return data || null;
   } catch (err) {
-    console.warn(err);
-    return null;
+    throw toDataServiceError(err, "getOrganizationById");
   }
 }
 
@@ -1104,6 +1105,7 @@ export async function getPublicOrganizationById(id) {
       },
       cache: "no-store",
     });
+    await logApiFailure(response, "getPublicOrganizationById");
     if (!response.ok) return null;
     const payload = await response.json();
     return payload?.organization || payload?.data?.organization || payload?.data || payload || null;
@@ -1132,7 +1134,7 @@ export async function getOrganizationMembers(id) {
   const token = await getRawToken();
   try {
     const response = await safeFetch(
-      `${SERVICE_URL}/organizations/${id}/members?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      `${SERVICE_URL}/organizations/${id}/members?page=1&limit=100&sortBy=createdAt&sortOrder=desc`,
       {
         method: "GET",
         headers: {
@@ -1142,12 +1144,11 @@ export async function getOrganizationMembers(id) {
         cache: "no-store",
       }
     );
-    console.log(response)
-    const { data } = await response.json();
-    return data || [];
+    await ensureApiSuccess(response, "getOrganizationMembers");
+    const payload = await response.json();
+    return payload?.data?.members || payload?.data || payload?.members || payload || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getOrganizationMembers");
   }
 }
 
@@ -1165,20 +1166,15 @@ export async function getAllUsers(passedToken, limit = 20) {
         cache: "no-store",
       }
     );
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch users", response);
-      return [];
-    }
+    await ensureApiSuccess(response, "getAllUsers");
     const payload = await response.json();
     return Array.isArray(payload) ? payload : payload?.data?.users || payload?.data?.results || payload?.data || payload?.users || [];
   } catch (error) {
-    console.warn("Error fetching all users:", error);
-    return [];
+    throw toDataServiceError(error, "getAllUsers");
   }
 }
 
 export async function getUserById(id) {
-  console.log(id)
   const token = await getRawToken();
   try {
     const response = await safeFetch(`https://services.xpacy.com/api/v1/users/${id}`, {
@@ -1189,12 +1185,11 @@ export async function getUserById(id) {
       },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getUserById");
     const data = await response.json();
-    console.log("from get user by id", response)
     return data || null;
   } catch (err) {
-    console.warn(err);
-    return null;
+    throw toDataServiceError(err, "getUserById");
   }
 }
 
@@ -1221,6 +1216,7 @@ export async function getOrganizationProperties(organizationId) {
           cache: "no-store",
         }
       );
+      await logApiFailure(response, "getOrganizationProperties");
       if (!response.ok) break;
       const payload = await response.json();
       const pageProperties = Array.isArray(payload)
@@ -1238,7 +1234,7 @@ export async function getOrganizationProperties(organizationId) {
       const meta = payload?.meta || payload?.pagination || payload?.data?.meta || payload?.data?.pagination;
       totalPages = Math.max(page, Number(meta?.totalPages) || 1);
     }
-    return properties;
+    return properties || [];
   } catch (err) {
     console.warn(err);
     return [];
@@ -1256,12 +1252,11 @@ export async function getPropertyById(id) {
       },
       cache: "no-store",
     });
-    console.warn("Unable to fetch property by ID")
+    await ensureApiSuccess(response, "getPropertyById");
     const data = await response.json();
     return data || null;
   } catch (err) {
-    console.warn(err);
-    return null;
+    throw toDataServiceError(err, "getPropertyById");
   }
 }
 
@@ -1278,11 +1273,11 @@ export async function getMyProperties(limit = 20) {
         },
       }
     );
+    await ensureApiSuccess(response, "getMyProperties");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getMyProperties");
   }
 }
 
@@ -1299,11 +1294,11 @@ export async function getManagedProperties(limit = 20) {
         },
       }
     );
+    await ensureApiSuccess(response, "getManagedProperties");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getManagedProperties");
   }
 }
 
@@ -1320,11 +1315,11 @@ export async function getMyRentedProperties() {
         },
       }
     );
+    await ensureApiSuccess(response, "getMyRentedProperties");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getMyRentedProperties");
   }
 }
 
@@ -1348,8 +1343,8 @@ export async function getMyLeases() {
           cache: "no-store",
         }
       );
+      await ensureApiSuccess(response, "getMyLeases");
 
-      if (!response.ok) break;
 
       const payload = await response.json();
       const pageLeases = [
@@ -1377,8 +1372,7 @@ export async function getMyLeases() {
 
     return leases;
   } catch (err) {
-    console.warn("Error fetching user leases:", err);
-    return leases;
+    throw toDataServiceError(err, "getMyLeases");
   }
 }
 
@@ -1395,11 +1389,11 @@ export async function getMyBookings() {
         },
       }
     );
+    await ensureApiSuccess(response, "getMyBookings");
     const { data } = await response.json();
     return data || [];
   } catch (err) {
-    console.warn(err);
-    return [];
+    throw toDataServiceError(err, "getMyBookings");
   }
 }
 
@@ -1419,8 +1413,8 @@ export async function getAdminProfile(token) {
         "Content-type": "application/json",
       },
     });
+    await logApiFailure(response, "getAdminProfile");
     if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch admin profile", response);
       return null;
     }
     const { admin } = await response.json();
@@ -1448,15 +1442,11 @@ export async function getAdminProperties() {
         cache: "no-store",
       }
     );
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch admin properties", response);
-      return { properties: [], pagination: {} };
-    }
+    await ensureApiSuccess(response, "getAdminProperties");
     const { properties, pagination } = await response.json();
     return { properties: properties || [], pagination: pagination || {} };
   } catch (error) {
-    console.warn("Error fetching admin properties (catch):", error);
-    return { properties: [], pagination: {} };
+    throw toDataServiceError(error, "getAdminProperties");
   }
 }
 
@@ -1472,15 +1462,11 @@ export async function getAdminServices(token) {
       },
       cache: "no-store",
     });
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch admin services", response);
-      return [];
-    }
+    await ensureApiSuccess(response, "getAdminServices");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching admin services (catch):", error);
-    return [];
+    throw toDataServiceError(error, "getAdminServices");
   }
 }
 
@@ -1496,15 +1482,11 @@ export async function getAdminServiceById(token, id) {
       },
       cache: "no-store",
     });
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch admin service", response);
-      return null;
-    }
+    await ensureApiSuccess(response, "getAdminServiceById");
     const { data } = await response.json();
     return data || null;
   } catch (error) {
-    console.warn("Error fetching admin service (catch):", error);
-    return null;
+    throw toDataServiceError(error, "getAdminServiceById");
   }
 }
 
@@ -1523,16 +1505,11 @@ export async function getPropertyOwner(token) {
         cache: "no-store",
       }
     );
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch property owners", response);
-      return [];
-    }
+    await ensureApiSuccess(response, "getPropertyOwner");
     const { data } = await response.json();
-    
     return data || [];
   } catch (error) {
-    console.warn("Error fetching property owner (catch):", error);
-    return [];
+    throw toDataServiceError(error, "getPropertyOwner");
   }
 }
 
@@ -1568,12 +1545,11 @@ export async function getPropertyOwnerProperties(token, searchParams = {}) {
       },
       cache: "no-store",
     });
-    if (!response.ok) return [[], {}];
+    await ensureApiSuccess(response, "getPropertyOwnerProperties");
     const { properties, pagination } = await response.json();
     return [properties || [], pagination || {}];
   } catch (error) {
-    console.warn("Error fetching property-owner properties:", error);
-    return [[], {}];
+    throw toDataServiceError(error, "getPropertyOwnerProperties");
   }
 }
 
@@ -1589,15 +1565,11 @@ export async function getAllAdmin(token) {
       },
       cache: "no-store",
     });
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch admins", response);
-      return [];
-    }
+    await ensureApiSuccess(response, "getAllAdmin");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn(`Error in getAllAdmin: ${url}/admin/fetch-admin`, error);
-    return [];
+    throw toDataServiceError(error, "getAllAdmin");
   }
 }
 
@@ -1613,15 +1585,11 @@ export async function getAdminBooking(propertyId, token) {
         "Content-type": "application/json",
       },
     });
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch admin bookings", response);
-      return [];
-    }
+    await ensureApiSuccess(response, "getAdminBooking");
     const { data } = await response.json();
-    return data;
+    return data || [];
   } catch (error) {
-    console.warn("Error fetching admin bookings:", error);
-    return [];
+    throw toDataServiceError(error, "getAdminBooking");
   }
 }
 
@@ -1637,12 +1605,11 @@ export async function getAdminBookingById(token, id) {
       },
       cache: "no-store",
     });
-    if (!response.ok) return null;
+    await ensureApiSuccess(response, "getAdminBookingById");
     const data = await response.json();
     return data.booking || data.data || null;
   } catch (error) {
-    console.warn("Error fetching admin booking:", error);
-    return null;
+    throw toDataServiceError(error, "getAdminBookingById");
   }
 }
 
@@ -1653,11 +1620,11 @@ export async function getAdminServiceProviders(token) {
       headers: { Authorization: `Bearer ${raw}` },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getAdminServiceProviders");
     const { serviceProviders } = await response.json();
     return serviceProviders || [];
   } catch (error) {
-    console.warn("Error fetching admin service providers:", error);
-    return [];
+    throw toDataServiceError(error, "getAdminServiceProviders");
   }
 }
 
@@ -1668,11 +1635,11 @@ export async function getAdminServiceProviderById(token, id) {
       headers: { Authorization: `Bearer ${raw}` },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getAdminServiceProviderById");
     const { serviceProvider } = await response.json();
     return serviceProvider || null;
   } catch (error) {
-    console.warn("Error fetching admin service provider:", error);
-    return null;
+    throw toDataServiceError(error, "getAdminServiceProviderById");
   }
 }
 
@@ -1694,15 +1661,11 @@ export async function getPropertyOwnerBookings(token) {
         "Content-type": "application/json",
       },
     });
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch property owner bookings", response);
-      return [];
-    }
+    await ensureApiSuccess(response, "getPropertyOwnerBookings");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching property owner bookings:", error);
-    return [];
+    throw toDataServiceError(error, "getPropertyOwnerBookings");
   }
 }
 
@@ -1720,15 +1683,11 @@ export async function getPropertyOwnerServices(token) {
         "Content-type": "application/json",
       },
     });
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch property owner services", response);
-      return [];
-    }
+    await ensureApiSuccess(response, "getPropertyOwnerServices");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching property owner services:", error);
-    return [];
+    throw toDataServiceError(error, "getPropertyOwnerServices");
   }
 }
 
@@ -1746,15 +1705,11 @@ export async function getPropertyOwnerInvoices(token) {
         "Content-type": "application/json",
       },
     });
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch property owner invoices", response);
-      return [];
-    }
+    await ensureApiSuccess(response, "getPropertyOwnerInvoices");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching property owner invoices:", error);
-    return [];
+    throw toDataServiceError(error, "getPropertyOwnerInvoices");
   }
 }
 
@@ -1772,15 +1727,11 @@ export async function getPropertyOwnerNotifications(token) {
         "Content-type": "application/json",
       },
     });
-    if (!response.ok) {
-      logUnexpectedResponse("Unable to fetch property owner notifications", response);
-      return [];
-    }
+    await ensureApiSuccess(response, "getPropertyOwnerNotifications");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching property owner notifications:", error);
-    return [];
+    throw toDataServiceError(error, "getPropertyOwnerNotifications");
   }
 }
 
@@ -1791,11 +1742,11 @@ export async function getOwnerProperties(token) {
       headers: { Authorization: `Bearer ${raw}` },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getOwnerProperties");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching owner properties:", error);
-    return [];
+    throw toDataServiceError(error, "getOwnerProperties");
   }
 }
 
@@ -1809,11 +1760,11 @@ export async function getOwnerServiceById(token, id) {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getOwnerServiceById");
     const { data } = await response.json();
     return data || null;
   } catch (error) {
-    console.warn("Error fetching owner service:", error);
-    return null;
+    throw toDataServiceError(error, "getOwnerServiceById");
   }
 }
 
@@ -1826,11 +1777,11 @@ export async function getAllServiceProviders() {
     const response = await safeFetch(
       `${url}/service-provider/get-all-service-providers`
     );
+    await ensureApiSuccess(response, "getAllServiceProviders");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
-    console.warn("Error fetching service providers:", error);
-    return [];
+    throw toDataServiceError(error, "getAllServiceProviders");
   }
 }
 
@@ -1839,11 +1790,11 @@ export async function getServiceProviderById(id) {
     const response = await safeFetch(
       `${url}/service-provider/get-service-provider/${id}`
     );
+    await ensureApiSuccess(response, "getServiceProviderById");
     const { serviceProvider } = await response.json();
     return serviceProvider || null;
   } catch (error) {
-    console.warn("Error fetching service provider:", error);
-    return null;
+    throw toDataServiceError(error, "getServiceProviderById");
   }
 }
 
@@ -1857,11 +1808,11 @@ export async function getSavedPropertyById(token, id) {
         cache: "no-store",
       }
     );
+    await ensureApiSuccess(response, "getSavedPropertyById");
     const { data } = await response.json();
     return data || null;
   } catch (error) {
-    console.warn("Error fetching saved property:", error);
-    return null;
+    throw toDataServiceError(error, "getSavedPropertyById");
   }
 }
 
@@ -1872,11 +1823,11 @@ export async function getServiceRequestById(token, id) {
       headers: { Authorization: `Bearer ${raw}` },
       cache: "no-store",
     });
+    await ensureApiSuccess(response, "getServiceRequestById");
     const { data } = await response.json();
     return data || null;
   } catch (error) {
-    console.warn("Error fetching service request:", error);
-    return null;
+    throw toDataServiceError(error, "getServiceRequestById");
   }
 }
 
@@ -1887,6 +1838,7 @@ export async function getServiceRequestById(token, id) {
 export async function getReferralLeaderboard() {
   try {
     const response = await safeFetch(`${url}/user/fetch-leaderboard`);
+    await logApiFailure(response, "getReferralLeaderboard");
     const { data } = await response.json();
     return data || [];
   } catch (error) {
@@ -1900,6 +1852,7 @@ export async function getReferralDownline(referralCode) {
     const response = await safeFetch(
       `${url}/user/fetch-downline/${referralCode}`
     );
+    await logApiFailure(response, "getReferralDownline");
     const { data } = await response.json();
     return data || null;
   } catch (error) {
@@ -1915,6 +1868,7 @@ export async function getReferralDownline(referralCode) {
 export async function debugFetch(urlStr) {
   try {
     const response = await safeFetch(urlStr);
+    await logApiFailure(response, "debugFetch");
     const text = await response.text();
     return text;
   } catch (err) {
@@ -1942,12 +1896,11 @@ export async function getListingById(id, passedToken) {
       },
       cache: "no-store",
     });
-    if (!response.ok) return null;
+    await ensureApiSuccess(response, "getListingById");
     const payload = await safeJson(response);
     return payload?.data ?? payload?.listings ?? payload ?? [];
   } catch (error) {
-    console.warn("Error fetching listing:", error);
-    return null;
+    throw toDataServiceError(error, "getListingById");
   }
 }
 
@@ -1965,6 +1918,7 @@ export async function getPublicListingsForProperty(propertyId) {
         `${SERVICE_URL}/properties/${encodeURIComponent(propertyId)}/listings?page=${page}&limit=20&sortBy=createdAt&sortOrder=desc`,
         { method: "GET", headers, cache: "no-store" }
       );
+      await logApiFailure(response, "getPublicListingsForProperty");
       if (!response.ok) return null;
       return safeJson(response);
     };
@@ -1993,7 +1947,6 @@ export async function getPublicListingsForProperty(propertyId) {
     return { listings: [], meta: null };
   }
 }
-  
 export async function getSingleListing(id) {
   const token = await getRawToken();
   try {
@@ -2006,12 +1959,11 @@ export async function getSingleListing(id) {
       },
       cache: "no-store",
     });
-    if (!response.ok) return null;
+    await ensureApiSuccess(response, "getSingleListing");
     const { data } = await safeJson(response);
     return data || null;
   } catch (error) {
-    console.warn("Error fetching listing:", error);
-    return null;
+    throw toDataServiceError(error, "getSingleListing");
   }
 }
 
@@ -2027,22 +1979,17 @@ export async function getSubscriptionList(){
       },
       cache: "no-store",
     });
-    if (!response.ok) return null;
+    await ensureApiSuccess(response, "getSubscriptionList");
     const { data } = await safeJson(response);
     return data || null;
   } catch (error) {
-    console.warn("Error fetching Subscriptons:", error);
-    return null;
+    throw toDataServiceError(error, "getSubscriptionList");
   }
 }
 
 export async function getActiveOrganizationRole() {
   try {
     const cookieStore = await cookies();
-    const members = await getOrganizationMembers()
-    console.log(members)
-    
-    console.log(cookieStore)
     return cookieStore.get("organizationRole")?.value || "";
   } catch {
     return "";

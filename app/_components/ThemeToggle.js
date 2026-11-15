@@ -7,7 +7,13 @@ const STORAGE_KEY = "xpacy-theme";
 
 function getInitialTheme() {
     if (typeof document === "undefined") return "light";
-    return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+    const current = document.documentElement.dataset.theme;
+    if (current === "dark" || current === "light") return current;
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored === "dark" || stored === "light") return stored;
+    } catch {}
+    return "light";
 }
 
 export default function ThemeToggle({ className = "" }) {
@@ -15,8 +21,18 @@ export default function ThemeToggle({ className = "" }) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setTheme(getInitialTheme());
+        const updateTheme = () => {
+            setTheme(getInitialTheme());
+        };
+        updateTheme();
         setMounted(true);
+
+        window.addEventListener("themechange", updateTheme);
+        window.addEventListener("storage", updateTheme);
+        return () => {
+            window.removeEventListener("themechange", updateTheme);
+            window.removeEventListener("storage", updateTheme);
+        };
     }, []);
 
     const isDark = theme === "dark";
@@ -27,9 +43,8 @@ export default function ThemeToggle({ className = "" }) {
         document.documentElement.dataset.theme = next;
         try {
             localStorage.setItem(STORAGE_KEY, next);
-        } catch {
-            // Storage can be unavailable in private mode; the in-memory theme still applies.
-        }
+        } catch {}
+        window.dispatchEvent(new Event("themechange"));
     }
 
     return (

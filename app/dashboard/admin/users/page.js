@@ -151,26 +151,20 @@ export default async function Page() {
       </div>
 
       {/* ---------- Existing content ---------- */}
-      <DashboardGridItem title="All Users List">
+      <DashboardGridItem >
         <AdminUsersList users={usersList} title="All Users List" variant="tenant" />
       </DashboardGridItem>
 
-      <DashboardGridItem title="All Registered Users List">
+      <DashboardGridItem >
         <AdminUsersList users={allUsers} title="All Registered Users List" variant="registered" />
       </DashboardGridItem>
 
-      <DashboardGridItem title="Admins List">
+      <DashboardGridItem >
         <AdminUsersList users={adminsList} title="Admins List" />
       </DashboardGridItem>
 
-      <DashboardGridItem title="Property Owners List">
-        <Link
-          href="/admin/add-new-owner"
-          className="flex items-center self-end gap-2 text-sm text-primary hover:underline"
-        >
-          <FaPlus /> Add New Owner
-        </Link>
-        <AdminPropertyOwnersList owners={ownersList} />
+      <DashboardGridItem >
+        <AdminPropertyOwnersList owners={ownersList} title="Property Owners List" />
       </DashboardGridItem>
     </div>
   );

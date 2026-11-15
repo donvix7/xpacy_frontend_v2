@@ -6,6 +6,7 @@ import Modal from "./Modal";
 import { HiOutlineUserAdd } from "react-icons/hi";
 import AddNewOwnerForm from "./AddNewOwnerForm";
 import DataTable from "./DataTable";
+import Link from "next/link";
 
 const tableHeadings = [
     { heading: "Owner’s Information" },
@@ -135,17 +136,13 @@ export default function AdminPropertyOwnersList({ owners,  variant = "default" }
     );
 
     const AddOwnerBtn = (
-        <Modal>
-            <Modal.Open>
-                <button className="flex items-center justify-center cursor-pointer gap-2 px-4 py-2.5 bg-primary rounded-lg font-mono font-medium text-white text-sm hover:bg-primary-dark transition-colors shrink-0 whitespace-nowrap">
+       
+                <Link 
+                href={'/admin/add-new-owner'}
+                className="flex items-center justify-center cursor-pointer gap-2 px-4 py-2.5 bg-primary rounded-lg font-mono font-medium text-white text-sm hover:bg-primary-dark transition-colors shrink-0 whitespace-nowrap">
                     <HiOutlineUserAdd className="text-xl" />
                     <span>Add New Owner</span>
-                </button>
-            </Modal.Open>
-            <Modal.Window>
-                <AddNewOwnerForm/>
-            </Modal.Window>
-        </Modal>
+                </Link>
     );
 
     return (

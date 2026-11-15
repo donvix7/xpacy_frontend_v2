@@ -4,7 +4,9 @@ import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers"
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getAdminOrganizationMembers } from "./data-services";
+import { getAdminOrganizationMembers, getOrganizationMembers } from "./data-services";
+import { getOrganizationMemberRole, normalizeOrganizationMembers } from "./organization-members";
+import { toDataServiceError } from "./api-error";
 
 const URL = "https://app.xpacy.com";
 const dashboardByRole = {
@@ -91,15 +93,8 @@ async function getOrganizationMembershipRole(organizationId, token, userId, emai
   }
 }
 
-async function getOrganizationMemberList(organizationId) {
-  const limit = 100;
-  const members = [];
-  let page = 1;
-
-  try {
-    while (page <= 100) {
-      const payload = await getAdminOrganizationMembers(organizationId, limit, page);
-      const currentPageMembers = Array.isArray(payload)
+const extractOrganizationMembers = (payload) =>
+  Array.isArray(payload)
         ? payload
         : [
             payload?.members,
@@ -114,15 +109,34 @@ async function getOrganizationMemberList(organizationId) {
             payload?.data?.data?.members,
             payload?.data?.data?.items,
           ].find(Array.isArray) || [];
-      members.push(...currentPageMembers);
-      if (currentPageMembers.length < limit) break;
-      page += 1;
+
+/**
+ * Load the members of an organization and keep the API's failure message.
+ * Members are used to resolve the current user's role, so callers need to know
+ * whether an empty list means "no members" or "the request failed".
+ */
+async function getOrganizationMemberList(organizationId) {
+  let firstErrorMessage = "";
+
+  try {
+    const members = extractOrganizationMembers(await getOrganizationMembers(organizationId));
+    if (members.length) return { members, errorMessage: "" };
+  } catch (error) {
+    firstErrorMessage = toDataServiceError(error, "Unable to load organization members").message;
     }
 
-    return members;
-  } catch {
-    return members;
+  // Fall back to the admin-scoped endpoint, which also covers organizations
+  // where the standard members endpoint returns nothing.
+  try {
+    const members = extractOrganizationMembers(await getAdminOrganizationMembers(organizationId));
+    if (members.length) return { members, errorMessage: "" };
+  } catch (error) {
+    if (!firstErrorMessage) {
+      firstErrorMessage = toDataServiceError(error, "Unable to load organization members").message;
+    }
   }
+
+  return { members: [], errorMessage: firstErrorMessage };
 }
 
 function getRoleFromMemberList(members, userId, email) {
@@ -146,11 +160,7 @@ function getRoleFromMemberList(members, userId, email) {
     const memberEmail = String(member?.email || member?.member?.email || member?.user?.email || member?.profile?.email || member?.member?.user?.email || member?.member?.profile?.email || "").trim().toLowerCase();
     return (userId && ids.includes(String(userId))) || (normalizedEmail && memberEmail === normalizedEmail);
   });
-  const role = currentMember?.role?.name || currentMember?.role?.value || currentMember?.role?.code || currentMember?.role
-    || currentMember?.organizationRole?.name || currentMember?.organizationRole?.value || currentMember?.organizationRole?.code || currentMember?.organizationRole
-    || currentMember?.memberRole?.name || currentMember?.memberRole?.value || currentMember?.memberRole?.code || currentMember?.memberRole
-    || currentMember?.membership?.role?.name || currentMember?.membership?.role?.value || currentMember?.membership?.role
-    || currentMember?.roleName;
+  const role = getOrganizationMemberRole(currentMember);
   return typeof role === "string" ? role : "";
 }
 
@@ -162,33 +172,13 @@ export async function attachCurrentUserRolesToOrganizations(organizations = []) 
 
   return Promise.all(organizations.map(async (organization) => {
     const id = organization?.id || organization?._id || organization?.organizationId || organization?.organization_id;
-    if (!id || !token) return { ...organization, id: id ? String(id) : "", organizationRole: "", members: [] };
+    if (!id || !token) return { ...organization, id: id ? String(id) : "", organizationRole: "", members: [], membersError: "" };
 
-    const members = await getOrganizationMemberList(String(id));
+    const { members, errorMessage } = await getOrganizationMemberList(String(id));
     const organizationRole = getRoleFromMemberList(members, userId, email);
-    const displayMembers = members.map((member, index) => {
-      const user = member?.user || member?.profile || member?.member?.user || member?.member?.profile || {};
-      const name = member?.name
-        || [user?.firstName || user?.firstname, user?.lastName || user?.lastname].filter(Boolean).join(" ")
-        || user?.name
-        || user?.username
-        || user?.email
-        || member?.email
-        || `Member ${index + 1}`;
-      const memberRole = member?.role?.name || member?.role?.value || member?.role?.code || member?.role
-        || member?.organizationRole?.name || member?.organizationRole?.value || member?.organizationRole?.code || member?.organizationRole
-        || member?.memberRole?.name || member?.memberRole?.value || member?.memberRole?.code || member?.memberRole
-        || member?.membership?.role?.name || member?.membership?.role?.value || member?.membership?.role
-        || member?.roleName;
-      return {
-        id: String(member?.id || member?._id || member?.userId || member?.user_id || index),
-        name: String(name),
-        email: String(member?.email || user?.email || ""),
-        role: typeof memberRole === "string" ? memberRole : "",
-      };
-    });
+    const displayMembers = normalizeOrganizationMembers(members);
 
-    return { ...organization, id: String(id), organizationRole, members: displayMembers };
+    return { ...organization, id: String(id), organizationRole, members: displayMembers, membersError: errorMessage };
   }));
 }
 

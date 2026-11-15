@@ -16,11 +16,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <Script id="xpacy-theme-init" strategy="beforeInteractive">
-          {`(function(){try{var t=localStorage.getItem("xpacy-theme");if(!t){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.dataset.theme=t;}catch(e){}})();`}
-        </Script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("xpacy-theme");if(!t){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.dataset.theme=t;}catch(e){}})();`,
+          }}
+        />
       </head>
-      <body className="text-primary flex flex-col">
+      <body className="min-h-screen bg-canvas text-ink flex flex-col transition-colors duration-150">
         <UserProvider>
           {children}
           <TokenRefreshModal />

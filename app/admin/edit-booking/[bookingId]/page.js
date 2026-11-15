@@ -1,5 +1,4 @@
-import BackBtn from "@/app/_components/BackBtn";
-import Logo from "@/app/_components/Logo";
+import AdminHeader from "@/app/_components/AdminHeader";
 import { getAdminBooking } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import EditBookingForm from "@/app/_components/EditBookingForm";
@@ -23,18 +22,11 @@ export default async function EditBookingPage({ params }) {
     }
 
     return (
-        <div className="flex-1 flex flex-col gap-8 min-h-screen bg-neutrals-50">
+        <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
             {/* Header Navigation */}
-            <nav className="flex items-center justify-between px-[7%] py-6 bg-white border-b border-primary-100 sticky top-0 z-10 shadow-sm">
-                <div className="flex items-center gap-8">
-                    <BackBtn />
-                    <div className="h-8 w-px bg-primary-100"></div>
-                    <p className="text-xl font-bold text-primary">Edit Booking</p>
-                </div>
-                <Logo />
-            </nav>
+            <AdminHeader title="Edit Booking" backHref={`/admin/booking-details/${bookingId}`} />
 
-            <main className="flex-1 px-[7%] py-8">
+            <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 sm:px-6 md:px-8">
                 <EditBookingForm booking={booking} />
             </main>
         </div>

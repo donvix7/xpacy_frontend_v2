@@ -3,16 +3,22 @@ import { Plus, ChevronLeft } from "lucide-react";
 import AdminUsersList from "@/app/_components/AdminUsersList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import { getAllTenants, getPropertyById } from "@/app/_lib/data-services";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page({ params }) {
   // propertyId comes straight from the URL
   const { id: propertyId } = await params;
 
   // Fetch the property and its tenants in parallel
-  const [property, rawUsers] = await Promise.all([
-    getPropertyById(propertyId).catch(() => null),
-    getAllTenants().catch(() => []),
+  const [propertyResult, usersResult] = await Promise.allSettled([
+    getPropertyById(propertyId),
+    getAllTenants(),
   ]);
+
+  const property = propertyResult.status === "fulfilled" ? propertyResult.value : null;
+  const rawUsers = usersResult.status === "fulfilled" ? usersResult.value : [];
+  const dataErrorMessages = getSettledErrorMessages([propertyResult, usersResult]);
 
   const propertyName =
     property?.name ||
@@ -87,6 +93,7 @@ export default async function Page({ params }) {
 
   return (
     <div className="space-y-6 p-2 sm:p-4">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

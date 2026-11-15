@@ -1,5 +1,4 @@
-import BackBtn from "@/app/_components/BackBtn";
-import Logo from "@/app/_components/Logo";
+import AdminHeader from "@/app/_components/AdminHeader";
 import { getAdminBooking } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import { formatCurrency } from "@/app/_lib/utils";
@@ -31,21 +30,14 @@ export default async function ViewBookingPage({ params }) {
     const bookingStatus = payment_status || status || "pending";
 
     return (
-        <div className="flex-1 flex flex-col gap-8 min-h-screen bg-neutrals-50">
+        <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
             {/* Header Navigation */}
-            <nav className="flex items-center justify-between px-[7%] py-6 bg-white border-b border-primary-100 sticky top-0 z-10 shadow-sm">
-                <div className="flex items-center gap-8">
-                    <BackBtn />
-                    <div className="h-8 w-px bg-primary-100"></div>
-                    <p className="text-xl font-bold text-primary">Booking Details</p>
-                </div>
-                <Logo />
-            </nav>
+            <AdminHeader title="Booking Details" backHref="/dashboard/admin/bookings" />
 
-            <main className="flex-1 px-[7%] py-8">
-                <div className="flex flex-col gap-12 w-full max-w-[796px] mx-auto pb-12">
+            <main className="flex-1 px-4 py-8 sm:px-6 md:px-8">
+                <div className="flex flex-col gap-8 w-full max-w-3xl mx-auto pb-12">
                     {/* Content Area */}
-                    <div className="p-8 flex flex-col gap-10 bg-white rounded-xl shadow-sm">
+                    <div className="p-6 sm:p-8 flex flex-col gap-10 bg-card border border-line rounded-2xl shadow-sm">
                         
                         {/* 1. Tenant Info Section */}
                         <div className="flex flex-col gap-6">

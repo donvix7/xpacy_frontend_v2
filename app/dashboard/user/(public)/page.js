@@ -96,7 +96,7 @@ export default async function Page() {
 
             <div className="flex flex-wrap items-center gap-2">
               <Link
-                href="/properties"
+                href="/listings"
                 className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
               >
                 <Search className="h-4 w-4" aria-hidden="true" />

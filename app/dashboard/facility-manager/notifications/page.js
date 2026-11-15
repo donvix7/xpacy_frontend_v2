@@ -83,10 +83,6 @@ export default async function Page() {
         </div>
       </section>
 
-      {/* ---------- Existing content ---------- */}
-      <DashboardGridItem title="Summary">
-        <AdminNotificationsSummary notifications={notifications} />
-      </DashboardGridItem>
 
       <DashboardGridItem title="All Notifications">
         <AdminNotificationList notifications={notifications} />

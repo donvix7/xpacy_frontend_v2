@@ -1,27 +1,19 @@
 "use client";
 
 import React from 'react';
-import BackBtn from "../../_components/BackBtn";
-import Logo from "../../_components/Logo";
+import AdminHeader from "../../_components/AdminHeader";
 
 export default function AddNewProviderPage() {
     return (
-        <div className="flex-1 flex flex-col min-h-screen bg-white">
+        <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
             {/* Header Navigation */}
-            <nav className="flex items-center px-[7%] py-6 bg-white border-b border-gray-100 sticky top-0 z-10">
-                <div className="w-1/3">
-                    <BackBtn />
-                </div>
-                <div className="w-1/3 flex justify-center">
-                    <Logo />
-                </div>
-                <div className="w-1/3 flex justify-end"></div>
-            </nav>
+            <AdminHeader title="Add Service Provider" backHref="/dashboard/admin/services" />
 
             {/* Content Area */}
-            <main className="flex-1 max-w-[800px] mx-auto w-full py-12 px-6 flex flex-col gap-10">
-                <header className="flex flex-col items-center gap-4">
-                    <p className="text-[2.5rem] font-bold text-primary-900 font-mono tracking-tight">Add New Provider</p>
+            <main className="flex-1 max-w-3xl mx-auto w-full py-8 px-4 sm:px-6 flex flex-col gap-8">
+                <header className="flex flex-col items-center gap-2 text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold font-sans text-ink">Add New Provider</h1>
+                    <p className="font-mono text-sm text-mute">Register a new service professional or vendor.</p>
                 </header>
 
                 <form className="flex flex-col gap-8 mt-4 pb-20">

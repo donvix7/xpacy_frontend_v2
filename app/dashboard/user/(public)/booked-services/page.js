@@ -50,16 +50,7 @@ export default async function BookingList({ bookings }) {
     const token = cookieStore.get("token");
     bookingList = await getMyBookings(token);
   }
-/*
-  if (!bookingList || bookingList.length <= 0) {
-    return (
-      <EmptyState
-        message={"Oops!... You have no bookings yet."}
-        cta={"Browse Listings"}
-        link={"/listings"}
-      />
-    );
-  }*/
+
 
   // ---- Hero stats ----------------------------------------------------------
   const today = new Date();

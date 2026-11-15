@@ -13,6 +13,8 @@ import AppHeader from "../_components/AppHeader";
 import { isValidOrganizationId } from "../_lib/public-navigation";
 import { notFound } from "next/navigation";
 import Footer from "../_components/Footer";
+import DataErrorNotice from "../_components/DataErrorNotice";
+import { getSettledErrorMessages } from "../_lib/api-error";
 
 export const metadata = {
   title: "Organization Property Listings",
@@ -46,6 +48,7 @@ export default async function AdminListingsPage({ searchParams }) {
 
   // 2. Extract fulfilled values (unwrapping settled results)
   const [myPropertiesRes, managedPropertiesRes, rentedPropertiesRes] = results;
+  const dataErrorMessages = getSettledErrorMessages(results);
 
   const myProperties =
     myPropertiesRes.status === "fulfilled" ? myPropertiesRes.value ?? [] : [];
@@ -70,8 +73,6 @@ export default async function AdminListingsPage({ searchParams }) {
       : "";
   const cookieOrganizationId = cookieStore.get("organizationId")?.value || "";
   const organizationId = organizationIdFromQuery || cookieOrganizationId || "";
-
-  console.log("organizationId", organizationId);
 
   const organization = isValidOrganizationId(organizationId)
     ? await getPublicOrganizationById(organizationId)
@@ -152,6 +153,7 @@ export default async function AdminListingsPage({ searchParams }) {
     <div>
       <AppHeader />
       <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+        {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
         <AdminListingsClient
           listings={listings}
           organization={organization}

@@ -7,6 +7,8 @@ import {
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
   const results = await Promise.allSettled([
@@ -14,6 +16,7 @@ export default async function Page() {
     getManagedProperties(),
     getMyRentedProperties(),
   ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
 
   const unwrap = (result) =>
     result.status === "fulfilled" && Array.isArray(result.value)
@@ -50,6 +53,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-6 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

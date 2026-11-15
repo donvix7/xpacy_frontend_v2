@@ -2,6 +2,8 @@ import Link from "next/link";
 import { CalendarCheck, Plus, XCircle, Timer } from "lucide-react";
 import { cookies } from "next/headers";
 import { getAdminBooking, getPropertyById } from "@/app/_lib/data-services";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import DataTable from "@/app/_components/DataTable";
@@ -42,10 +44,14 @@ export default async function BookingsPage({ params }) {
     const token = cookieStore.get("token")?.value;
 
     // Fetch the property and its bookings in parallel
-    const [property, rawBookings] = await Promise.all([
-        getPropertyById(propertyId).catch(() => null),
-        getAdminBooking(propertyId, token).catch(() => []),
+    const [propertyResult, bookingsResult] = await Promise.allSettled([
+        getPropertyById(propertyId),
+        getAdminBooking(propertyId, token),
     ]);
+
+    const property = propertyResult.status === "fulfilled" ? propertyResult.value : null;
+    const rawBookings = bookingsResult.status === "fulfilled" ? bookingsResult.value : [];
+    const dataErrorMessages = getSettledErrorMessages([propertyResult, bookingsResult]);
 
     const propertyName =
         property?.name ||
@@ -185,6 +191,7 @@ export default async function BookingsPage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>

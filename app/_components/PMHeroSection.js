@@ -96,7 +96,7 @@ export default function PMHeroSection({ banners = [], isAuthenticated = false })
                 onClick={() => setCurrentSlide(dotIdx)}
                 aria-label={`Jump to slide ${dotIdx + 1}`}
                 aria-current={currentSlide === dotIdx ? "true" : undefined}
-                className="grid h-9 w-9 cursor-pointer place-items-center"
+                className="grid h-10 w-10 cursor-pointer place-items-center"
               >
                 <span
                   className={`h-2 rounded-full transition-all duration-300 ${
