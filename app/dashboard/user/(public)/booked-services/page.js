@@ -6,6 +6,8 @@ import StatusChips from "@/app/_components/StatusChips";
 import { getMyBookings } from "@/app/_lib/data-services";
 import Link from "next/link";
 import { Search } from "lucide-react";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { toDataServiceError } from "@/app/_lib/api-error";
 
 const tableHeadings = [
   { heading: "Unit" },
@@ -43,12 +45,18 @@ const bookingCheckIn = (booking) =>
 
 export default async function BookingList({ bookings }) {
   let bookingList = bookings;
+  let dataErrorMessages = [];
 
   // If not passed in, fetch using the token from cookies
   if (!bookingList) {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
-    bookingList = await getMyBookings(token);
+    try {
+      bookingList = await getMyBookings(token);
+    } catch (error) {
+      dataErrorMessages.push(toDataServiceError(error, "getMyBookings").message);
+      bookingList = [];
+    }
   }
 
 
@@ -164,6 +172,7 @@ export default async function BookingList({ bookings }) {
 
   return (
     <div className="flex flex-col gap-6 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       <MobileDashboardHeader />
 
       {/* ---------- Hero summary ---------- */}

@@ -1156,7 +1156,7 @@ export async function getAllUsers(passedToken, limit = 20) {
   const token = await getRawToken(passedToken);
   try {
     const response = await safeFetch(
-      `${SERVICE_URL}/users?page=1&limit=${encodeURIComponent(limit)}&sortBy=createdAt&sortOrder=desc`,
+      `${SERVICE_URL}/admin/users?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
       {
         method: "GET",
         headers: {
@@ -1167,8 +1167,8 @@ export async function getAllUsers(passedToken, limit = 20) {
       }
     );
     await ensureApiSuccess(response, "getAllUsers");
-    const payload = await response.json();
-    return Array.isArray(payload) ? payload : payload?.data?.users || payload?.data?.results || payload?.data || payload?.users || [];
+    const {data} = await response.json();
+return data || [];
   } catch (error) {
     throw toDataServiceError(error, "getAllUsers");
   }
@@ -1968,6 +1968,26 @@ export async function getSingleListing(id) {
 }
 
 export async function getSubscriptionList(){
+  const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/admin/subscription-plans?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionList");
+    const { data } = await safeJson(response);
+    return data || null;
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionList");
+  }
+}
+
+export async function getSubscriptionPlans(){
   const token = await getRawToken();
   try {
     const response = await safeFetch(`${SERVICE_URL}/admin/subscription-plans?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,

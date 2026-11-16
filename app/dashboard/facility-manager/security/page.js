@@ -1,9 +1,13 @@
 import { getManagedProperties } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
-  const response = await getManagedProperties(10000);
+  const results = await Promise.allSettled([getManagedProperties(10000)]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const response = results[0].status === "fulfilled" ? results[0].value : [];
   const properties = Array.isArray(response?.[0])
     ? response[0]
     : Array.isArray(response)
@@ -36,6 +40,9 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? (
+        <DataErrorNotice messages={dataErrorMessages} />
+      ) : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

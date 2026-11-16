@@ -25,6 +25,8 @@ import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
 import { getUnitById, getPropertyById } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages, toDataServiceError } from "@/app/_lib/api-error";
 
 const formatDate = (value) => {
     if (!value) return "—";
@@ -111,7 +113,12 @@ async function fetchUnitData(unitId) {
 
 export async function generateMetadata({ params }) {
     const { unitId } = await params;
-    const unit = await fetchUnitData(unitId);
+    let unit = null;
+    try {
+        unit = await fetchUnitData(unitId);
+    } catch {
+        unit = null;
+    }
     const label = unit?.unitNumber ? `Unit ${unit.unitNumber}` : "Unit Details";
     return {
         title: `${label} - Unit Details`,
@@ -122,17 +129,29 @@ export async function generateMetadata({ params }) {
 export default async function ViewUnitDetailsPage({ params }) {
     const { id, buildingId, unitId } = await params;
 
-    const unit = await fetchUnitData(unitId);
+    const dataErrorMessages = [];
 
-    const property = unit?.propertyId
-        ? await getPropertyById(unit.propertyId || id)
-        : id
-        ? await getPropertyById(id)
-        : null;
+    let unit = null;
+    try {
+        unit = await fetchUnitData(unitId);
+    } catch (error) {
+        dataErrorMessages.push(toDataServiceError(error, "getUnitById").message);
+    }
+
+    let property = null;
+    const propertyId = unit?.propertyId || id;
+    if (propertyId) {
+        try {
+            property = await getPropertyById(propertyId);
+        } catch (error) {
+            dataErrorMessages.push(toDataServiceError(error, "getPropertyById").message);
+        }
+    }
 
     if (!unit || typeof unit !== "object") {
         return (
             <div className="space-y-5 p-2 sm:p-4">
+                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
                 <Link
                     href={`/dashboard/user/my-properties/${id}/buildings/${buildingId}/units`}
                     className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
@@ -260,6 +279,7 @@ export default async function ViewUnitDetailsPage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>

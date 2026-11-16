@@ -11,6 +11,8 @@ import DateFilter from "@/app/_components/DateFilter";
 import { checkDateInRange } from "@/app/_lib/utils";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import { Suspense } from "react";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page({searchParams}) {
     const cookieStore = await cookies();
@@ -19,11 +21,17 @@ export default async function Page({searchParams}) {
     const filterRange = params?.range;
 
     // Fetch data - explicitly query full unpaginated list
-    const [[allPropertiesForSummary], bookings, services] = await Promise.all([
+    const results = await Promise.allSettled([
         getPropertyOwnerProperties(token, { limit: 10000 }),
         getPropertyOwnerBookings(token),
         getPropertyOwnerServices(token)
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+
+    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [[], {}];
+    const [allPropertiesForSummary] = propertiesData;
+    const bookings = results[1].status === "fulfilled" ? results[1].value : [];
+    const services = results[2].status === "fulfilled" ? results[2].value : [];
 
     let propertiesList = allPropertiesForSummary || [];
 
@@ -74,6 +82,7 @@ export default async function Page({searchParams}) {
 
     return (
         <div className="space-y-6 p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <div className="flex justify-between items-center gap-2">
                 <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Properties</p>
                 <div className="flex gap-2">

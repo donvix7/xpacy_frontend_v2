@@ -3,6 +3,8 @@ import MobileDashboardHeader from "@/app/_components/MobileDashboardHeader";
 import MobileNotificationItem from "@/app/_components/MobileNotificationItem";
 import NotificationList from "@/app/_components/NotificationList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 function toList(payload) {
   if (Array.isArray(payload)) return payload;
@@ -16,7 +18,9 @@ function toList(payload) {
 const isRead = (n) => !!(n?.read_at || n?.is_read || n?.read);
 
 export default async function Page() {
-  const notifications = await getUserNotifications();
+  const results = await Promise.allSettled([getUserNotifications()]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const notifications = results[0].status === "fulfilled" ? results[0].value : [];
   const list = toList(notifications);
 
   // ---- Hero stats ----------------------------------------------------------
@@ -41,6 +45,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       <MobileDashboardHeader showMenu={false} />
 
       {/* ---------- Hero summary ---------- */}

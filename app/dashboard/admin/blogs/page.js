@@ -4,10 +4,14 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { getAdminBlogs } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page({ searchParams: searchParamsPromise }) {
   const searchParams = await searchParamsPromise;
-  const blogs = (await getAdminBlogs()) || [];
+  const results = await Promise.allSettled([getAdminBlogs()]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const blogs = (results[0].status === "fulfilled" ? results[0].value : null) || [];
 
   const stats = {
     totalBlogs: blogs.length,
@@ -38,6 +42,7 @@ export default async function Page({ searchParams: searchParamsPromise }) {
 
   return (
     <div className="space-y-6 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

@@ -3,12 +3,17 @@ import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
 import { FaBuilding, FaClock, FaDollarSign, FaFileInvoice } from "react-icons/fa6";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
-  const [propertiesData, invoicesData] = await Promise.all([
+  const results = await Promise.allSettled([
     getManagedProperties(10000),
     getInvoiceList(),
   ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
+  const invoicesData = results[1].status === "fulfilled" ? results[1].value : [];
   const properties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
   const invoices = Array.isArray(invoicesData) ? invoicesData : [];
   const rentProperties = properties.filter((property) => String(property.purpose || property.listingType || "").toLowerCase().includes("rent"));
@@ -25,6 +30,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       <h1 className="text-[28px] font-bold text-primary lg:text-4xl">Rents</h1>
       <SummaryCards cards={cards} />
       <DashboardGridItem title="Rent Collection">

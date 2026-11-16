@@ -4,6 +4,8 @@ import { getOrganizationById, getOrganizationMembers } from "@/app/_lib/data-ser
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import Image from "next/image";
 import DataTable from "@/app/_components/DataTable";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 function getMembers(payload) {
     if (Array.isArray(payload)) return payload;
@@ -14,7 +16,10 @@ function getMembers(payload) {
 
 export default async function Page({ params }) {
     const { id } = await params;
-    const [organizationResult, memberResult] = await Promise.all([getOrganizationById(id), getOrganizationMembers(id)]);
+    const results = await Promise.allSettled([getOrganizationById(id), getOrganizationMembers(id)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+    const organizationResult = results[0].status === "fulfilled" ? results[0].value : null;
+    const memberResult = results[1].status === "fulfilled" ? results[1].value : null;
     const organization = organizationResult?.organization || organizationResult;
     const members = getMembers(memberResult);
     const nameOf = (member) => member.name || [member.user?.firstName || member.user?.firstname, member.user?.lastName || member.user?.lastname].filter(Boolean).join(" ") || member.fullName || "Unnamed member";
@@ -70,6 +75,7 @@ export default async function Page({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <Link href={`/dashboard/admin/organizations/${id}`} className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary"><ChevronLeft className="h-4 w-4" />Back to organization</Link>
             <div><p className="text-[28px] font-bold text-primary lg:text-4xl">Members</p><p className="mt-1 text-sm text-gray-500">{organization?.name || "Organization"}</p></div>
             <DashboardGridItem title="Organization members">

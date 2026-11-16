@@ -5,15 +5,22 @@ import ServicesOverviewWrapper from "@/app/_components/ServicesOverviewWrapper";
 import { getUserProfile, getProperties, getPropertyOwnerServices, getPropertyOwnerProperties } from "@/app/_lib/data-services";
 import { MdAdd } from "react-icons/md";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page({ searchParams }) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const [user, propertiesData, services] = await Promise.all([
+  const results = await Promise.allSettled([
       getUserProfile(token),
       getPropertyOwnerProperties(token),
       getPropertyOwnerServices(token) 
   ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+
+  const user = results[0].status === "fulfilled" ? results[0].value : null;
+  const propertiesData = results[1].status === "fulfilled" ? results[1].value : [[], {}];
+  const services = results[2].status === "fulfilled" ? results[2].value : [];
 
   const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : [];
   const myProperties = allProperties.filter(property => property.property_owner_id === user?.id);
@@ -40,6 +47,7 @@ export default async function Page({ searchParams }) {
 
   return (
     <div className="space-y-6 p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <ServicesOverviewWrapper services={myServices} />
             <DashboardGridItem title={"All Services"}>
                 <PropertyOwnerServicesTable services={paginatedServices} pagination={pagination} />

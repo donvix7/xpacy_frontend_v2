@@ -15,6 +15,8 @@ import SummaryCards from "@/app/_components/SummaryCards";
 import StatusChips from "@/app/_components/StatusChips";
 import { getAllUnits } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const headers = [
     { heading: "Unit" },
@@ -46,7 +48,9 @@ const unitStatus = (unit) => unit.status || "Unknown";
 export default async function PropertyUnitsPage({ params }) {
     const { id } = await params;
 
-    const units = await getAllUnits(id);
+    const results = await Promise.allSettled([getAllUnits(id)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+    const units = results[0].status === "fulfilled" ? results[0].value : [];
     const list = Array.isArray(units)
         ? units
         : units && typeof units === "object"
@@ -201,6 +205,7 @@ export default async function PropertyUnitsPage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <div>
                 <Link
                     href={`/dashboard/user/my-properties/${id}`}

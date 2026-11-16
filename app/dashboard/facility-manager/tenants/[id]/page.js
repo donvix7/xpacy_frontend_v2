@@ -24,6 +24,8 @@ import StatusChips from "@/app/_components/StatusChips";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
 import { formatCurrency } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const UPLOAD_BASE =
     process.env.NEXT_PUBLIC_UPLOAD_URL ||
@@ -384,11 +386,16 @@ function EmploymentInformationDetails({ info }) {
 
 export default async function Page({ params }) {
     const { id } = await params;
-    const tenant = await getTenantById(id);
+    const results = await Promise.allSettled([getTenantById(id)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+    const tenant = results[0].status === "fulfilled" ? results[0].value : null;
 
     if (!tenant || typeof tenant !== "object" || Array.isArray(tenant)) {
         return (
             <div className="space-y-6 p-2">
+                {dataErrorMessages.length > 0 ? (
+                    <DataErrorNotice messages={dataErrorMessages} />
+                ) : null}
                 <Link
                     href="/dashboard/admin/users"
                     className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary"
@@ -416,6 +423,9 @@ export default async function Page({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? (
+                <DataErrorNotice messages={dataErrorMessages} />
+            ) : null}
             <Link
                 href="/dashboard/admin/users"
                 className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary"

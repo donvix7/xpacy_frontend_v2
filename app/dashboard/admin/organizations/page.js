@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Building2, Plus } from "lucide-react";
 import { getAllAdminOrganization } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const getOrganizationList = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -15,7 +17,11 @@ function getMemberCount(org) {
 }
 
 export default async function Page() {
-  const organizations = getOrganizationList(await getAllAdminOrganization());
+  const results = await Promise.allSettled([getAllAdminOrganization()]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const organizations = getOrganizationList(
+    results[0].status === "fulfilled" ? results[0].value : null,
+  );
 
   // ---- Hero stats ----------------------------------------------------------
   const totalOrgs = organizations.length;
@@ -44,6 +50,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-6 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

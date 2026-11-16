@@ -27,6 +27,8 @@ import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
 import { getSingleListing, getListingById } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages, toDataServiceError } from "@/app/_lib/api-error";
 
 /* ---------------- helpers ---------------- */
 
@@ -140,7 +142,12 @@ async function fetchListingData(listingId, propertyId) {
 
 export async function generateMetadata({ params }) {
     const { listing: listingId, id } = await params;
-    const listing = await fetchListingData(listingId, id);
+    let listing = null;
+    try {
+        listing = await fetchListingData(listingId, id);
+    } catch {
+        listing = null;
+    }
     const title = listing?.title || "Listing Details";
     return {
         title: `${title} - Listing Details`,
@@ -153,11 +160,19 @@ export async function generateMetadata({ params }) {
 export default async function ViewListingDetailsPage({ params }) {
     const { id, listing: listingId } = await params;
 
-    const listing = await fetchListingData(listingId, id);
+    const dataErrorMessages = [];
+
+    let listing = null;
+    try {
+        listing = await fetchListingData(listingId, id);
+    } catch (error) {
+        dataErrorMessages.push(toDataServiceError(error, "getListing").message);
+    }
 
     if (!listing || typeof listing !== "object") {
         return (
             <div className="space-y-5 p-2 sm:p-4">
+                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
                 <Link
                     href={`/dashboard/user/my-properties/${id}/listings`}
                     className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
@@ -221,6 +236,7 @@ export default async function ViewListingDetailsPage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">

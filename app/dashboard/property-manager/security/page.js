@@ -4,9 +4,13 @@ import SummaryCards from "@/app/_components/SummaryCards";
 import EmptyState from "@/app/_components/EmptyState";
 import { FaBuilding, FaUserShield } from "react-icons/fa6";
 import { FaExclamationTriangle, FaShieldAlt } from "react-icons/fa";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
-  const response = await getManagedProperties(10000);
+  const results = await Promise.allSettled([getManagedProperties(10000)]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const response = results[0].status === "fulfilled" ? results[0].value : [];
   const properties = Array.isArray(response?.[0]) ? response[0] : Array.isArray(response) ? response : [];
   const cards = [
     { label: "Managed Properties", value: properties.length, color: "bg-blue-100", icon: <FaBuilding className="w-5 h-5 text-blue-700" /> },
@@ -17,6 +21,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       <h1 className="text-[28px] font-bold text-primary lg:text-4xl">Security</h1>
       <SummaryCards cards={cards} />
       <DashboardGridItem title="Security Overview">

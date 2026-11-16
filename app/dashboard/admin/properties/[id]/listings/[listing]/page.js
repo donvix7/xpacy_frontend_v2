@@ -27,6 +27,8 @@ import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
 import { getSingleListing, getListingById } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 /* ---------------- helpers ---------------- */
 
@@ -140,12 +142,19 @@ async function fetchListingData(listingId, propertyId) {
 
 export async function generateMetadata({ params }) {
     const { listing: listingId, id } = await params;
-    const listing = await fetchListingData(listingId, id);
-    const title = listing?.title || "Listing Details";
-    return {
-        title: `${title} - Listing Details`,
-        description: listing?.description || `Details for listing ${title}`,
-    };
+    try {
+        const listing = await fetchListingData(listingId, id);
+        const title = listing?.title || "Listing Details";
+        return {
+            title: `${title} - Listing Details`,
+            description: listing?.description || `Details for listing ${title}`,
+        };
+    } catch {
+        return {
+            title: "Listing Details",
+            description: "",
+        };
+    }
 }
 
 /* ---------------- page ---------------- */
@@ -153,11 +162,15 @@ export async function generateMetadata({ params }) {
 export default async function ViewListingDetailsPage({ params }) {
     const { id, listing: listingId } = await params;
 
-    const listing = await fetchListingData(listingId, id);
+    const results = await Promise.allSettled([fetchListingData(listingId, id)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+
+    const listing = results[0].status === "fulfilled" ? results[0].value : null;
 
     if (!listing || typeof listing !== "object") {
         return (
             <div className="space-y-5 p-2 sm:p-4">
+                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
                 <Link
                     href={`/dashboard/user/my-properties/${id}/listings`}
                     className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
@@ -221,6 +234,7 @@ export default async function ViewListingDetailsPage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">

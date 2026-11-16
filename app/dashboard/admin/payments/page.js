@@ -8,9 +8,15 @@ import { toRecordArray } from "@/app/_lib/utils";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Download, Plus, Receipt, Wrench } from "lucide-react";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
-  const invoices = toRecordArray(await getAllInvoices());
+  const results = await Promise.allSettled([getAllInvoices()]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const invoices = toRecordArray(
+    results[0].status === "fulfilled" ? results[0].value : [],
+  );
 
   // --- Hero stats -----------------------------------------------------------
   const total = invoices.length;
@@ -54,6 +60,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

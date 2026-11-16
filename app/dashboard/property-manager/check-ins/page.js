@@ -5,13 +5,17 @@ import { getAdminBooking } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import { FaCalendarCheck, FaDoorOpen, FaPeopleRoof } from "react-icons/fa6";
 import { FiLogIn } from "react-icons/fi";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const statusKey = (s) => (s || "").toLowerCase();
 
 export default async function Page() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
-    const bookings = await getAdminBooking(token) || [];
+    const results = await Promise.allSettled([getAdminBooking(token)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+    const bookings = results[0].status === "fulfilled" ? results[0].value || [] : [];
     const myBookings = Array.isArray(bookings) ? bookings : [];
 
     const expectedCheckIns = myBookings.filter(b => ["confirmed", "pending", "approved", "accepted"].includes(statusKey(b.status)));
@@ -61,6 +65,7 @@ export default async function Page() {
 
     return (
         <div className="space-y-6 p-2">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Guest Check-in & Check-out</p>
 
             <SummaryCards cards={summaryCards} title="Check-in Overview" />

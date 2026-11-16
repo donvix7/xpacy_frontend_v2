@@ -22,6 +22,8 @@ import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
 import { getLeaseById, getSingleLease, getPropertyById } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const formatDate = (value) => {
     if (!value) return "—";
@@ -98,25 +100,37 @@ async function fetchLeaseData(propertyId, leaseId) {
 
 export async function generateMetadata({ params }) {
     const { id, leaseId } = await params;
-    const lease = await fetchLeaseData(id, leaseId);
-    const leaseNumber = lease?.leaseNumber || "Lease Details";
-    return {
-        title: `${leaseNumber} - Lease Details`,
-        description: `Details and terms for lease agreement ${leaseNumber}`,
-    };
+    try {
+        const lease = await fetchLeaseData(id, leaseId);
+        const leaseNumber = lease?.leaseNumber || "Lease Details";
+        return {
+            title: `${leaseNumber} - Lease Details`,
+            description: `Details and terms for lease agreement ${leaseNumber}`,
+        };
+    } catch {
+        return {
+            title: "Lease Details",
+            description: "",
+        };
+    }
 }
 
 export default async function ViewLeaseDetailsPage({ params }) {
     const { id, leaseId } = await params;
 
-    const [lease, property] = await Promise.all([
+    const results = await Promise.allSettled([
         fetchLeaseData(id, leaseId),
         getPropertyById(id),
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+
+    const lease = results[0].status === "fulfilled" ? results[0].value : null;
+    const property = results[1].status === "fulfilled" ? results[1].value : null;
 
     if (!lease || typeof lease !== "object") {
         return (
             <div className="space-y-5 p-2 sm:p-4">
+                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
                 <Link
                     href={`/dashboard/user/my-properties/${id}/leases`}
                     className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
@@ -167,6 +181,7 @@ export default async function ViewLeaseDetailsPage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>

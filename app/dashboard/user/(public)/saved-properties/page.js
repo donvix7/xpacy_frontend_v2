@@ -7,11 +7,18 @@ import SavedPropCardList from "@/app/_components/SavedProCardList";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const { pagination } = await getSavedProperties(token);
+  const results = await Promise.allSettled([getSavedProperties(token)]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const savedPropertiesResult = results[0].status === "fulfilled" && results[0].value
+    ? results[0].value
+    : { data: [], pagination: {} };
+  const { pagination } = savedPropertiesResult;
 
   const page = pagination?.page ?? 1;
   const limit = pagination?.limit ?? 0;
@@ -54,6 +61,7 @@ export default async function Page() {
 
   return (
     <main className="flex flex-col gap-6 p-2 lg:gap-8">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       <MobileDashboardHeader />
 
       {/* ---------- Hero summary ---------- */}

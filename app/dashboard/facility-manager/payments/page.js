@@ -2,6 +2,8 @@ import InvoiceListTable from "@/app/_components/InvoiceListTable";
 import InvoiceSummary from "@/app/_components/InvoiceSummary";
 import MobileDashboardHeader from "@/app/_components/MobileDashboardHeader";
 import { getInvoiceList } from "@/app/_lib/data-services";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 import { Suspense } from "react";
 
 function toList(payload) {
@@ -20,7 +22,9 @@ const parseAmount = (inv) => {
 };
 
 export default async function Page() {
-  const invoices = await getInvoiceList();
+  const results = await Promise.allSettled([getInvoiceList()]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const invoices = results[0].status === "fulfilled" ? results[0].value : [];
   const list = toList(invoices);
 
   // ---- Hero stats ----------------------------------------------------------
@@ -61,6 +65,9 @@ export default async function Page() {
 
   return (
     <div className="flex flex-col gap-6 p-2 lg:gap-8">
+      {dataErrorMessages.length > 0 ? (
+        <DataErrorNotice messages={dataErrorMessages} />
+      ) : null}
       <MobileDashboardHeader />
 
       {/* ---------- Hero summary ---------- */}

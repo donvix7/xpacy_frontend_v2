@@ -1,6 +1,8 @@
 import Link from "next/link";
 import EmptyState from "@/app/_components/EmptyState";
 import { getSubscriptionList } from "@/app/_lib/data-services";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 function getPlans(result) {
   if (Array.isArray(result)) return result;
@@ -34,12 +36,15 @@ function Detail({ label, value }) {
 
 export default async function Page({ params }) {
   const { id } = await params;
-  const plans = getPlans(await getSubscriptionList());
+  const results = await Promise.allSettled([getSubscriptionList()]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const plans = getPlans(results[0].status === "fulfilled" ? results[0].value : null);
   const plan = plans.find((item) => String(item?.id || item?._id || item?.planId || "") === String(id));
 
   if (!plan) {
     return (
       <div className="space-y-6 p-4 md:p-6">
+        {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
         <Link href="/dashboard/admin/subscriptions" className="text-sm font-semibold text-primary hover:underline">← Back to subscriptions</Link>
         <EmptyState message="Subscription plan not found." />
       </div>
@@ -53,6 +58,7 @@ export default async function Page({ params }) {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       <Link href="/dashboard/admin/subscriptions" className="text-sm font-semibold text-primary hover:underline">← Back to subscriptions</Link>
 
       <header className="rounded-2xl bg-primary-900 p-6 text-white md:p-8">

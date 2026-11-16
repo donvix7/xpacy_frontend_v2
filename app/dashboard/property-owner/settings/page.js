@@ -10,6 +10,8 @@ import {
   getUserProfile,
 } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const hasValue = (...vals) =>
   vals.some((v) => v != null && String(v).trim() !== "");
@@ -18,11 +20,15 @@ export default async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   const organizationId = cookieStore.get("organizationId")?.value;
-  const [profile, organizationResult, organizationRole] = await Promise.all([
+  const results = await Promise.allSettled([
     getUserProfile(token),
     organizationId ? getOrganizationById(organizationId) : Promise.resolve(null),
     getActiveOrganizationRole(),
   ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const profile = results[0].status === "fulfilled" ? results[0].value : null;
+  const organizationResult = results[1].status === "fulfilled" ? results[1].value : null;
+  const organizationRole = results[2].status === "fulfilled" ? results[2].value : null;
   const organization =
     organizationResult?.organization ||
     organizationResult?.data?.organization ||
@@ -87,6 +93,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       <MobileDashboardHeader />
 
       {/* ---------- Hero summary ---------- */}

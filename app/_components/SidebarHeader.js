@@ -49,8 +49,7 @@ export default async function SidebarHeader({ role = "user", isOrganizationAdmin
                 
                 {activeRole === "admin" && (
                     <>
-                        <Link href="/dashboard/admin/services" className="xp-btn hidden text-sm lg:inline-flex">Manage Service Requests</Link>
-                        <Link href="/admin/add-new-property" className="xp-btn xp-btn-fill px-3 py-2 text-sm lg:px-5 lg:py-3 lg:text-[15px]">Add New Property</Link>
+                        
                         <div className="hidden h-10 w-px bg-line lg:block"></div>
                     </>
                 )}

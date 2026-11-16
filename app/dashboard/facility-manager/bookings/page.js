@@ -3,6 +3,8 @@ import { getMyBookings } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import AdminBookingList from "@/app/_components/AdminBookingList";
 import PaymentsOverviewWrapper from "@/app/_components/PaymentsOverviewWrapper";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const getStatus = (b) => String(b?.status || "").toLowerCase();
 const getCheckIn = (b) => b?.checkIn || b?.check_in || b?.start_date;
@@ -14,7 +16,10 @@ const getAmount = (b) => {
 export default async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const bookings = (await getMyBookings()) || [];
+  const results = await Promise.allSettled([getMyBookings()]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const bookings =
+    (results[0].status === "fulfilled" ? results[0].value : []) || [];
   const list = Array.isArray(bookings) ? bookings : [];
 
   // ---- Hero stats ----------------------------------------------------------
@@ -64,6 +69,9 @@ export default async function Page() {
 
   return (
     <div className="flex flex-col gap-6 p-2">
+      {dataErrorMessages.length > 0 ? (
+        <DataErrorNotice messages={dataErrorMessages} />
+      ) : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

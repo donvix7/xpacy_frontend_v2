@@ -20,6 +20,8 @@ import {
 } from "@/app/_lib/data-services";
 import { toReportArray } from "@/app/_lib/report-utils";
 import { cookies } from "next/headers";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const chartBox =
   "bg-white p-3 sm:p-6 rounded-lg border border-primary-100 shadow-sm flex items-center justify-center min-h-[320px] min-w-0";
@@ -34,15 +36,7 @@ export default async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
 
-  const [
-    propertiesData,
-    servicesData,
-    propertyOwners,
-    admins,
-    users,
-    invoices,
-    bookingsData,
-  ] = await Promise.all([
+  const results = await Promise.allSettled([
     getAdminProperties(token, { limit: 10000 }),
     getAdminServices(token),
     getPropertyOwner(token),
@@ -51,6 +45,15 @@ export default async function Page() {
     getAllInvoices(undefined, token),
     getAdminBooking(token),
   ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+
+  const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
+  const servicesData = results[1].status === "fulfilled" ? results[1].value : [];
+  const propertyOwners = results[2].status === "fulfilled" ? results[2].value : [];
+  const admins = results[3].status === "fulfilled" ? results[3].value : [];
+  const users = results[4].status === "fulfilled" ? results[4].value : [];
+  const invoices = results[5].status === "fulfilled" ? results[5].value : [];
+  const bookingsData = results[6].status === "fulfilled" ? results[6].value : [];
 
   const properties = toReportArray(propertiesData);
   const services = toReportArray(servicesData);
@@ -133,6 +136,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

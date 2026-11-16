@@ -23,6 +23,8 @@ import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
 import SummaryItemCard from "@/app/_components/SummaryItemCard";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const detailConfig = [
     { key: "address", label: "Address", icon: Home },
@@ -75,25 +77,37 @@ function StatCard({ icon, label, value, href, className = "", bgColor }) {
 
 export async function generateMetadata({ params }) {
     const pageParams = await params;
-    const property = await getPropertyById(pageParams.id);
+    try {
+        const property = await getPropertyById(pageParams.id);
 
-    return {
-        title: property?.name || "Property",
-        description: property?.description || "",
-    };
+        return {
+            title: property?.name || "Property",
+            description: property?.description || "",
+        };
+    } catch {
+        return {
+            title: "Property",
+            description: "",
+        };
+    }
 }
 
 export default async function Page({ params }) {
     const pageParams = await params;
-    const [property, units] = await Promise.all([
+    const results = await Promise.allSettled([
         getPropertyById(pageParams.id),
         getAllUnits(pageParams.id),
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+
+    const property = results[0].status === "fulfilled" ? results[0].value : null;
+    const units = results[1].status === "fulfilled" ? results[1].value : [];
     const unitList = Array.isArray(units) ? units : [];
 
     if (!property || typeof property !== "object") {
         return (
             <div className="space-y-5 p-2">
+                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
                 <Link
                     href="/dashboard/properties"
                     className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
@@ -120,6 +134,7 @@ export default async function Page({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p className="text-[28px] font-bold text-primary lg:text-4xl">

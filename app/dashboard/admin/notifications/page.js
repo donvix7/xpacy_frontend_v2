@@ -4,6 +4,8 @@ import AdminNotificationsSummary from "@/app/_components/AdminNotificationsSumma
 import { getUserNotifications } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
 import { Bell } from "lucide-react";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 function toList(payload) {
   if (Array.isArray(payload)) return payload;
@@ -17,7 +19,9 @@ function toList(payload) {
 export default async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const notifications = await getUserNotifications(token);
+  const results = await Promise.allSettled([getUserNotifications(token)]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const notifications = results[0].status === "fulfilled" ? results[0].value : null;
   const list = toList(notifications);
 
   // ---- Hero stats ----------------------------------------------------------
@@ -42,6 +46,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

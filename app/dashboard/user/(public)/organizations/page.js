@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Building2, Plus, Users } from "lucide-react";
 import { getAllOrganization } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const getOrganizationList = (payload) => {
     if (Array.isArray(payload)) return payload;
@@ -11,10 +13,15 @@ const getOrganizationList = (payload) => {
 };
 
 export default async function Page() {
-    const organizations = getOrganizationList(await getAllOrganization());
+    const results = await Promise.allSettled([getAllOrganization()]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+    const organizations = getOrganizationList(
+        results[0].status === "fulfilled" ? results[0].value : []
+    );
 
     return (
         <div className="space-y-6 p-2">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <p className="text-[28px] font-bold text-primary lg:text-4xl">Organizations</p>

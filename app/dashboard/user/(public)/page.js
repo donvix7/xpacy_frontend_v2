@@ -14,21 +14,26 @@ import MobileDashboardHeader from "@/app/_components/MobileDashboardHeader";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
-  const [
-    bookingList,
-    invoiceList,
-    savedPropertiesRes,
-    notifications,
-    profile,
-  ] = await Promise.all([
+  const results = await Promise.allSettled([
     getBookingList(),
     getInvoiceList(),
     getSavedProperties(),
     getUserNotifications(),
     getUserProfile(),
   ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+
+  const bookingList = results[0].status === "fulfilled" ? results[0].value : [];
+  const invoiceList = results[1].status === "fulfilled" ? results[1].value : [];
+  const savedPropertiesRes =
+    results[2].status === "fulfilled" ? results[2].value : null;
+  const notifications =
+    results[3].status === "fulfilled" ? results[3].value : [];
+  const profile = results[4].status === "fulfilled" ? results[4].value : null;
 
   const savedProperties = savedPropertiesRes?.data ?? [];
   const invoices = invoiceList ?? [];
@@ -76,6 +81,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       <MobileDashboardHeader />
 
       {/* ---------- Hero summary ---------- */}

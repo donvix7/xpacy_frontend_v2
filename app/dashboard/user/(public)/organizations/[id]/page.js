@@ -25,6 +25,8 @@ import {
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const detailConfig = [
     { key: "email", label: "Email", icon: Mail },
@@ -62,11 +64,17 @@ const memberName = (member) => {
 export default async function Page({ params }) {
     const { id } = await params;
 
-    const [result, organizationProperties, members] = await Promise.all([
+    const results = await Promise.allSettled([
         getOrganizationById(id),
         getOrganizationProperties(id),
         getOrganizationMembers(id),
     ]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+
+    const result = results[0].status === "fulfilled" ? results[0].value : null;
+    const organizationProperties =
+        results[1].status === "fulfilled" ? results[1].value : [];
+    const members = results[2].status === "fulfilled" ? results[2].value : [];
 
     const organization = result?.organization || result;
     const memberList = Array.isArray(members) ? members : [];
@@ -77,6 +85,7 @@ export default async function Page({ params }) {
     if (!organization || typeof organization !== "object") {
         return (
             <div className="space-y-5 p-2">
+                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
                 <Link
                     href="/dashboard/admin/organizations"
                     className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
@@ -97,6 +106,7 @@ export default async function Page({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-center gap-4">

@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import PaymentsOverviewWrapper from "@/app/_components/PaymentsOverviewWrapper";
 import PaymentsTableList from "@/app/_components/PaymentsTableList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const getStatus = (b) => String(b?.status || "").toLowerCase();
 const getAmount = (b) => {
@@ -14,7 +16,9 @@ export default async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
 
-  const bookingsData = await getPropertyOwnerBookings(token);
+  const results = await Promise.allSettled([getPropertyOwnerBookings(token)]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const bookingsData = results[0].status === "fulfilled" ? results[0].value : [];
 
   // Bookings for my properties
   const myBookings = Array.isArray(bookingsData) ? bookingsData : [];
@@ -63,6 +67,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

@@ -5,6 +5,8 @@ import DataTable from "@/app/_components/DataTable";
 import EmptyState from "@/app/_components/EmptyState";
 import SummaryCards from "@/app/_components/SummaryCards";
 import { getAllBuildings } from "@/app/_lib/data-services";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const headers = [
     { heading: "Building" },
@@ -38,7 +40,9 @@ const unitsCount = (building) => building?._count?.units ?? "—";
 export default async function PropertyBuildingsPage({ params }) {
     const { id } = await params;
 
-    const buildings = await getAllBuildings(id);
+    const results = await Promise.allSettled([getAllBuildings(id)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+    const buildings = results[0].status === "fulfilled" ? results[0].value : [];
     const list = Array.isArray(buildings)
         ? buildings
         : buildings && typeof buildings === "object"
@@ -173,6 +177,7 @@ export default async function PropertyBuildingsPage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <div>
                 <Link
                     href={`/dashboard/user/my-properties/${id}`}

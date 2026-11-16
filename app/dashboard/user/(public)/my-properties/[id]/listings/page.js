@@ -8,6 +8,8 @@ import SummaryCards from "@/app/_components/SummaryCards";
 import StatusChips from "@/app/_components/StatusChips";
 import { getListingById } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const headers = [
     { heading: "Listing" },
@@ -79,7 +81,9 @@ export default async function UserListingsPage({ params }) {
     const token = cookieStore.get("token")?.value;
 
     // Adjust this call/signature to match your data service.
-    const listings = await getListingById(id, token);
+    const results = await Promise.allSettled([getListingById(id, token)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+    const listings = results[0].status === "fulfilled" ? results[0].value : [];
     const list = Array.isArray(listings)
         ? listings
         : listings && typeof listings === "object"
@@ -207,6 +211,7 @@ export default async function UserListingsPage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <div>
                 <Link
                     href={`/dashboard/user/my-properties/${id}`}

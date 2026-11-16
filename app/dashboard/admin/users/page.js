@@ -5,42 +5,40 @@ import { getPropertyOwner, getAllAdmin, getAllUsers } from "@/app/_lib/data-serv
 import { UserPlus } from "lucide-react";
 import Link from "next/link";
 import { FaPlus } from "react-icons/fa6";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
-  const [owners, admins, regularUsers] = await Promise.all([
+  const results = await Promise.allSettled([
     getPropertyOwner(),
-    getAllAdmin(),
     getAllUsers(),
   ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+
+  const owners = results[0].status === "fulfilled" ? results[0].value : [];
+  const regularUsers = results[1].status === "fulfilled" ? results[1].value : [];
 
   // Normalize data structure if needed
   const ownersList = (owners || []).map((u) => ({ ...u, role: "property-owner" }));
-  const adminsList = (admins || []).map((u) => ({ ...u, role: "admin" }));
-  const usersList = (regularUsers || [])
-    .filter(
-      (user) =>
-        ![user.role, user.user_role, user.user_type].some(
-          (role) => String(role || "").trim().toLowerCase() === "tenant",
-        ),
-    )
-    .map((u) => ({ ...u, role: "user" }));
+  const usersList = regularUsers || [];
 
   // Deduplicate users for the "All Registered Users" list
   // Priority: Admin > Property Owner > User
   const allUsersMap = new Map();
   usersList.forEach((u) => allUsersMap.set(u.id, u));
   ownersList.forEach((u) => allUsersMap.set(u.id, u));
-  adminsList.forEach((u) => allUsersMap.set(u.id, u));
   const allUsers = Array.from(allUsersMap.values());
+
+  console.log(allUsers)
 
   const stats = {
     totalUsers: allUsers.length,
+    admins: allUsers.filter((u) => u.role === "admin" || u.role === "SUPER_ADMIN").length,
     propertyOwners: ownersList.length,
-    admins: adminsList.length,
-    regularUsers: usersList.length,
+    regularUsers: usersList.filter((u) => u.role === "user" || u.role === "USER").length,
     processedKyc: allUsers.filter((u) => u.kyc_status === "processing").length,
-    activeUsers: allUsers.filter((u) => u.status === "active").length,
-    inactiveUsers: allUsers.filter((u) => u.status === "inactive").length,
+    activeUsers: allUsers.filter((u) => u.isActive === true).length,
+    inactiveUsers: allUsers.filter((u) => u.isActive === false).length,
     unverifiedUsers: allUsers.filter((u) => !u.email_verified_at).length,
   };
 
@@ -76,6 +74,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-6 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
@@ -159,9 +158,6 @@ export default async function Page() {
         <AdminUsersList users={allUsers} title="All Registered Users List" variant="registered" />
       </DashboardGridItem>
 
-      <DashboardGridItem >
-        <AdminUsersList users={adminsList} title="Admins List" />
-      </DashboardGridItem>
 
       <DashboardGridItem >
         <AdminPropertyOwnersList owners={ownersList} title="Property Owners List" />

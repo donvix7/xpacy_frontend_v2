@@ -7,6 +7,8 @@ import DateFilter from "@/app/_components/DateFilter";
 import { checkDateInRange } from "@/app/_lib/utils";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import { Suspense } from "react";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const getPrice = (p) => {
   const n = Number(p?.property_price ?? p?.price ?? 0);
@@ -20,7 +22,11 @@ export default async function Page({ searchParams }) {
   const filterRange = params?.range;
 
   // Fetch data - explicitly query full unpaginated list
-  const propertiesData = await getPropertyOwnerProperties(token, { limit: 10000 });
+  const results = await Promise.allSettled([
+    getPropertyOwnerProperties(token, { limit: 10000 }),
+  ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
   const allPropertiesForSummary = Array.isArray(propertiesData?.[0])
     ? propertiesData[0]
     : Array.isArray(propertiesData)
@@ -127,6 +133,7 @@ export default async function Page({ searchParams }) {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

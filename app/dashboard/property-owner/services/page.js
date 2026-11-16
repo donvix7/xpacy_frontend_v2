@@ -3,13 +3,17 @@ import PropertyOwnerServicesTable from "@/app/_components/PropertyOwnerServicesT
 import ServicesOverviewWrapper from "@/app/_components/ServicesOverviewWrapper";
 import { getPropertyOwnerServices } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const getStatus = (s) => String(s?.status || "").toLowerCase();
 
 export default async function Page({ searchParams }) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const services = await getPropertyOwnerServices(token);
+  const results = await Promise.allSettled([getPropertyOwnerServices(token)]);
+  const dataErrorMessages = getSettledErrorMessages(results);
+  const services = results[0].status === "fulfilled" ? results[0].value : [];
 
   const myServices = Array.isArray(services) ? services : [];
 
@@ -68,6 +72,7 @@ export default async function Page({ searchParams }) {
 
   return (
     <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
         <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">

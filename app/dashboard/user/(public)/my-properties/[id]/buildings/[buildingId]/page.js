@@ -18,6 +18,8 @@ import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
 import { getBuildingById, getPropertyById } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages, toDataServiceError } from "@/app/_lib/api-error";
 
 const unitHeaders = [
     { heading: "Unit" },
@@ -108,7 +110,12 @@ async function fetchBuildingData(buildingId) {
 
 export async function generateMetadata({ params }) {
     const { buildingId } = await params;
-    const building = await fetchBuildingData(buildingId);
+    let building = null;
+    try {
+        building = await fetchBuildingData(buildingId);
+    } catch {
+        building = null;
+    }
     const name = building?.name || "Building Details";
     return {
         title: `${name} - Building Details`,
@@ -119,15 +126,28 @@ export async function generateMetadata({ params }) {
 export default async function ViewBuildingDetailsPage({ params }) {
     const { id, buildingId } = await params;
 
-    const building = await fetchBuildingData(buildingId);
+    const dataErrorMessages = [];
 
-    const property = building?.propertyId
-        ? await getPropertyById(building.propertyId || id)
-        : null;
+    let building = null;
+    try {
+        building = await fetchBuildingData(buildingId);
+    } catch (error) {
+        dataErrorMessages.push(toDataServiceError(error, "getBuildingById").message);
+    }
+
+    let property = null;
+    if (building?.propertyId) {
+        try {
+            property = await getPropertyById(building.propertyId || id);
+        } catch (error) {
+            dataErrorMessages.push(toDataServiceError(error, "getPropertyById").message);
+        }
+    }
 
     if (!building || typeof building !== "object") {
         return (
             <div className="space-y-5 p-2 sm:p-4">
+                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
                 <Link
                     href={`/dashboard/user/my-properties/${id}/buildings`}
                     className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
@@ -268,6 +288,7 @@ export default async function ViewBuildingDetailsPage({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>

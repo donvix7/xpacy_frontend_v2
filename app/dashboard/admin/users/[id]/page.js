@@ -17,6 +17,8 @@ import { getUserById } from "@/app/_lib/data-services";
 import StatusChips from "@/app/_components/StatusChips";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const UPLOAD_BASE =
     process.env.NEXT_PUBLIC_UPLOAD_URL ||
@@ -118,7 +120,9 @@ export default async function Page({ params }) {
     const userId = id.trim();
 
     // 4. Fetch the user using the resolved id.
-    const result = await getUserById(userId);
+    const results = await Promise.allSettled([getUserById(userId)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+    const result = results[0].status === "fulfilled" ? results[0].value : null;
 
     // 5. Unwrap the response defensively — different APIs nest differently.
     const user =
@@ -131,6 +135,7 @@ export default async function Page({ params }) {
     if (!user || typeof user !== "object" || Array.isArray(user)) {
         return (
             <div className="space-y-6 p-2">
+                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
                 <Link
                     href="/dashboard/admin/users"
                     className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary"
@@ -171,6 +176,7 @@ export default async function Page({ params }) {
 
     return (
         <div className="space-y-6 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <Link
                 href="/dashboard/admin/users"
                 className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary"

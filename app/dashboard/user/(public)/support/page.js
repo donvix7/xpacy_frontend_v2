@@ -3,14 +3,19 @@ import MobileDashboardHeader from "@/app/_components/MobileDashboardHeader";
 import SupportForm from "@/app/_components/SupportForm"
 import { getUserProfile } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
+import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 
 export default async function Page() {
       const cookieStore = await cookies();
     const token = cookieStore.get("token");
-    const profile = await getUserProfile(token)
+    const results = await Promise.allSettled([getUserProfile(token)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+    const profile = results[0].status === "fulfilled" ? results[0].value : null;
     return (
         <div className="px-6 pt-6 pb-12 lg:pb-[109px] ">
+            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
             <MobileDashboardHeader/>
             <div className="flex flex-col gap-12 lg:max-w-[796px] lg:mx-auto lg:px-6 w-full">
                 <Section title={"Need Help?"} subtitle={"Have a question or need assistance? Fill out the form below, and we'll get back to you shortly."}>
