@@ -42,7 +42,7 @@ export default async function SidebarHeader({ role = "user", isOrganizationAdmin
                 {activeRole === "user" && (
                     <>
                         <Link href="/dashboard/user/create-organization" className="xp-btn xp-btn-fill hidden text-sm lg:inline-flex">Create Organization</Link>
-                        <Link href="/book-service" className="xp-btn xp-btn-fill hidden text-sm lg:inline-flex">Book A Service</Link>
+                        <Link href="/auth/proceed" className="xp-btn xp-btn-fill hidden text-sm lg:inline-flex">Swicth organization</Link>
                         <div className="hidden h-10 w-px bg-line lg:block"></div>
                     </>
                 )}

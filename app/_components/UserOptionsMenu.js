@@ -12,33 +12,14 @@ export default function UserOptionsMenu({ id, role }) {
     const isTenant = role === 'tenant' || role === 'TENANT';
 
     const actions = [
+      
         {
             label: "View details",
-            href: isProvider
-                ? `/admin/provider-details/${id}`
-                : (isOwner ? `/admin/owner-details/${id}` : isTenant ? `/dashboard/admin/tenants/${id}` : `/dashboard/admin/users/${id}`),
-            icon: <VscNote className="text-gray-400" />,
-        },
-        {
-            label: "View user",
             href: `/dashboard/admin/users/${id}`,
             icon: <User className="text-gray-400" />,
         },
 
-        // Only show invoice option for owners for now, unless tenants also get invoices here
-        ...((isOwner || isProvider) ? [
-            {
-                label: "Issue invoice",
-                href: `/admin/issue-invoice/${id}`,
-                icon: <TbInvoice className="text-gray-400" />,
-            },
-            {
-                label: "Assign service request",
-                href: `/admin/assign-service/${id}`,
-                icon: <Wrench className="text-gray-400" />,
-            }
-        ] : []),
-
+        
         {
             label: "Remove user",
             icon: <RiDeleteBin6Line className="text-gray-400" />,
@@ -48,17 +29,7 @@ export default function UserOptionsMenu({ id, role }) {
                     onConfirm={() => console.log("remove user", id)}
                 />
             ,
-        },
-        {
-            label: "Delete Provider",
-            icon: <RiDeleteBin6Line className="text-gray-400" />,
-            modal:
-                <ConfirmDeleteModal
-                    title={`Are you sure you want to delete this provider?`}
-                    onConfirm={() => console.log("delete", id)}
-                />
-            ,
-        },
+        }
     ];
 
     return (

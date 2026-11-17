@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { safeFetch } from "./safe-fetch";
 import { ensureApiSuccess, logApiFailure, toDataServiceError } from "./api-error";
 
-import { url } from "./constants";
+import { SERVICES_URL, url } from "./constants";
 export { url };
 
 const SERVICE_URL = "https://services.xpacy.com/api/v1";
@@ -124,39 +124,11 @@ export async function getRentProperties() {
 }
 
 export async function getProperties(search = {}) {
-  const apiUrl = `${url}/property/fetch-properties?${new URLSearchParams(search)}`;
-  try {
-    const response = await safeFetch(apiUrl);
-    await logApiFailure(response, "getProperties");
-    if (!response.ok) return [[], {}];
-    const payload = await response.json();
-    const properties = Array.isArray(payload?.properties)
-      ? payload.properties
-      : Array.isArray(payload?.data)
-        ? payload.data
-        : Array.isArray(payload?.data?.properties)
-          ? payload.data.properties
-          : Array.isArray(payload?.data?.data)
-            ? payload.data.data
-            : [];
-    const pagination = payload?.pagination || payload?.meta || payload?.data?.pagination || payload?.data?.meta || {};
-    return [properties, pagination];
-  } catch (error) {
-    console.warn("Error fetching properties:", error);
-    return [[], {}];
-  }
+  return []
 }
 
-export async function getLatestProperties() {
-  try {
-    const response = await safeFetch(`${url}/property/fetch-properties?limit=5`);
-    await logApiFailure(response, "getLatestProperties");
-    const { properties } = await response.json();
-    return properties || [];
-  } catch (error) {
-    console.warn("Error fetching latest properties:", error);
-    return [];
-  }
+export async function getLatestPropertie(){
+  return []
 }
 
 export async function getProperty(id) {
@@ -331,20 +303,7 @@ export async function getPropertyOwnerInfo(tokenKey) {
  * ---------------------------------------------------------------- */
 
 export async function getSavedProperties() {
-  const token = await getRawToken();
-  if (!token) return { data: [], pagination: {} };
-  try {
-    const response = await safeFetch(`${url}/user-property/saved-properties`, {
-      next: { tags: ["saved-properties"] },
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    await ensureApiSuccess(response, "getSavedProperties");
-    const { data, pagination } = await response.json();
-    return { data: data || [], pagination: pagination || {} };
-  } catch (error) {
-    throw toDataServiceError(error, "getSavedProperties");
-  }
+  return []
 }
 
 export async function getUnreadNotificationsCount(passedToken) {
@@ -404,21 +363,8 @@ export async function getUserNotifications() {
     }
 }
 
-export async function getBookedServices(token) {
-  const raw = await getRawToken(token);
-  if (!raw) return [];
-  try {
-    const response = await safeFetch(`${url}/user/fetch-services`, {
-      next: { tags: ["booked-services"] },
-      method: "GET",
-      headers: { Authorization: `Bearer ${raw}` },
-    });
-    await ensureApiSuccess(response, "getBookedServices");
-    const { data } = await response.json();
-    return data || [];
-  } catch (error) {
-    throw toDataServiceError(error, "getBookedServices");
-  }
+export async function getBookedServices() {
+  return []
 }
 
 export async function getRentedProperties() {
@@ -441,7 +387,7 @@ export async function getBookingList() {
   const token = await getRawToken();
   if (!token) return [];
   try {
-    const response = await safeFetch(`${url}/user/fetch-bookings`, {
+    const response = await safeFetch(`${SERVICE_URL}/user/fetch-bookings`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -455,7 +401,7 @@ export async function getBookingList() {
 
 export async function getBookingSlots() {
   try {
-    const response = await safeFetch(`${url}/bookings/fetch-slots`);
+    const response = await safeFetch(`${SERVICE_URL}/bookings/fetch-slots`);
     await logApiFailure(response, "getBookingSlots");
     const { slots } = await response.json();
     return slots || [];
@@ -468,7 +414,7 @@ export async function getBookingSlots() {
 export async function getBookingById(token, id) {
   const raw = await getRawToken(token);
   try {
-    const response = await safeFetch(`${url}/user/fetch-booking/${id}`, {
+    const response = await safeFetch(`${SERVICE_URL}/user/fetch-booking/${id}`, {
       headers: { Authorization: `Bearer ${raw}` },
     });
     await ensureApiSuccess(response, "getBookingById");
@@ -561,55 +507,15 @@ export async function getAllInvoices(organizationId, passedToken, limit = 10000)
 }
 
 export async function getInvoiceList() {
-  const token = await getRawToken();
-  if (!token) return [];
-  try {
-    const response = await safeFetch(`${url}/user/fetch-invoices`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    await ensureApiSuccess(response, "getInvoiceList");
-    const data = await safeJson(response);
-    return toArray(data);
-  } catch (error) {
-    throw toDataServiceError(error, "getInvoiceList");
-  }
+  return []
 }
 
 export async function getPaymentById(id) {
-  const token = await getRawToken();
-  try {
-    const response = await safeFetch(`${SERVICE_URL}/payments/${id}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    await ensureApiSuccess(response, "getPaymentById");
-    const { data } = await response.json();
-    return data || null;
-  } catch (err) {
-    throw toDataServiceError(err, "getPaymentById");
-  }
+  return null
 }
 
 export async function getPaymentsForInvoice(invoiceId) {
-  const token = await getRawToken();
-  try {
-    const response = await safeFetch(`${SERVICE_URL}/payments/${invoiceId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    await ensureApiSuccess(response, "getPaymentsForInvoice");
-    const { data } = await response.json();
-    return data || [];
-  } catch (err) {
-    throw toDataServiceError(err, "getPaymentsForInvoice");
-  }
+  return null
 }
 
 /* ----------------------------------------------------------------
@@ -1967,10 +1873,12 @@ export async function getSingleListing(id) {
   }
 }
 
-export async function getSubscriptionList(){
-  const token = await getRawToken();
+export async function getTrialPlans(){
+  
+   const token = await getRawToken();
   try {
-    const response = await safeFetch(`${SERVICE_URL}/admin/subscription-plans?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+    const response = await safeFetch(`${SERVICE_URL}/subscription-plans/trial
+`,
     {
       method: "GET",
       headers: {
@@ -1980,7 +1888,30 @@ export async function getSubscriptionList(){
       cache: "no-store",
     });
     await ensureApiSuccess(response, "getSubscriptionList");
-    const { data } = await safeJson(response);
+    const data  = await safeJson(response);
+    console.log(data)
+    return data || null;
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionList");
+  }
+}
+
+export async function getSubscriptionList(){
+  const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/subscription-plans
+`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionList");
+    const data  = await safeJson(response);
+    console.log(data)
     return data || null;
   } catch (error) {
     throw toDataServiceError(error, "getSubscriptionList");

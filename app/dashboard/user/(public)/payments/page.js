@@ -22,9 +22,7 @@ function parseAmount(inv) {
 }
 
 export default async function Page() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const results = await Promise.allSettled([getInvoiceList(token)]);
+  const results = await Promise.allSettled([getInvoiceList()]);
   const dataErrorMessages = getSettledErrorMessages(results);
   const invoices = results[0].status === "fulfilled" ? results[0].value : [];
   const list = toList(invoices);

@@ -7,11 +7,12 @@ import {
     Plus,
     ChevronLeft,
     Building2,
+    TrendingUp,
+    Wrench,
 } from "lucide-react";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import DataTable from "@/app/_components/DataTable";
 import EmptyState from "@/app/_components/EmptyState";
-import SummaryCards from "@/app/_components/SummaryCards";
 import StatusChips from "@/app/_components/StatusChips";
 import { getAllUnits } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
@@ -54,55 +55,102 @@ export default async function PropertyUnitsPage({ params }) {
     const list = Array.isArray(units)
         ? units
         : units && typeof units === "object"
-        ? [units]
-        : [];
+            ? [units]
+            : [];
 
     const normalizedStatus = (unit) =>
         String(unit.status || "").toLowerCase();
 
     const availableCount = list.filter((unit) =>
-        ["available", "vacant"].includes(normalizedStatus(unit))
+        ["available", "vacant"].includes(normalizedStatus(unit)),
     ).length;
     const occupiedCount = list.filter((unit) =>
-        ["occupied", "rented", "leased"].includes(normalizedStatus(unit))
+        ["occupied", "rented", "leased"].includes(normalizedStatus(unit)),
     ).length;
     const maintenanceCount = list.filter((unit) =>
         ["maintenance", "under-maintenance", "unavailable"].includes(
-            normalizedStatus(unit)
-        )
+            normalizedStatus(unit),
+        ),
     ).length;
 
     const rents = list
         .map((u) => Number(u.monthlyRent))
         .filter((n) => Number.isFinite(n));
     const totalMonthlyRent = rents.reduce((sum, n) => sum + n, 0);
+    const avgMonthlyRent =
+        rents.length > 0 ? Math.round(totalMonthlyRent / rents.length) : 0;
 
-    const summaryCards = [
+    const occupancyRate =
+        list.length > 0
+            ? Math.round((occupiedCount / list.length) * 100)
+            : 0;
+
+    // ---- Hero stats (4 counts) ----
+    const heroStats = [
         {
             label: "All units",
             value: list.length,
-            color: "bg-primary-100",
-            icon: <DoorOpen className="h-5 w-5 text-primary-700" />,
+            hint: "In this property",
         },
         {
             label: "Available",
             value: availableCount,
-            color: "bg-green-100",
-            icon: <CheckCircle2 className="h-5 w-5 text-green-700" />,
+            hint: "Ready to lease",
         },
         {
             label: "Occupied",
             value: occupiedCount,
-            color: "bg-amber-100",
-            icon: <Users className="h-5 w-5 text-amber-700" />,
+            hint: "Currently leased",
         },
         {
-            label: "Total monthly rent",
-            value: formatCurrency(totalMonthlyRent),
-            color: "bg-blue-100",
-            icon: <Wallet className="h-5 w-5 text-blue-700" />,
+            label: "Maintenance",
+            value: maintenanceCount,
+            hint: "Under repair",
         },
     ];
+
+    // ---- Info cards (below hero) ----
+    const infoCards = [
+        {
+            label: "Occupancy rate",
+            value: `${occupancyRate}%`,
+            hint: `${occupiedCount} of ${list.length} units occupied`,
+            icon: <TrendingUp className="h-4 w-4 text-white" />,
+            iconBg: "bg-emerald-600",
+            accent: "from-emerald-600 to-emerald-400",
+        },
+        {
+            label: "Monthly rent",
+            value: formatCurrency(totalMonthlyRent),
+            hint: "Total across all units",
+            icon: <Wallet className="h-4 w-4 text-white" />,
+            iconBg: "bg-primary-600",
+            accent: "from-primary-600 to-primary-400",
+        },
+        {
+            label: "Avg. rent / unit",
+            value: formatCurrency(avgMonthlyRent),
+            hint: rents.length > 0 ? `Across ${rents.length} priced units` : "No priced units",
+            icon: <DoorOpen className="h-4 w-4 text-white" />,
+            iconBg: "bg-violet-600",
+            accent: "from-violet-600 to-violet-400",
+        },
+        {
+            label: "Maintenance",
+            value: maintenanceCount,
+            hint: maintenanceCount > 0 ? "Units needing attention" : "All units clear",
+            icon: <Wrench className="h-4 w-4 text-white" />,
+            iconBg: "bg-amber-500",
+            accent: "from-amber-500 to-amber-300",
+        },
+    ];
+
+    const today = new Date().toLocaleDateString("en-NG", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    });
 
     const renderRow = (unit, index) => {
         const unitId = unit.id || unit._id;
@@ -114,7 +162,7 @@ export default async function PropertyUnitsPage({ params }) {
         return (
             <tr
                 key={unitId || index}
-                className="border-b border-gray-100 text-sm hover:bg-gray-50/60 transition-colors last:border-0 font-mono"
+                className="border-b border-gray-100 text-sm font-mono transition-colors last:border-0 hover:bg-gray-50/60"
             >
                 <td className="p-4 font-semibold text-primary">
                     <Link href={detailsHref} className="hover:underline">
@@ -139,7 +187,7 @@ export default async function PropertyUnitsPage({ params }) {
                 <td className="p-4 text-right">
                     <Link
                         href={detailsHref}
-                        className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-100 transition-colors"
+                        className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary-100"
                     >
                         View details
                     </Link>
@@ -158,7 +206,7 @@ export default async function PropertyUnitsPage({ params }) {
         return (
             <article
                 key={unitId || index}
-                className="rounded-xl border border-primary-100 bg-white p-4 shadow-sm"
+                className="rounded-xl border-2 border-gray-200 bg-white p-4 shadow-sm transition hover:border-gray-300"
             >
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -168,7 +216,7 @@ export default async function PropertyUnitsPage({ params }) {
                         >
                             {unitNumber(unit, index)}
                         </Link>
-                        <p className="mt-1 text-xs text-gray-500 inline-flex items-center gap-1.5">
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-gray-500">
                             <Building2 className="h-3 w-3" />
                             {unitBuilding(unit)}
                         </p>
@@ -185,16 +233,16 @@ export default async function PropertyUnitsPage({ params }) {
                     </div>
                     <div>
                         <dt className="text-xs text-gray-500">Monthly Rent</dt>
-                        <dd className="mt-1 font-bold text-gray-900 font-mono">
+                        <dd className="mt-1 font-mono font-bold text-gray-900">
                             {unitRent(unit)}
                         </dd>
                     </div>
                 </dl>
 
-                <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                <div className="mt-4 flex justify-end border-t border-gray-100 pt-3">
                     <Link
                         href={detailsHref}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                     >
                         View details
                     </Link>
@@ -204,37 +252,103 @@ export default async function PropertyUnitsPage({ params }) {
     };
 
     return (
-        <div className="space-y-6 p-2 sm:p-4">
-            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
-            <div>
-                <Link
-                    href={`/dashboard/user/my-properties/${id}`}
-                    className="mb-2 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Back to property
-                </Link>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <p className="text-[28px] font-bold text-primary lg:text-4xl">
-                            Units
-                        </p>
-                        <p className="mt-1 text-sm text-gray-500">
-                            View and manage all units across this property.
-                        </p>
+        <div className="space-y-8 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? (
+                <DataErrorNotice messages={dataErrorMessages} />
+            ) : null}
+
+            {/* ---------- Hero ---------- */}
+            <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+                <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
+                        <div className="min-w-0">
+                            <Link
+                                href={`/dashboard/user/my-properties/${id}`}
+                                className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute transition-colors hover:text-white"
+                            >
+                                <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                                Back to property
+                            </Link>
+                            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                                Units console · {today}
+                            </p>
+                            <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                                Units
+                            </h1>
+                            <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                                View and manage all units across this property — occupancy, rent and status at a glance.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Link
+                                href={`/admin/add-new-unit?propertyId=${id}`}
+                                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+                            >
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                Add unit
+                            </Link>
+                        </div>
                     </div>
-                    <Link
-                        href={`/admin/add-new-unit?propertyId=${id}`}
-                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Add unit
-                    </Link>
+
+                    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {heroStats.map((stat) => (
+                            <div
+                                key={stat.label}
+                                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+                            >
+                                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                                    {stat.label}
+                                </dt>
+                                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                                    {typeof stat.value === "number"
+                                        ? stat.value.toLocaleString()
+                                        : stat.value}
+                                </dd>
+                                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                                    {stat.hint}
+                                </p>
+                            </div>
+                        ))}
+                    </dl>
                 </div>
-            </div>
+            </section>
 
-            <SummaryCards cards={summaryCards} title="Unit summary" />
+            {/* ---------- Info cards (derived metrics) ---------- */}
+            {list.length > 0 && (
+                <div className="grid grid-cols-1 gap-3 @container @sm:grid-cols-2 lg:grid-cols-4">
+                    {infoCards.map((card) => (
+                        <div
+                            key={card.label}
+                            className="group relative overflow-hidden rounded-xl border-2 border-gray-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md sm:p-4"
+                        >
+                            <div
+                                className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${card.accent}`}
+                            />
+                            <div className="relative pl-2">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500 sm:text-[10.5px] sm:tracking-[0.14em]">
+                                        {card.label}
+                                    </span>
+                                    <span
+                                        className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${card.iconBg} shadow-sm sm:h-7 sm:w-7`}
+                                    >
+                                        {card.icon}
+                                    </span>
+                                </div>
+                                <p className="mt-2 truncate text-[20px] font-bold leading-none tracking-[-0.5px] text-ink tabular-nums sm:text-[22px] sm:tracking-[-0.6px]">
+                                    {card.value}
+                                </p>
+                                <p className="mt-1.5 truncate text-[11px] text-gray-500">
+                                    {card.hint}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
+            {/* ---------- Units list ---------- */}
             <DashboardGridItem title="Units">
                 {list.length === 0 ? (
                     <EmptyState

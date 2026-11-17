@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { Building2, CheckCircle2, Clock, XCircle, ChevronLeft } from "lucide-react";
+import {
+    Building2,
+    CheckCircle2,
+    Clock,
+    XCircle,
+    ChevronLeft,
+    Plus,
+    Sparkles,
+} from "lucide-react";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import DataTable from "@/app/_components/DataTable";
 import EmptyState from "@/app/_components/EmptyState";
-import SummaryCards from "@/app/_components/SummaryCards";
 import StatusChips from "@/app/_components/StatusChips";
 import { getListingById } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
@@ -22,7 +29,9 @@ const headers = [
 
 const valueFrom = (listing, keys, fallback = "—") => {
     for (const key of keys) {
-        const value = key.split(".").reduce((object, part) => object?.[part], listing);
+        const value = key
+            .split(".")
+            .reduce((object, part) => object?.[part], listing);
         if (value !== undefined && value !== null && value !== "") return value;
     }
     return fallback;
@@ -35,7 +44,7 @@ const listingTitle = (listing, index) =>
     valueFrom(
         listing,
         ["title", "name", "listingTitle", "listingNumber", "reference", "id", "_id"],
-        `Listing ${index + 1}`
+        `Listing ${index + 1}`,
     );
 
 const propertyName = (listing) => {
@@ -70,20 +79,19 @@ const priceAmount = (listing) =>
     valueFrom(
         listing,
         ["rentAmount", "rent_amount", "price", "amount", "monthlyRent"],
-        null
+        null,
     );
 
 export default async function UserListingsPage({ params }) {
-    // Next.js 15: params is a Promise. On Next.js 14, drop the `await`.
     const { id } = await params;
 
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
 
-    // Adjust this call/signature to match your data service.
     const results = await Promise.allSettled([getListingById(id, token)]);
     const dataErrorMessages = getSettledErrorMessages(results);
-    const listings = results[0].status === "fulfilled" ? results[0].value : [];
+    const listings =
+        results[0].status === "fulfilled" ? results[0].value : [];
     const list = Array.isArray(listings)
         ? listings
         : listings && typeof listings === "object"
@@ -93,23 +101,59 @@ export default async function UserListingsPage({ params }) {
     const normalizedStatus = (listing) => statusOf(listing).toLowerCase();
 
     const activeCount = list.filter((l) =>
-        ["active", "published", "available", "confirmed"].includes(normalizedStatus(l))
+        ["active", "published", "available", "confirmed"].includes(
+            normalizedStatus(l),
+        ),
     ).length;
     const pendingCount = list.filter((l) =>
-        ["pending", "draft", "review"].includes(normalizedStatus(l))
+        ["pending", "draft", "review"].includes(normalizedStatus(l)),
     ).length;
     const inactiveCount = list.filter((l) =>
-        ["inactive", "unpublished", "archived", "closed", "sold", "rented", "cancelled", "canceled"].includes(
-            normalizedStatus(l)
-        )
+        [
+            "inactive",
+            "unpublished",
+            "archived",
+            "closed",
+            "sold",
+            "rented",
+            "cancelled",
+            "canceled",
+        ].includes(normalizedStatus(l)),
     ).length;
 
-    const summaryCards = [
-        { label: "All listings", value: list.length, color: "bg-primary-100", icon: <Building2 className="h-5 w-5 text-primary-700" /> },
-        { label: "Active", value: activeCount, color: "bg-green-100", icon: <CheckCircle2 className="h-5 w-5 text-green-700" /> },
-        { label: "Pending", value: pendingCount, color: "bg-amber-100", icon: <Clock className="h-5 w-5 text-amber-700" /> },
-        { label: "Inactive", value: inactiveCount, color: "bg-gray-100", icon: <XCircle className="h-5 w-5 text-gray-600" /> },
+    // Health signal: % of listings currently live
+    const activeShare =
+        list.length > 0 ? Math.round((activeCount / list.length) * 100) : 0;
+
+    const heroStats = [
+        {
+            label: "All listings",
+            value: list.length,
+            hint: "Total records",
+        },
+        {
+            label: "Active",
+            value: activeCount,
+            hint: "Live & published",
+        },
+        {
+            label: "Pending",
+            value: pendingCount,
+            hint: "Awaiting review",
+        },
+        {
+            label: "Inactive",
+            value: inactiveCount,
+            hint: "Archived / closed",
+        },
     ];
+
+    const today = new Date().toLocaleDateString("en-NG", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    });
 
     const renderRow = (listing, index) => {
         const listingId = listing.id || listing._id;
@@ -128,12 +172,16 @@ export default async function UserListingsPage({ params }) {
                 <td className="p-4 text-gray-700">
                     <div className="flex flex-col">
                         <span>{propertyName(listing)}</span>
-                        <span className="text-xs text-gray-500">{unitDisplay(listing)}</span>
+                        <span className="text-xs text-gray-500">
+                            {unitDisplay(listing)}
+                        </span>
                     </div>
                 </td>
                 <td className="p-4 text-gray-600">{locationDisplay(listing)}</td>
                 <td className="p-4 text-center font-bold text-gray-900">
-                    {priceAmount(listing) === null ? "—" : formatCurrency(priceAmount(listing))}
+                    {priceAmount(listing) === null
+                        ? "—"
+                        : formatCurrency(priceAmount(listing))}
                 </td>
                 <td className="p-4 text-center">
                     <div className="flex justify-center">
@@ -179,19 +227,25 @@ export default async function UserListingsPage({ params }) {
                 <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 text-sm">
                     <div className="col-span-2">
                         <dt className="text-xs text-gray-500">Location</dt>
-                        <dd className="mt-1 text-gray-800">{locationDisplay(listing)}</dd>
+                        <dd className="mt-1 text-gray-800">
+                            {locationDisplay(listing)}
+                        </dd>
                     </div>
                     <div>
                         <dt className="text-xs text-gray-500">Rent</dt>
                         <dd className="mt-1 font-bold text-gray-900">
-                            {priceAmount(listing) === null ? "—" : formatCurrency(priceAmount(listing))}
+                            {priceAmount(listing) === null
+                                ? "—"
+                                : formatCurrency(priceAmount(listing))}
                         </dd>
                     </div>
                     {valueFrom(listing, ["billingCycle", "billing_cycle"], "") && (
                         <div>
                             <dt className="text-xs text-gray-500">Billing cycle</dt>
                             <dd className="mt-1 capitalize text-gray-800">
-                                {String(valueFrom(listing, ["billingCycle", "billing_cycle"])).toLowerCase()}
+                                {String(
+                                    valueFrom(listing, ["billingCycle", "billing_cycle"]),
+                                ).toLowerCase()}
                             </dd>
                         </div>
                     )}
@@ -210,24 +264,65 @@ export default async function UserListingsPage({ params }) {
     };
 
     return (
-        <div className="space-y-6 p-2 sm:p-4">
-            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
-            <div>
-                <Link
-                    href={`/dashboard/user/my-properties/${id}`}
-                    className="mb-2 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Back to property
-                </Link>
-                <p className="text-[28px] font-bold text-primary lg:text-4xl">My Listings</p>
-                <p className="mt-1 text-sm text-gray-500">
-                    View and manage listings associated with this property.
-                </p>
-            </div>
+        <div className="space-y-8 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? (
+                <DataErrorNotice messages={dataErrorMessages} />
+            ) : null}
 
-            <SummaryCards cards={summaryCards} title="Listing summary" />
+            {/* ---------- Hero summary ---------- */}
+            <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+                <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
+                        <div className="min-w-0">
+                           
+                            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                                Listings console · {today}
+                            </p>
+                            <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                                My Listings
+                            </h1>
+                            <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                                View and manage listing associated with this property.
+                            </p>
+                        </div>
 
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Link
+                                href={`/dashboard/user/my-properties/${id}/listings/new`}
+                                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+                            >
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                New listing
+                            </Link>
+                        </div>
+                    </div>
+
+                    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {heroStats.map((stat) => (
+                            <div
+                                key={stat.label}
+                                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+                            >
+                                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                                    {stat.label}
+                                </dt>
+                                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                                    {typeof stat.value === "number"
+                                        ? stat.value.toLocaleString()
+                                        : stat.value}
+                                </dd>
+                                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                                    {stat.hint}
+                                </p>
+                            </div>
+                        ))}
+                    </dl>
+
+                   
+                </div>
+            </section>
+
+            {/* ---------- Listings table ---------- */}
             <DashboardGridItem title="Listings">
                 {list.length === 0 ? (
                     <EmptyState

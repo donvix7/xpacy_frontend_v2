@@ -59,11 +59,6 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             link: "/dashboard/user/booked-services",
             icon: <IoCalendarOutline />
         },
-         {
-            text: "Leases",
-            link: "/dashboard/user/leases",
-            icon: <IoDocumentOutline />
-        },
         {
             text: "Payments",
             link: "/dashboard/user/payments",

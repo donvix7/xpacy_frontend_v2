@@ -11,25 +11,34 @@ import { getSettledErrorMessages } from "@/app/_lib/api-error";
 export default async function Page() {
   const results = await Promise.allSettled([
     getPropertyOwner(),
+    getAllAdmin(),
     getAllUsers(),
   ]);
   const dataErrorMessages = getSettledErrorMessages(results);
 
   const owners = results[0].status === "fulfilled" ? results[0].value : [];
-  const regularUsers = results[1].status === "fulfilled" ? results[1].value : [];
+  const admins = results[1].status === "fulfilled" ? results[1].value : [];
+  const regularUsers = results[2].status === "fulfilled" ? results[2].value : [];
 
   // Normalize data structure if needed
   const ownersList = (owners || []).map((u) => ({ ...u, role: "property-owner" }));
-  const usersList = regularUsers || [];
+  const adminsList = (admins || []).map((u) => ({ ...u, role: "admin" }));
+  const usersList = (regularUsers || [])
+    .filter(
+      (user) =>
+        ![user.role, user.user_role, user.user_type].some(
+          (role) => String(role || "").trim().toLowerCase() === "tenant",
+        ),
+    )
+    .map((u) => ({ ...u, role: "user" }));
 
   // Deduplicate users for the "All Registered Users" list
   // Priority: Admin > Property Owner > User
   const allUsersMap = new Map();
   usersList.forEach((u) => allUsersMap.set(u.id, u));
   ownersList.forEach((u) => allUsersMap.set(u.id, u));
+  adminsList.forEach((u) => allUsersMap.set(u.id, u));
   const allUsers = Array.from(allUsersMap.values());
-
-  console.log(allUsers)
 
   const stats = {
     totalUsers: allUsers.length,
@@ -152,10 +161,6 @@ export default async function Page() {
       {/* ---------- Existing content ---------- */}
       <DashboardGridItem >
         <AdminUsersList users={usersList} title="All Users List" variant="tenant" />
-      </DashboardGridItem>
-
-      <DashboardGridItem >
-        <AdminUsersList users={allUsers} title="All Registered Users List" variant="registered" />
       </DashboardGridItem>
 
 

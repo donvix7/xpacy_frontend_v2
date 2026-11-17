@@ -19,21 +19,14 @@ import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
   const results = await Promise.allSettled([
-    getBookingList(),
-    getInvoiceList(),
-    getSavedProperties(),
-    getUserNotifications(),
-    getUserProfile(),
   ]);
   const dataErrorMessages = getSettledErrorMessages(results);
 
-  const bookingList = results[0].status === "fulfilled" ? results[0].value : [];
-  const invoiceList = results[1].status === "fulfilled" ? results[1].value : [];
-  const savedPropertiesRes =
-    results[2].status === "fulfilled" ? results[2].value : null;
-  const notifications =
-    results[3].status === "fulfilled" ? results[3].value : [];
-  const profile = results[4].status === "fulfilled" ? results[4].value : null;
+  const bookingList = [];
+  const invoiceList = [];
+  const savedPropertiesRes = [];
+  const notifications = [];
+   const profile = null;
 
   const savedProperties = savedPropertiesRes?.data ?? [];
   const invoices = invoiceList ?? [];

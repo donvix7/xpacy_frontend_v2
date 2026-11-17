@@ -95,21 +95,12 @@ export default function ProceedSelection({
     };
 
     const handleContinueClick = () => {
-        // If load failed, don't allow blind continue — send them to subscribe.
-        if (hasLoadError) {
-            router.push("/auth/subscriptions");
-            return;
-        }
-
-        // No organizations available → continue straight to user dashboard.
-        if (!hasOrganizations) {
-            void continueWithoutSelection();
-            return;
-        }
-
-        // Organizations exist but nothing picked → prompt a selection.
+        // Nothing selected (no organizations, a failed load, or the user chose
+        // not to pick one) → continue with just the token. `completeProceedSelection`
+        // clears the organization cookies and sends the user to the dashboard
+        // for their account role.
         if (!selectedId) {
-            setError("Choose an organization to continue.");
+            void continueWithoutSelection();
             return;
         }
 
@@ -129,8 +120,8 @@ export default function ProceedSelection({
                         </h1>
                         <p className="mt-1 font-mono text-[13.5px] leading-6 text-mute">
                             {hasLoadError
-                                ? "Try again, or start a subscription to set up your own workspace."
-                                : `Select an organization to open your ${roleLabel.toLowerCase()} workspace.`}
+                                ? "You can continue to your dashboard without an organization, or subscribe to set up your own workspace."
+                                : `Select an organization to open its workspace, or continue to your ${roleLabel.toLowerCase()} dashboard.`}
                         </p>
                     </div>
                 </div>
@@ -310,33 +301,20 @@ export default function ProceedSelection({
                         Subscribe
                     </Link>
 
-                    {hasLoadError ? (
-                        // Hide / disable Continue — subscribe is the recovery path.
-                        <button
-                            type="button"
-                            disabled
-                            className="xp-btn w-full cursor-not-allowed py-3 font-mono text-[14px] opacity-60 sm:w-auto"
-                            title="Fix the load error or subscribe to continue"
-                        >
-                            Continue
+                    <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleContinueClick}
+                        className="xp-btn xp-btn-fill w-full py-3 font-mono text-[14px] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                        {isSubmitting ? (
+                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                        ) : null}
+                        {hasOrganizations && selectedId ? "Continue" : "Continue to dashboard"}
+                        {!isSubmitting && (
                             <ChevronRight aria-hidden="true" className="h-4 w-4" />
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={handleContinueClick}
-                            className="xp-btn xp-btn-fill w-full py-3 font-mono text-[14px] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                        >
-                            {isSubmitting ? (
-                                <LoaderCircle className="h-4 w-4 animate-spin" />
-                            ) : null}
-                            {hasOrganizations ? "Continue" : "Continue to dashboard"}
-                            {!isSubmitting && (
-                                <ChevronRight aria-hidden="true" className="h-4 w-4" />
-                            )}
-                        </button>
-                    )}
+                        )}
+                    </button>
                 </div>
             </section>
 

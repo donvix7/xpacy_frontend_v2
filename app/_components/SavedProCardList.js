@@ -4,9 +4,7 @@ import SavedPropCard from "./SavedPropCard";
 import EmptyState from "./EmptyState";
 
 export default async function SavedPropCardList() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")
-  const { data } = await getSavedProperties(token)
+  const { data } = await getSavedProperties()
   if(!data || data.length <= 0) return <EmptyState message={"Oops!... You do not have any saved property yet."}/>
   
   return (

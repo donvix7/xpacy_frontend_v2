@@ -13,13 +13,13 @@ import {
     LayoutGrid,
     FileText,
     CalendarCheck,
-    List,
+    Plus,
+    TrendingUp,
 } from "lucide-react";
-import { getProperty, getPropertyById } from "@/app/_lib/data-services";
+import { getPropertyById } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
-import SummaryItemCard from "@/app/_components/SummaryItemCard";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
@@ -39,35 +39,39 @@ function detailRows(property) {
     return detailConfig
         .map(({ key, label, icon }) => [label, property[key], icon])
         .filter(
-            ([, value]) => value !== undefined && value !== null && value !== ""
+            ([, value]) => value !== undefined && value !== null && value !== "",
         );
 }
 
 function managerName(manager) {
     const u = manager.user || {};
     return (
-        [u.firstName , u.lastName]
-            .filter(Boolean)
-            .join(" ") ||
+        [u.firstName, u.lastName].filter(Boolean).join(" ") ||
         u.username ||
         u.email ||
         "Manager"
     );
 }
 
-function StatCard({ icon, label, value, href, className = "", bgColor }) {
+// Tiles use the same high-contrast pattern as the other summaries
+function StatTile({ icon, label, value, href }) {
     const inner = (
-        <article className={`flex min-w-0 items-start justify-between gap-3 rounded-xl border border-primary-200 bg-white p-4 sm:p-5 ${className}`}>
-            <div className="min-w-0 h-full flex flex-col justify-between">
-                <p className=" text-xs text-gray-600 sm:text-sm">{label}</p>
-                <p className="mt-1 text-xl font-bold text-gray-900 sm:text-2xl">{typeof value === "number" ? value.toLocaleString() : value}</p>
+        <div className="group relative overflow-hidden rounded-xl border-2 border-gray-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md sm:p-4">
+            <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary-600 to-primary-400" />
+            <div className="relative pl-2">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500 sm:text-[10.5px] sm:tracking-[0.14em]">
+                        {label}
+                    </span>
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary-600 text-white shadow-sm sm:h-7 sm:w-7">
+                        {icon}
+                    </span>
+                </div>
+                <p className="mt-2 text-[22px] font-bold leading-none tracking-[-0.6px] text-ink tabular-nums sm:text-[24px]">
+                    {typeof value === "number" ? value.toLocaleString() : value}
+                </p>
             </div>
-            {icon && (
-                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl sm:h-11 sm:w-11 ${bgColor}`}>
-                    {icon}
-                </span>
-            )}
-        </article>
+        </div>
     );
     return href ? <Link href={href}>{inner}</Link> : inner;
 }
@@ -96,7 +100,9 @@ export default async function Page({ params }) {
     if (!property || typeof property !== "object") {
         return (
             <div className="space-y-5 p-2">
-                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
+                {dataErrorMessages.length > 0 ? (
+                    <DataErrorNotice messages={dataErrorMessages} />
+                ) : null}
                 <Link
                     href="/dashboard/properties"
                     className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
@@ -105,11 +111,11 @@ export default async function Page({ params }) {
                     Back to properties
                 </Link>
                 <div className="rounded-xl border border-gray-100 bg-white p-10 text-center">
-                   <EmptyState
-                   title="Property not found"
-                   message="This property may have been removed or the link may be incorrect."
-                   icon={Building2}
-                   />
+                    <EmptyState
+                        title="Property not found"
+                        message="This property may have been removed or the link may be incorrect."
+                        icon={Building2}
+                    />
                 </div>
             </div>
         );
@@ -120,120 +126,154 @@ export default async function Page({ params }) {
     const owners = property.owners ?? [];
     const media = property.media ?? [];
 
+    // Tile data
+    const tiles = [
+        {
+            icon: <Building2 className="h-4 w-4 text-white" />,
+            title: "Units",
+            value: counts.units ?? 0,
+            href: `/dashboard/user/my-properties/${property.id}/units`,
+        },
+        {
+            icon: <LayoutGrid className="h-4 w-4 text-white" />,
+            title: "Buildings",
+            value: counts.buildings ?? 0,
+            href: `/dashboard/user/my-properties/${property.id}/buildings`,
+        },
+        {
+            icon: <FileText className="h-4 w-4 text-white" />,
+            title: "Listings",
+            value: counts.listings ?? 0,
+            href: `/dashboard/user/my-properties/${property.id}/listings`,
+        },
+        {
+            icon: <FileText className="h-4 w-4 text-white" />,
+            title: "Leases",
+            value: counts.leases ?? 0,
+            href: `/dashboard/user/my-properties/${property.id}/leases`,
+        },
+        {
+            icon: <CalendarCheck className="h-4 w-4 text-white" />,
+            title: "Bookings",
+            value: counts.bookings ?? 0,
+            href: `/dashboard/properties/${property.id}`,
+        },
+    ];
+
+    // Total record count for the header hint
+    const totalRecords = tiles.reduce((sum, t) => sum + (t.value || 0), 0);
+
+    const today = new Date().toLocaleDateString("en-NG", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    });
 
     return (
-        <div className="space-y-6 p-2 sm:p-4">
-            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
-            <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <p className="text-[28px] font-bold text-primary lg:text-4xl">
-                        Property information
-                    </p>
-                    <p className="mt-1 capitalize text-sm text-gray-500">
-                        {property.name || "Property"}
-                    </p>
-                </div>
-               
-            </div>
+        <div className="space-y-8 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? (
+                <DataErrorNotice messages={dataErrorMessages} />
+            ) : null}
 
-            <DashboardGridItem>
-                <div className="grid grid-cols-4 gap-3">
-                    <div className="col-span-3 flex w-full items-center gap-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 p-3">
-                            <Building2 className="h-7 w-7 text-primary" />
-                        </div>
+            {/* ---------- Hero summary ---------- */}
+            <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+                <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
                         <div className="min-w-0">
-                            <h1 className="break-words text-2xl font-bold text-primary lg:text-3xl">
+                            <Link
+                                href="/dashboard/properties"
+                                className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute transition-colors hover:text-white"
+                            >
+                                <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                                Back to properties
+                            </Link>
+                            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                                Property console · {today}
+                            </p>
+                            <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
                                 {property.name || "Untitled property"}
                             </h1>
-                            <p className="mt-1 break-all text-sm text-gray-500">
+                            <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
                                 {property.address || "No address available"}
+                                {(property.city || property.state) && (
+                                    <>
+                                        {" · "}
+                                        {[property.city, property.state]
+                                            .filter(Boolean)
+                                            .join(", ")}
+                                    </>
+                                )}
                             </p>
                         </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            <StatusChips status={property.status || "active"} />
+                        </div>
                     </div>
-                    <div className="flex h-full w-full items-start justify-end">
-                        <StatusChips status={property.status || "active"} />
-                    </div>
+
+                    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                        {tiles.map((tile) => (
+                            <Link
+                                key={tile.title}
+                                href={tile.href}
+                                className="group rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm transition-colors hover:border-white/30 hover:bg-white/[0.14] sm:p-4"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                                        {tile.title}
+                                    </dt>
+                                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary-600 shadow-sm">
+                                        {tile.icon}
+                                    </span>
+                                </div>
+                                <dd className="mt-2 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                                    {typeof tile.value === "number"
+                                        ? tile.value.toLocaleString()
+                                        : tile.value}
+                                </dd>
+                            </Link>
+                        ))}
+                    </dl>
+
+                    
+                </div>
+            </section>
+
+            {/* ---------- Overview tile row ---------- */}
+            <DashboardGridItem title="Overview">
+                <div className="grid grid-cols-2 gap-3 @container @sm:grid-cols-3 lg:grid-cols-5">
+                    {tiles.map((tile) => (
+                        <StatTile
+                            key={tile.title}
+                            icon={tile.icon}
+                            label={tile.title}
+                            value={tile.value}
+                            href={tile.href}
+                        />
+                    ))}
                 </div>
             </DashboardGridItem>
 
-            <DashboardGridItem title="Overview">
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                    {[
-                        {
-                            icon: <Building2 className="h-5 w-5 text-primary" />,
-                            title: "Units",
-                            value: counts.units ?? 0,
-                            href: `/dashboard/properties/${property.id}`,
-                            color: "bg-blue-50 border-blue-100",
-                            bgColor:"bg-blue-50"
-
-                        },
-                        {
-                            icon: <LayoutGrid className="h-5 w-5 text-primary" />,
-                            title: "Buildings",
-                            value: counts.buildings ?? 0,
-                            href: `/dashboard/user/my-properties/${property.id}/buildings`,
-                            color: "bg-blue-50 border-green-100",
-                            bgColor:"bg-green-50"
-                        },
-                        {
-                            icon: <FileText className="h-5 w-5 text-primary" />,
-                            title: "Listings",
-                            value: counts.listings ?? 0,
-                            href: `/dashboard/user/my-properties/${property.id}/listings`,
-                            color: "bg-blue-50 border-amber-100",
-                            bgColor:"bg-amber-50"
-
-                        },
-                        {
-                            icon: <FileText className="h-5 w-5 text-primary" />,
-                            title: "Leases",
-                            value: counts.leases ?? 0,
-                            href: `/dashboard/user/my-properties/${property.id}/leases`,
-                            color: "bg-blue-50 border-blue-100",
-                            bgColor:"bg-blue-50"
-                            
-                        },
-                        {
-                            icon: <CalendarCheck className="h-5 w-5 text-primary" />,
-                            title: "Bookings",
-                            value: counts.bookings ?? 0,
-                            href: `/dashboard/properties/${property.id}`,
-                            color: "bg-blue-50 border-blue-100",
-                            bgColor:"bg-blue-50"
-
-                        },
-
-                    ].map((item, index) => (
-                        <StatCard
-                            key={index}
-                            icon={item.icon}
-                            label={item.title}
-                            value={item.value}
-                            href={item.href}
-                        />
-                    ))}
-                    </div>
-            </DashboardGridItem>
-
+            {/* ---------- Property details ---------- */}
             <DashboardGridItem title="Property Details">
-                <dl className="flex flex-col gap-3">
+                <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {detailRows(property).map(([label, value, Icon]) => (
-                        <div key={label} className="flex items-start gap-3">
-                            <div className="flex min-w-0 flex-col">
-                                <div className="flex items-center gap-2">
-                                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                                        <Icon className="h-4 w-4 text-primary" />
-                                    </div>
-                                    <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                                        {label}
-                                    </dt>
+                        <div
+                            key={label}
+                            className="rounded-lg border border-gray-100 bg-white p-3"
+                        >
+                            <div className="flex items-center gap-2">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-50">
+                                    <Icon className="h-3.5 w-3.5 text-primary" />
                                 </div>
-                                <dd className="mt-1 ml-10 break-words text-sm capitalize text-gray-800">
-                                    {value}
-                                </dd>
+                                <dt className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-gray-500">
+                                    {label}
+                                </dt>
                             </div>
+                            <dd className="mt-2 break-words text-[13px] capitalize text-ink">
+                                {value}
+                            </dd>
                         </div>
                     ))}
                 </dl>
@@ -256,7 +296,6 @@ export default async function Page({ params }) {
                     />
                 ) : (
                     <>
-                        {/* Tabular format for long/desktop screens */}
                         <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm md:block">
                             <table className="w-full border-collapse text-left text-sm">
                                 <thead className="border-b border-gray-100 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -265,17 +304,19 @@ export default async function Page({ params }) {
                                         <th className="px-4 py-3.5">Contact</th>
                                         <th className="px-4 py-3.5">Role</th>
                                         <th className="px-4 py-3.5 text-center">Status</th>
-                                        <th className="px-4 py-3.5 text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {managers.map((manager) => {
                                         const name = managerName(manager);
-                                        const email = manager.user?.email || manager.email;
-                                        const phone = manager.user?.phone || manager.phone;
+                                        const email =
+                                            manager.user?.email || manager.email;
+                                        const phone =
+                                            manager.user?.phone || manager.phone;
                                         const role =
-                                            manager.role?.replace(/_/g, " ").toLowerCase() ||
-                                            "—";
+                                            manager.role
+                                                ?.replace(/_/g, " ")
+                                                .toLowerCase() || "—";
                                         const status = manager.status || "active";
                                         const profileHref = manager.userId
                                             ? `/dashboard/admin/users/${manager.userId}`
@@ -296,9 +337,15 @@ export default async function Page({ params }) {
                                                                 {name}
                                                             </p>
                                                             {manager.user?.username &&
-                                                                manager.user.username !== name && (
+                                                                manager.user.username !==
+                                                                    name && (
                                                                     <p className="text-xs text-gray-400">
-                                                                        @{manager.user.username}
+                                                                        @
+                                                                        {
+                                                                            manager
+                                                                                .user
+                                                                                .username
+                                                                        }
                                                                     </p>
                                                                 )}
                                                         </div>
@@ -322,20 +369,7 @@ export default async function Page({ params }) {
                                                         <StatusChips status={status} />
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3.5 text-right">
-                                                    {profileHref ? (
-                                                        <Link
-                                                            href={profileHref}
-                                                            className="inline-flex items-center text-xs font-semibold text-primary hover:underline"
-                                                        >
-                                                            View
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="text-xs text-gray-300">
-                                                            —
-                                                        </span>
-                                                    )}
-                                                </td>
+                                                
                                             </tr>
                                         );
                                     })}
@@ -343,34 +377,29 @@ export default async function Page({ params }) {
                             </table>
                         </div>
 
-                        {/* Card grid for small/mobile screens */}
-                        <div className="grid gap-4 sm:grid-cols-2 md:hidden">
+                        <div className="grid gap-3 sm:grid-cols-2 md:hidden">
                             {managers.map((manager) => (
                                 <Link
                                     key={manager.id}
                                     href={`/dashboard/admin/users/${manager.userId}`}
-                                    className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                                    className="block rounded-lg border-2 border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md"
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="w-full flex items-center gap-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex min-w-0 items-center gap-2">
                                             <Users className="h-4 w-4 shrink-0 text-primary" />
-                                            <h3 className="text-sm font-medium text-gray-900">
+                                            <h3 className="truncate text-sm font-semibold text-ink">
                                                 {managerName(manager)}
                                             </h3>
                                         </div>
-                                        <div className="mt-3">
-                                            <StatusChips
-                                                status={manager.status || "active"}
-                                            />
-                                        </div>
+                                        <StatusChips
+                                            status={manager.status || "active"}
+                                        />
                                     </div>
-                                    <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-500">
-                                        <span className="capitalize">
-                                            {manager.role?.replace(/_/g, " ").toLowerCase() ||
-                                                "—"}
-                                        </span>
+                                    <p className="mt-2 text-xs capitalize text-gray-500">
+                                        {manager.role
+                                            ?.replace(/_/g, " ")
+                                            .toLowerCase() || "—"}
                                     </p>
-
                                 </Link>
                             ))}
                         </div>
@@ -387,7 +416,6 @@ export default async function Page({ params }) {
                     />
                 ) : (
                     <>
-                        {/* Tabular format for long/desktop screens */}
                         <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm md:block">
                             <table className="w-full border-collapse text-left text-sm">
                                 <thead className="border-b border-gray-100 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -404,8 +432,8 @@ export default async function Page({ params }) {
                                         const u = owner.user || {};
                                         const name =
                                             [
-                                                owner.ownerProfile.firstName,
-                                                owner.ownerProfile.lastName,
+                                                owner.ownerProfile?.firstName,
+                                                owner.ownerProfile?.lastName,
                                             ]
                                                 .filter(Boolean)
                                                 .join(" ") ||
@@ -414,12 +442,16 @@ export default async function Page({ params }) {
                                             owner.email ||
                                             u.email ||
                                             "Owner";
-                                        const email = owner.ownerProfile.email || u.email;
-                                        const phone = owner.ownerProfile.phone || u.phone;
+                                        const email =
+                                            owner.ownerProfile?.email || u.email;
+                                        const phone =
+                                            owner.ownerProfile?.phone || u.phone;
                                         const role =
-                                            owner.role?.replace(/_/g, " ").toLowerCase() ||
-                                            "Owner";
-                                        const status = owner.status || u.status || "active";
+                                            owner.role
+                                                ?.replace(/_/g, " ")
+                                                .toLowerCase() || "owner";
+                                        const status =
+                                            owner.status || u.status || "active";
 
                                         return (
                                             <tr
@@ -435,9 +467,12 @@ export default async function Page({ params }) {
                                                             <p className="font-medium text-gray-900">
                                                                 {name}
                                                             </p>
-                                                            {(owner.username || u.username) && (
+                                                            {(owner.username ||
+                                                                u.username) && (
                                                                 <p className="text-xs text-gray-400">
-                                                                    @{owner.username || u.username}
+                                                                    @
+                                                                    {owner.username ||
+                                                                        u.username}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -468,15 +503,18 @@ export default async function Page({ params }) {
                             </table>
                         </div>
 
-                        {/* Card grid for small/mobile screens */}
-                        <div className="grid gap-4 sm:grid-cols-2 md:hidden">
+                        <div className="grid gap-3 sm:grid-cols-2 md:hidden">
                             {owners.map((owner, index) => {
                                 const id = owner.id || owner.userId || index;
                                 const u = owner.user || {};
                                 const name =
                                     [
-                                        owner.first_name || u.firstname || u.first_name,
-                                        owner.last_name || u.lastname || u.last_name,
+                                        owner.first_name ||
+                                            u.firstname ||
+                                            u.first_name,
+                                        owner.last_name ||
+                                            u.lastname ||
+                                            u.last_name,
                                     ]
                                         .filter(Boolean)
                                         .join(" ") ||
@@ -487,35 +525,34 @@ export default async function Page({ params }) {
                                     "Owner";
                                 const email = owner.email || u.email;
                                 const role =
-                                    owner.role?.replace(/_/g, " ").toLowerCase() ||
-                                    "Owner";
-                                const status = owner.status || u.status || "active";
+                                    owner.role
+                                        ?.replace(/_/g, " ")
+                                        .toLowerCase() || "owner";
+                                const status =
+                                    owner.status || u.status || "active";
 
                                 return (
                                     <div
                                         key={id}
-                                        className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                                        className="rounded-lg border-2 border-gray-200 bg-white p-4 shadow-sm"
                                     >
-                                        <div className="flex items-center gap-2 justify-between">
-                                            <div className="flex items-center gap-2">
-                                            <Users className="h-4 w-4 shrink-0 text-primary" />
-                                            <h3 className="text-sm font-medium text-gray-900">
-                                                {name}
-                                            </h3>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <Users className="h-4 w-4 shrink-0 text-primary" />
+                                                <h3 className="truncate text-sm font-semibold text-ink">
+                                                    {name}
+                                                </h3>
                                             </div>
-                                         <div className="mt-3">
                                             <StatusChips status={status} />
                                         </div>
-                                        </div>
-                                        <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-500">
-                                            <span className="capitalize">{role}</span>
+                                        <p className="mt-2 text-xs capitalize text-gray-500">
+                                            {role}
                                         </p>
                                         {email && (
                                             <p className="mt-1 break-all text-xs text-gray-500">
                                                 {email}
                                             </p>
                                         )}
-                                       
                                     </div>
                                 );
                             })}
