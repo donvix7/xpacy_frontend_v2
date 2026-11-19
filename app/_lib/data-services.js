@@ -2016,10 +2016,51 @@ export async function getVirtualAccounts() {
   }
 }
 
+export async function getVirtualAccountById(id) {
+  
+   const token = await getRawToken();
+  try {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${id}
+
+`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionList");
+    const  data  = await safeJson(response);
+    console.log(data,"data")
+    return data || [];
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionList");
+  }
+}
 
 
-export async function getVirtualAccountHistory(token) {
-  // const res = await fetch(`${API}/virtual-accounts/history`, { ... });
-  // return res.json();
-  return [];
+export async function getVirtualAccountTransactions() {
+  
+   const token = await getRawToken();
+  try {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${id}/transactions
+
+`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionList");
+    const  data  = await safeJson(response);
+    console.log(data,"data")
+    return data || [];
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionList");
+  }
 }

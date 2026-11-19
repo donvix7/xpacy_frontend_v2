@@ -2953,11 +2953,29 @@ export async function syncWallet(){
 
 }
 
+
 export async function createVirtualAccount(){
   
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts`,
+  {
+  method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({})
+  });
+  return response.json(); 
+
+}
+
+export async function refreshVirtualAccount(id){
+  
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts${id}/refresh`,
   {
   method: "POST",
     headers: {
