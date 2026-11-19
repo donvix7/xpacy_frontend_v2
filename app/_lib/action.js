@@ -2971,17 +2971,19 @@ export async function createVirtualAccount(){
 }
 
 
-export async function expireVirtualAccount({ accountId }) {
+export async function expireVirtualAccount( accountId ) {
+  console.log(accountId)
    const cookieStore = await cookies();
   const token = cookieStore.get("token");
   const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${accountId}`,
   {
-  method: "POST",
+  method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({})
   });
+  console.log(response)
   return response.json(); 
 }

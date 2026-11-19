@@ -8,14 +8,27 @@ import {
     Wallet,
     ArrowUpRight,
     RefreshCw,
+    AlertTriangle,
+    Trash2,
+    Clock,
+    ShieldAlert,
 } from "lucide-react";
 import EmptyState from "@/app/_components/EmptyState";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 import { getWallet, getUserProfile } from "@/app/_lib/data-services";
 import SyncWalletButton from "@/app/_components/SyncWalletBtn";
-import { createVirtualAccount, syncWallet } from "@/app/_lib/action";
+import {
+    createVirtualAccount,
+    syncWallet,
+} from "@/app/_lib/action";
 import CreateVirtualAccountForm from "@/app/_components/VirtualAccountForm";
+import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import DeleteAccountModal from "@/app/_components/DeleteAccountModal";
+
+/* -------------------------------------------------------------------------- */
+/* MODAL (client) — kept inline so it's colocated with the page               */
+/* -------------------------------------------------------------------------- */
 
 export default async function WalletSettingsPage() {
     const results = await Promise.allSettled([
@@ -35,7 +48,6 @@ export default async function WalletSettingsPage() {
         walletRaw?.data ??
         walletRaw ??
         {};
-
     const profile =
         profileRaw?.user ??
         profileRaw?.data?.user ??
@@ -129,7 +141,6 @@ export default async function WalletSettingsPage() {
                     </div>
 
                     <div className="grid gap-6 p-5 sm:grid-cols-2 sm:p-6">
-                        {/* Account number — hero-style */}
                         <div>
                             <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-gray-500">
                                 Account number
@@ -142,7 +153,6 @@ export default async function WalletSettingsPage() {
                             </p>
                         </div>
 
-                        {/* Account name */}
                         <div>
                             <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-gray-500">
                                 Account name
@@ -195,7 +205,7 @@ export default async function WalletSettingsPage() {
                 </section>
             )}
 
-            {/* ---------- Create form (only if no account) ---------- */}
+            {/* ---------- Create form ---------- */}
             {!hasVirtualAccount && (
                 <section className="rounded-2xl border border-gray-200 bg-white">
                     <div className="border-b border-gray-200 px-5 py-4">
@@ -226,7 +236,7 @@ export default async function WalletSettingsPage() {
                 </section>
             )}
 
-            {/* ---------- Wallet details (compact) ---------- */}
+            {/* ---------- Wallet details ---------- */}
             <section className="rounded-2xl border border-gray-200 bg-white">
                 <div className="border-b border-gray-200 px-5 py-3">
                     <h2 className="text-[13.5px] font-semibold text-ink">
@@ -240,7 +250,6 @@ export default async function WalletSettingsPage() {
                             {walletId}
                         </span>
                     </div>
-                    
                 </div>
             </section>
 
@@ -259,6 +268,64 @@ export default async function WalletSettingsPage() {
                     </Link>
                 </div>
             </div>
+
+            {/* ============================================================ */}
+            {/* DANGER ZONE                                                   */}
+            {/* ============================================================ */}
+            <section className="overflow-hidden rounded-2xl border border-red-200 bg-white">
+                {/* Header band */}
+                <div className="flex items-center justify-between gap-3 border-b border-red-200 bg-red-50 px-5 py-3">
+                    <div className="flex items-center gap-2">
+                        <ShieldAlert
+                            className="h-4 w-4 text-red-600"
+                            aria-hidden="true"
+                        />
+                        <h2 className="text-[13.5px] font-semibold text-red-900">
+                            Danger zone
+                        </h2>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-red-700">
+                        <span className="h-1 w-1 rounded-full bg-current" />
+                        Irreversible
+                    </span>
+                </div>
+
+                <div className="divide-y divide-red-100">
+                    {/* Expire (soft) */}
+                    <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                                <Clock
+                                    className="h-4 w-4 shrink-0 text-amber-600"
+                                    aria-hidden="true"
+                                />
+                                <h3 className="text-[13.5px] font-semibold text-ink">
+                                    Expire account
+                                </h3>
+                            </div>
+                            <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-gray-600">
+                                Schedule this account for deletion after a
+                                30-day grace period. You can cancel anytime
+                                during that window by logging back in.
+                            </p>
+                        </div>
+
+                        {/* Client component wraps ONLY the trigger button + modal */}
+                        <DeleteAccountModal id={virtualAccount?.id} mode="expire">
+                            <button
+                                type="button"
+                                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2 text-[12px] font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                            >
+                                <Clock
+                                    className="h-3.5 w-3.5"
+                                    aria-hidden="true"
+                                />
+                                Expire account
+                            </button>
+                        </DeleteAccountModal>
+                    </div>        
+                </div>
+            </section>
         </div>
     );
 }
