@@ -33,7 +33,7 @@ export default function DataTable({
         <div className={`flex flex-col gap-6 rounded-lg ${className}`}>
             {(title || headerActions) && (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    {title && <h2 className="text-lg font-semibold text-primary-900">{title}</h2>}
+                    {title && <h2 className="text-lg font-semibold text-ink">{title}</h2>}
                     {headerActions && <div className="flex flex-wrap items-center gap-3">{headerActions}</div>}
                 </div>
             )}
@@ -41,45 +41,49 @@ export default function DataTable({
             {!data?.length && <EmptyState message={emptyMessage} />}
 
             {/* Desktop View - Table */}
-            {data?.length > 0 && <div className="bg-white border border-primary-100 rounded-xl overflow-x-auto shadow-sm hidden lg:block">
-                <table className="w-full text-left border-collapse">
-                    <thead className="bg-gray-50 text-neutrals-900 text-sm font-mono font-bold border-b border-primary-100">
-                        <tr>
-                            {headers.map((h, i) => (
-                                <th key={i} className={`p-4 font-bold ${h.center ? "text-center" : ""}`}>
-                                    {h.heading}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.map((item, index) => renderRow(item, index))}
-                    </tbody>
-                </table>
-            </div>}
+            {data?.length > 0 && (
+                <div className="bg-card border border-line rounded-xl overflow-x-auto shadow-sm hidden lg:block">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-soft text-ink text-sm font-mono font-bold border-b border-line">
+                            <tr>
+                                {headers.map((h, i) => (
+                                    <th key={i} className={`p-4 font-bold ${h.center ? "text-center" : ""}`}>
+                                        {h.heading}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((item, index) => renderRow(item, index))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {/* Mobile View - Cards */}
-            {data?.length > 0 && <div className="lg:hidden grid gap-3">
-                {renderMobileCard
-                    ? data.map((item, index) => renderMobileCard(item, index))
-                    : data.map((item, index) => (
-                        <article key={item?.id ?? item?._id ?? index} className="rounded-xl border border-primary-100 bg-white p-4 shadow-sm">
-                            <dl className="grid grid-cols-1 gap-3">
-                                {headers.map((header, columnIndex) => (
-                                    <div key={header.heading ?? columnIndex} className="flex items-start justify-between gap-4 border-b border-gray-100 pb-2 last:border-0 last:pb-0">
-                                        <dt className="text-xs font-medium text-gray-500">{header.heading}</dt>
-                                        <dd className="min-w-0 text-right text-sm text-gray-900">{item?.[header.key] ?? "—"}</dd>
-                                    </div>
-                                ))}
-                            </dl>
-                        </article>
-                    ))}
-            </div>}
+            {data?.length > 0 && (
+                <div className="lg:hidden grid gap-3">
+                    {renderMobileCard
+                        ? data.map((item, index) => renderMobileCard(item, index))
+                        : data.map((item, index) => (
+                            <article key={item?.id ?? item?._id ?? index} className="rounded-xl border border-line bg-card p-4 shadow-sm">
+                                <dl className="grid grid-cols-1 gap-3">
+                                    {headers.map((header, columnIndex) => (
+                                        <div key={header.heading ?? columnIndex} className="flex items-start justify-between gap-4 border-b border-line pb-2 last:border-0 last:pb-0">
+                                            <dt className="text-xs font-medium text-mute">{header.heading}</dt>
+                                            <dd className="min-w-0 text-right text-sm text-ink">{item?.[header.key] ?? "—"}</dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                            </article>
+                        ))}
+                </div>
+            )}
 
             {data?.length > 0 && showPagination && pagination && (
                 <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-sm font-mono text-gray-500">
+                        <span className="text-sm font-mono text-mute">
                             Showing <span>{(pagination.page - 1) * pagination.limit + 1}</span> - <span>{pagination?.page === pagination?.totalPages ? pagination.total : pagination?.page * pagination?.limit}</span> of <span>{pagination?.total}</span> results 
                         </span>
                         <Suspense fallback={<div className="h-10" />}>

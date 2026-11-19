@@ -235,8 +235,8 @@ export async function getBlogCategories() {
  * User profile & auth
  * ---------------------------------------------------------------- */
 
-export async function getUserProfile(passedToken) {
-  const token = await getRawToken(passedToken);
+export async function getUserProfile() {
+  const token = await getRawToken();
   if (!token) return null;
   try {
     const response = await safeFetch(`${SERVICE_URL}/auth/profile`, {
@@ -1945,4 +1945,81 @@ export async function getActiveOrganizationRole() {
   } catch {
     return "";
   }
+}
+
+
+export async function getWallet() {
+  
+   const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/wallet`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionList");
+    const  data  = await safeJson(response);
+    console.log(data)
+    return data || null;
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionList");
+  }
+}
+
+export async function getWalletTransactions() {
+  
+   const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/wallet/transactions?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionList");
+    const  data  = await safeJson(response);
+    console.log(response,"data")
+    return data || null;
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionList");
+  }
+}
+
+export async function getVirtualAccounts() {
+  
+   const token = await getRawToken();
+  try {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts
+
+`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionList");
+    const  data  = await safeJson(response);
+    console.log(data,"data")
+    return data || [];
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionList");
+  }
+}
+
+
+
+export async function getVirtualAccountHistory(token) {
+  // const res = await fetch(`${API}/virtual-accounts/history`, { ... });
+  // return res.json();
+  return [];
 }

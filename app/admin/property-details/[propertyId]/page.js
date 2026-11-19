@@ -1,20 +1,17 @@
-import BackBtn from "@/app/_components/BackBtn";
-import Logo from "@/app/_components/Logo";
+import AdminHeader from "@/app/_components/AdminHeader";
 import ViewPropertyForm from "@/app/_components/ViewPropertyForm";
-import { getCities, getProperty, getPropertyOwnerById, getAdminBooking, getPropertyById } from "@/app/_lib/data-services";
+import { getCities, getPropertyOwnerById, getAdminBooking, getPropertyById } from "@/app/_lib/data-services";
 import { cookies } from "next/headers";
-
-
 
 export default async function Page({ params }) {
     const param = await params;
     const cookieStore = await cookies();
-    const token = cookieStore.get("token")
-    const property = await getPropertyById(param.propertyId)
+    const token = cookieStore.get("token");
+    const property = await getPropertyById(param.propertyId);
     const [propertyOwner, allCities, allBookings] = await Promise.all([
         getPropertyOwnerById(property?.property_owner_id),
         getCities(),
-        getAdminBooking(token)
+        getAdminBooking(token),
     ]);
 
     // Match bookings to this property
@@ -30,16 +27,9 @@ export default async function Page({ params }) {
     }
 
     return (
-        <div className="flex min-w-0 flex-1 flex-col gap-4.5">
-            {/* Navigation */}
-            <nav className="flex border-b border-primary-100 px-4 py-4 sm:px-6 md:px-[7%] md:py-6">
-                <div className="flex w-full items-center justify-between gap-4 md:w-1/2">
-                    <BackBtn />
-                    <Logo />
-                </div>
-            </nav>
-            {/* Form */}
-            <div className="flex min-w-0 flex-col items-center justify-center px-2 sm:px-4">
+        <div className="flex min-w-0 flex-1 flex-col">
+            <AdminHeader title="Property Details" backHref="/dashboard/admin/properties" />
+            <main className="flex-1 max-w-5xl mx-auto w-full py-8 px-4 sm:px-6 flex min-w-0 flex-col items-center justify-center">
                 <ViewPropertyForm
                     allOwners={null}
                     allCities={allCities}
@@ -48,9 +38,7 @@ export default async function Page({ params }) {
                     disableSearch={true}
                     propertyObj={property}
                 />
-            </div>
-
-            
+            </main>
         </div>
-    )
+    );
 }

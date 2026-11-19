@@ -30,7 +30,7 @@ export default async function SidebarHeader({ role = "user", isOrganizationAdmin
         : [];
     const activeOrganizationId = cookieStore.get("organizationId")?.value || "";
     return (
-        <div className="sticky top-0 z-[10] flex items-center justify-between gap-3 border-b border-line bg-white px-3 py-3 shadow-[0_1px_2px_rgba(31,58,82,0.05)] md:px-8 lg:py-4">
+        <div className="sticky top-0 z-[10] flex items-center justify-between gap-3 border-b border-line bg-card px-3 py-3 shadow-[0_1px_2px_rgba(31,58,82,0.05)] md:px-8 lg:py-4">
             <DashboardHeading />
             <Suspense fallback={<div className="h-8 w-8" />}>
                 <MobileNav isSidebar={true} role={activeRole} isOrganizationAdmin={activeOrganizationAdmin} />
@@ -42,7 +42,7 @@ export default async function SidebarHeader({ role = "user", isOrganizationAdmin
                 {activeRole === "user" && (
                     <>
                         <Link href="/dashboard/user/create-organization" className="xp-btn xp-btn-fill hidden text-sm lg:inline-flex">Create Organization</Link>
-                        <Link href="/auth/proceed" className="xp-btn xp-btn-fill hidden text-sm lg:inline-flex">Swicth organization</Link>
+                        <Link href="/auth/proceed" className="xp-btn xp-btn-fill hidden text-sm lg:inline-flex">Switch organization</Link>
                         <div className="hidden h-10 w-px bg-line lg:block"></div>
                     </>
                 )}

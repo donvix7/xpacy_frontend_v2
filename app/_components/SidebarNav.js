@@ -11,7 +11,7 @@ import { LuBell, LuLayoutDashboard, LuMessageCircleQuestion, LuMessageSquare, Lu
 import { IoCalendarOutline } from "react-icons/io5";
 import { RiHome2Line, RiSearchLine, RiSettings3Line, RiPulseLine } from "react-icons/ri";
 import { Archive, Calendar1, MessageSquare, Settings, User, User2 } from "lucide-react";
-import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaWrench } from "react-icons/fa6";
+import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaWallet, FaWrench } from "react-icons/fa6";
 import { TbBuilding, TbBuildingCommunity, TbFileText, TbHelp, TbReportAnalytics, TbSettings, TbUsers } from "react-icons/tb";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import { BsTools } from "react-icons/bs";
@@ -47,7 +47,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             link: "/dashboard/user/saved-properties",
             icon: <FaRegHeart />
         },
-         
+          {
+            text: "My Wallet",
+            link: "/dashboard/user/wallet",
+            icon: <FaWallet />
+        },
 
         {
             text: "Bookings",

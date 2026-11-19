@@ -353,6 +353,8 @@ export default async function Page({ params }) {
                         {String(status).toLowerCase() !== "active" && (
                             <ActivateUserButton
                                 userId={userId}
+                                userName={name}
+                                userEmail={user.email || null}
                                 onActivate={activateUser}
                             />
                         )}
@@ -371,7 +373,7 @@ export default async function Page({ params }) {
 
             {/* ---------- User information ---------- */}
             <DashboardGridItem title="User information">
-                <div className="grid grid-cols-1 gap-3 @container @sm:grid-cols-2 @2xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 container sm:grid-cols-2 ">
                     {details.map(({ label, value, icon: Icon }) => (
                         <div
                             key={label}

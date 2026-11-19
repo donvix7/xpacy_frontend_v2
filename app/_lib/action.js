@@ -2936,3 +2936,52 @@ export async function activateUser(id){
   return response.json(); 
 
 }
+export async function syncWallet(){
+  
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/wallet/sync`,
+  {
+  method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({})
+  });
+  return response.json(); 
+
+}
+
+export async function createVirtualAccount(){
+  
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts`,
+  {
+  method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({})
+  });
+  return response.json(); 
+
+}
+
+
+export async function expireVirtualAccount({ accountId }) {
+   const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${accountId}`,
+  {
+  method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({})
+  });
+  return response.json(); 
+}

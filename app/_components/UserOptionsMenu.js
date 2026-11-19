@@ -1,35 +1,71 @@
 "use client";
-import { VscNote } from "react-icons/vsc";
-import ConfirmDeleteModal from "./ConfirmDeleteModal";
-import { RiDeleteBin6Line } from "react-icons/ri";
+
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { User, UserX, Wrench } from "lucide-react";
 import TableItemOptionsMenu from "./TableItemOptionsMenu";
-import { TbInvoice } from "react-icons/tb";
-import { User, Wrench } from "lucide-react";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import { deleteUser } from "../_lib/action";
+import toast from "react-hot-toast";
+
+const DeactivateUserModal = ({ id, onClose }) => {
+    const [isPending, startTransition] = useTransition();
+    const router = useRouter();
+
+    const handleDeactivate = () => {
+        startTransition(async () => {
+            try {
+                const res = await deleteUser(id);
+                if (res?.success === false || res?.error) {
+                    toast.error(res?.message || res?.error || "Could not deactivate user.");
+                } else {
+                    toast.success("User deactivated successfully");
+                    onClose?.();
+                    router.refresh();
+                }
+            } catch (err) {
+                toast.error(err?.message || "Could not deactivate user.");
+            }
+        });
+    };
+
+    return (
+        <ConfirmDeleteModal
+            heading="Deactivate this user?"
+            description="Are you sure you want to deactivate this user account? The user will lose access to the platform until reactivated."
+            confirmLabel="Deactivate user"
+            cancelLabel="Cancel"
+            variant="warning"
+            icon={UserX}
+            onConfirm={handleDeactivate}
+            onClose={onClose}
+            isPending={isPending}
+        />
+    );
+};
 
 export default function UserOptionsMenu({ id, role }) {
-    const isOwner = ['property-owner', 'admin', 'super-admin', 'SUPER_ADMIN'].includes(role);
     const isProvider = role === 'provider' || role === 'service-provider';
-    const isTenant = role === 'tenant' || role === 'TENANT';
+    const detailHref = isProvider ? `/admin/provider-details/${id}` : `/dashboard/admin/users/${id}`;
 
     const actions = [
-      
         {
             label: "View details",
-            href: `/dashboard/admin/users/${id}`,
-            icon: <User className="text-gray-400" />,
+            href: detailHref,
+            icon: <User className="text-mute" />,
         },
-
-        
+        ...(isProvider ? [
+            {
+                label: "Edit provider",
+                href: `/admin/edit-provider/${id}`,
+                icon: <Wrench className="text-mute" />,
+            }
+        ] : []),
         {
-            label: "Remove user",
-            icon: <RiDeleteBin6Line className="text-gray-400" />,
-            modal:
-                <ConfirmDeleteModal
-                    title={`Are you sure you want to remove this user?`}
-                    onConfirm={() => console.log("remove user", id)}
-                />
-            ,
-        }
+            label: "Deactivate user",
+            icon: <UserX className="text-mute" />,
+            modal: <DeactivateUserModal id={id} />,
+        },
     ];
 
     return (

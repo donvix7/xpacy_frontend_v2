@@ -15,14 +15,15 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
+      <head />
+      <body className="min-h-screen bg-canvas text-ink flex flex-col transition-colors duration-150">
+        <Script
+          id="theme-initializer"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem("xpacy-theme");if(!t){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.dataset.theme=t;}catch(e){}})();`,
           }}
         />
-      </head>
-      <body className="min-h-screen bg-canvas text-ink flex flex-col transition-colors duration-150">
         <UserProvider>
           {children}
           <TokenRefreshModal />

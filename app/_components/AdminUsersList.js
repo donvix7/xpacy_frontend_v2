@@ -163,7 +163,7 @@ export default function AdminUsersList({
                     <div className="flex justify-center">
                         <UserOptionsMenu
                             id={user._id || user.id}
-                            role="tenant"
+                            role={user.role || user.user_role || "user"}
                         />
                     </div>
                 </td>

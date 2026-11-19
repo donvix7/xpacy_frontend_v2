@@ -1,30 +1,56 @@
+"use client";
+
 import Link from "next/link";
-import { FaEye, FaTools, FaChartLine } from "react-icons/fa";
-import { MdAdd } from "react-icons/md";
+import { usePathname } from "next/navigation";
+import { FaEye, FaTools, FaCalendar, FaEdit } from "react-icons/fa";
 import OptionsMenu from "./OptionsMenu";
-import { FaCalendar } from "react-icons/fa6";
 
 export default function PropertyOptionsMenu({ id }) {
+    const pathname = usePathname() || "";
+
+    // Determine role-isolated base paths dynamically
+    let roleBasePath = "/dashboard/property-owner/properties";
+    let maintenanceHref = `/dashboard/property-owner/maintenance`;
+    let bookingsHref = `/dashboard/property-owner/bookings`;
+
+    if (pathname.startsWith("/dashboard/admin")) {
+        roleBasePath = "/dashboard/admin/properties";
+        maintenanceHref = `/dashboard/admin/maintenance`;
+        bookingsHref = `/dashboard/admin/bookings`;
+    } else if (pathname.startsWith("/dashboard/facility-manager")) {
+        roleBasePath = "/dashboard/facility-manager/properties";
+        maintenanceHref = `/dashboard/facility-manager/maintenance`;
+        bookingsHref = `/dashboard/facility-manager/bookings`;
+    } else if (pathname.startsWith("/dashboard/property-manager")) {
+        roleBasePath = "/dashboard/property-manager/properties";
+        maintenanceHref = `/dashboard/property-manager/maintenance`;
+        bookingsHref = `/dashboard/property-manager/bookings`;
+    } else if (pathname.startsWith("/dashboard/user")) {
+        roleBasePath = "/dashboard/user/my-properties";
+        maintenanceHref = `/dashboard/user/maintenance`;
+        bookingsHref = `/dashboard/user/bookings`;
+    }
+
     const actions = [
         {
             label: "View property details",
-            href: `/dashboard/user/my-properties/${id}`,
-            icon: <FaEye className="text-gray-400" />,
+            href: `${roleBasePath}/${id}`,
+            icon: <FaEye className="text-mute" />,
         },
         {
             label: "Maintenance requests",
-            href: `/dashboard/admin/maintenance/${id}/requests`, 
-            icon: <FaTools className="text-gray-400" />,
+            href: maintenanceHref,
+            icon: <FaTools className="text-mute" />,
         },
         {
             label: "Bookings",
-            href: `/dashboard/admin/bookings/${id}`,
-            icon: <FaCalendar className="text-gray-400" />,
+            href: bookingsHref,
+            icon: <FaCalendar className="text-mute" />,
         },
         {
-            label: "Property valuation",
-            href: `/dashboard/user/properties/${id}/valuation`,
-            icon: <FaChartLine className="text-gray-400" />,
+            label: "Edit property",
+            href: `/admin/edit-property/${id}`,
+            icon: <FaEdit className="text-mute" />,
         },
     ];
 
@@ -32,9 +58,13 @@ export default function PropertyOptionsMenu({ id }) {
         <OptionsMenu id={`property-menu-${id}`}>
             {actions.map((action, i) => (
                 <Link key={i} href={action.href} className="w-full text-left">
-                     <div className={`flex items-center px-4 py-4 gap-4 hover:bg-gray-50 transition-colors ${i !== actions.length - 1 ? "border-b border-gray-100" : ""}`}>
-                        {action.icon && <span className="text-xl">{action.icon}</span>}
-                        <span className="text-sm font-medium text-gray-600">
+                    <div
+                        className={`flex items-center px-4 py-3 gap-3 hover:bg-soft transition-colors ${
+                            i !== actions.length - 1 ? "border-b border-line" : ""
+                        }`}
+                    >
+                        {action.icon && <span className="text-lg">{action.icon}</span>}
+                        <span className="text-[13px] font-medium text-ink">
                             {action.label}
                         </span>
                     </div>

@@ -53,7 +53,11 @@ export default async function Page({ params }) {
 
   const name = plan.name || plan.title || "Untitled plan";
   const status = plan.isActive === false || String(plan.status || "").toUpperCase() === "INACTIVE" ? "Inactive" : "Active";
-  const price = plan.price ?? plan.monthly ?? plan.priceMonthly;
+  const monthlyPrice = plan.price ?? plan.monthly ?? plan.monthlyPrice;
+  const yearlyPrice = plan.yearly ?? plan.yearlyPrice;
+  const quaterlyPrice = plan.quarterly ?? plan.quarterlyPrice;
+
+
   const features = getFeatureRows(plan.features);
 
   return (
@@ -70,21 +74,23 @@ export default async function Page({ params }) {
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-bold ${status === "Active" ? "bg-emerald-100 text-emerald-800" : "bg-white/15 text-white"}`}>{status}</span>
         </div>
-        <p className="mt-6 text-sm text-white/75">Slug: <span className="font-semibold text-white">{plan.slug || "—"}</span></p>
       </header>
 
       <section>
         <h2 className="mb-3 text-lg font-semibold text-gray-900">Plan details</h2>
-        <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <Detail label="Price" value={price == null ? "Custom" : `${plan.currency || "NGN"} ${Number(price).toLocaleString()}`} />
-          <Detail label="Billing interval" value={String(plan.interval || "—").toLowerCase()} />
+        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Detail label="Monthly Price" value={monthlyPrice == null ? "Custom" : `${plan.currency || "NGN"} ${Number(monthlyPrice).toLocaleString()}`} />
+          <Detail label="Yearly Price" value={yearlyPrice == null ? "Custom" : `${plan.currency || "NGN"} ${Number(yearlyPrice).toLocaleString()}`} />
+          <Detail label="Quarterly Price" value={quaterlyPrice == null ? "Custom" : `${plan.currency || "NGN"} ${Number(quaterlyPrice).toLocaleString()}`} />
           <Detail label="Currency" value={plan.currency || "NGN"} />
+          <Detail label="Sort order" value={plan.sortOrder ?? 0} />  
+
           <Detail label="Maximum organizations" value={plan.maxOrganizations ?? 0} />
           <Detail label="Maximum properties" value={plan.maxProperties ?? 0} />
-          <Detail label="Sort order" value={plan.sortOrder ?? 0} />
-          <Detail label="Created" value={formatDate(plan.createdAt || plan.created_at)} />
-          <Detail label="Last updated" value={formatDate(plan.updatedAt || plan.updated_at)} />
-        </dl>
+          <Detail label="Maximum units" value={plan.maxUnits ?? 0} />
+          <Detail label="Maximum buildings" value={plan.maxBuildings ?? 0} />
+
+          </dl>
       </section>
 
       <section className="rounded-2xl border border-primary-100 bg-white p-5 md:p-6">

@@ -96,7 +96,7 @@ const Window = ({name, children}) => {
     if(name !== filterByName || !mounted) return null;
 
     return createPortal(
-        <div ref={ref} className="fixed z-[9999] bg-white w-max" style={style}>
+        <div ref={ref} className="fixed z-[9999] bg-card text-ink rounded-xl border border-line shadow-2xl overflow-hidden w-max" style={style}>
             {cloneElement(children, {onClose: close})}
         </div>,
         document.body

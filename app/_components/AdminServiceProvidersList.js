@@ -1,186 +1,138 @@
 "use client";
 
 import { useState } from "react";
-import { IoSearch } from "react-icons/io5";
-import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
-import { HiOutlinePlus } from "react-icons/hi";
-import UserOptionsMenu from "./UserOptionsMenu";
 import Image from "next/image";
-import Link from "next/link";
+import { IoSearch } from "react-icons/io5";
+import UserOptionsMenu from "./UserOptionsMenu";
+import DataTable from "./DataTable";
+
+const tableHeadings = [
+    { heading: "N/O" },
+    { heading: "Provider's Name" },
+    { heading: "Contact Info" },
+    { heading: "Service Type" },
+    { heading: "Location" },
+    { heading: "Completed Services", center: true },
+    { heading: "" },
+];
 
 export default function AdminServiceProvidersList({ providers = [] }) {
     const [searchTerm, setSearchTerm] = useState("");
 
     const filteredProviders = providers.filter(provider => {
         const searchStr = searchTerm.toLowerCase();
-        const name = `${provider.company_name || provider.name || provider.firstname || ""} ${provider.lastname || ""}`.toLowerCase();
+        const name = `${provider.company_name || ""} ${provider.name || ""} ${provider.firstname || ""} ${provider.lastname || ""}`.toLowerCase();
         return (
             name.includes(searchStr) ||
-            provider.email?.toLowerCase().includes(searchStr) ||
             provider.service_type?.toLowerCase().includes(searchStr) ||
-            provider.city?.toLowerCase().includes(searchStr)
+            provider.city?.toLowerCase().includes(searchStr) ||
+            provider.state?.toLowerCase().includes(searchStr) ||
+            provider.email?.toLowerCase().includes(searchStr)
         );
     });
 
-    return (
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-            {/* Top Bar */}
-            <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <p className="text-xl font-bold text-primary-900 font-mono">Service Providers List</p>
-                
-                <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
-                    {/* Search */}
-                    <div className="relative w-full md:w-[340px]">
-                        <input 
-                            type="text" 
-                            placeholder="Search provider, service type, email or location"
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+    const renderRow = (provider, index) => {
+        const name = provider.company_name || provider.name || `${provider.firstname || ""} ${provider.lastname || ""}`.trim() || "N/A";
+
+        return (
+            <tr key={provider._id || provider.id || index} className="border-b border-line hover:bg-soft transition-colors text-[13px] font-mono last:border-0">
+                <td className="p-4 font-bold text-ink">{index + 1}</td>
+                <td className="p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 relative shrink-0">
+                            <Image 
+                                src={provider.display_picture ? `https://app.xpacy.com/src/upload/display_img/${provider.display_picture}` : "/avatar.png"} 
+                                alt="provider" 
+                                className="object-cover rounded-full" 
+                                unoptimized 
+                                fill 
+                            />
+                        </div>
+                        <span className="font-semibold text-ink">{name}</span>
+                    </div>
+                </td>
+                <td className="p-4">
+                    <div className="flex flex-col">
+                        <span className="text-ink">{provider.phone || "N/A"}</span>
+                        <span className="text-mute text-xs">{provider.email || "N/A"}</span>
+                    </div>
+                </td>
+                <td className="p-4 capitalize text-ink">{provider.service_type || provider.specialization || "N/A"}</td>
+                <td className="p-4">
+                    <div className="flex flex-col">
+                        <span className="text-ink">{provider.city || "N/A"}</span>
+                        <span className="text-mute text-xs">{provider.state || ""}</span>
+                    </div>
+                </td>
+                <td className="p-4 text-center font-bold text-ink">
+                    {provider.completed_services || 0}
+                </td>
+                <td className="p-4 text-right relative">
+                    <UserOptionsMenu id={provider._id || provider.id} role={provider?.user_role || "provider"} />
+                </td>
+            </tr>
+        );
+    };
+
+    const renderMobileCard = (provider, index) => {
+        const name = provider.company_name || provider.name || `${provider.firstname || ""} ${provider.lastname || ""}`.trim() || "N/A";
+
+        return (
+            <article key={provider._id || provider.id || index} className="rounded-xl border border-line bg-card p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-soft">
+                        <Image
+                            src={provider.display_picture ? `https://app.xpacy.com/src/upload/display_img/${provider.display_picture}` : "/avatar.png"}
+                            alt=""
+                            className="object-cover"
+                            unoptimized
+                            fill
                         />
-                        <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                     </div>
-
-                    {/* Sort By */}
-                    <div className="flex items-center gap-2 font-mono text-sm text-gray-500 whitespace-nowrap">
-                        <span>Sort by:</span>
-                        <select className="border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none">
-                            <option>Default</option>
-                            <option>Highest Rated</option>
-                            <option>Most Completed</option>
-                        </select>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                            <p className="break-words font-semibold text-ink">{name}</p>
+                            <UserOptionsMenu id={provider._id || provider.id} role={provider?.user_role || "provider"} />
+                        </div>
+                        <p className="mt-1 break-all text-xs text-mute">{provider.email || "No email"}</p>
                     </div>
-
-                    {/* Filter Icon */}
-                    <button className="p-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors">
-                        <HiOutlineAdjustmentsHorizontal className="text-xl" />
-                    </button>
                 </div>
-            </div>
+                <dl className="mt-4 flex flex-col gap-y-3 border-t border-line pt-3 text-xs">
+                    <div className="flex justify-between"><dt className="text-mute">Phone</dt><dd className="break-words font-medium text-ink">{provider.phone || "N/A"}</dd></div>
+                    <div className="flex justify-between"><dt className="text-mute">Service type</dt><dd className="break-words font-medium capitalize text-ink">{provider.service_type || provider.specialization || "N/A"}</dd></div>
+                    <div className="flex justify-between"><dt className="text-mute">Location</dt><dd className="break-words font-medium text-ink">{[provider.city, provider.state].filter(Boolean).join(", ") || "N/A"}</dd></div>
+                    <div className="flex justify-between"><dt className="text-mute">Completed services</dt><dd className="font-semibold text-ink">{provider.completed_services || 0}</dd></div>
+                </dl>
+            </article>
+        );
+    };
 
-            {/* Mobile cards */}
-            <div className="grid gap-3 px-4 pb-4 lg:hidden">
-                {filteredProviders.length > 0 ? filteredProviders.map((provider, index) => {
-                    const name = `${provider.company_name || provider.name || provider.firstname || "N/A"} ${provider.lastname || ""}`.trim();
-                    return (
-                        <article key={provider._id || index} className="rounded-xl border border-primary-100 bg-white p-4 shadow-sm">
-                            <div className="flex items-start gap-3">
-                                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-100">
-                                    <Image
-                                        src={provider.display_picture ? `https://app.xpacy.com/src/upload/display_img/${provider.display_picture}` : "/avatar.png"}
-                                        alt=""
-                                        className="object-cover"
-                                        unoptimized
-                                        fill
-                                    />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <p className="break-words font-semibold text-gray-900">{name}</p>
-                                        <UserOptionsMenu id={provider._id || provider.id} role={provider?.user_role || "provider"} />
-                                    </div>
-                                    <p className="mt-1 break-all text-xs text-gray-500">{provider.email || "No email"}</p>
-                                </div>
-                            </div>
-                            <dl className="mt-4 flex flex-col gap-y-3 border-t border-gray-100 pt-3 text-xs">
-                                <div className="flex justify-between"><dt className="text-gray-500">Phone</dt><dd className="mt-1 break-words font-medium text-gray-900">{provider.phone || "N/A"}</dd></div>
-                                <div className="flex justify-between"><dt className="text-gray-500">Service type</dt><dd className="mt-1 break-words font-medium capitalize text-gray-900">{provider.service_type || provider.specialization || "N/A"}</dd></div>
-                                <div className="flex justify-between"><dt className="text-gray-500">Location</dt><dd className="mt-1 break-words font-medium text-gray-900">{[provider.city, provider.state].filter(Boolean).join(", ") || "N/A"}</dd></div>
-                                <div className="flex justify-between"><dt className="text-gray-500">Completed services</dt><dd className="mt-1 font-semibold text-gray-900">{provider.completed_services || 0}</dd></div>
-                            </dl>
-                        </article>
-                    );
-                }) : <p className="rounded-xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500">No service providers found matching your search.</p>}
-            </div>
+    const headerSearch = (
+        <div className="relative w-full md:w-[320px]">
+            <input 
+                type="text" 
+                placeholder="Search provider, type or city"
+                className="w-full pl-9 pr-4 py-2 bg-card border border-line rounded-lg text-sm text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all placeholder:text-mute"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-mute text-base" />
+        </div>
+    );
 
-            {/* Desktop table */}
-            <div className="hidden overflow-x-auto lg:block">
-                <table className="w-full text-left border-separate border-spacing-0">
-                    <thead>
-                        <tr className="text-gray-400 font-mono text-[10px] uppercase tracking-wider border-b border-gray-50">
-                            <th className="px-6 py-4 font-bold">N/O</th>
-                            <th className="px-6 py-4 font-bold">Provider's Name</th>
-                            <th className="px-6 py-4 font-bold">Contact Info</th>
-                            <th className="px-6 py-4 font-bold">Service Type</th>
-                            <th className="px-6 py-4 font-bold">Location</th>
-                            <th className="px-6 py-4 font-bold text-center">Completed Services</th>
-                            <th className="px-6 py-4 font-bold text-right"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="font-mono text-[13px]">
-                        {filteredProviders.length > 0 ? (
-                            filteredProviders.map((provider, index) => (
-                                <tr key={provider._id || index} className="group hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-6 py-6 border-t border-gray-50 font-bold">{index + 1}</td>
-                                    <td className="px-6 py-6 border-t border-gray-50">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 relative shrink-0">
-                                                <Image 
-                                                    src={provider.display_picture ? `https://app.xpacy.com/src/upload/display_img/${provider.display_picture}` : "/avatar.png"} 
-                                                    alt="provider" 
-                                                    className="object-cover rounded-full" 
-                                                    unoptimized 
-                                                    fill 
-                                                />
-                                            </div>
-                                            <span className="font-semibold">{provider.company_name || provider.name || provider.firstname || "N/A"} {provider.lastname || ""}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-6 border-t border-gray-50">
-                                        <div className="flex flex-col">
-                                            <span>{provider.phone || "N/A"}</span>
-                                            <span className="text-gray-400 text-[11px]">{provider.email || "N/A"}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-6 border-t border-gray-50 capitalize">{provider.service_type || provider.specialization || "N/A"}</td>
-                                    <td className="px-6 py-6 border-t border-gray-50">
-                                        <div className="flex flex-col">
-                                            <span>{provider.city || "N/A"}</span>
-                                            <span className="text-gray-400 text-[11px]">{provider.state || ""}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-6 border-t border-gray-50 text-center font-bold">
-                                        {provider.completed_services || 0}
-                                    </td>
-                                    <td className="px-6 py-6 border-t border-gray-50 text-right relative">
-                                        <UserOptionsMenu id={provider._id || provider.id} role={provider?.user_role || "provider"} /> 
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="7" className="px-6 py-20 text-center text-gray-400">
-                                    No service providers found matching your search.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="p-6 border-t border-gray-50 flex flex-col gap-8">
-                <Link 
-                    href="/admin/add-new-provider"
-                    className="flex items-center gap-2 text-primary-900 font-bold font-mono text-sm hover:text-primary transition-colors"
-                >
-                    <HiOutlinePlus className="text-lg" />
-                    <span>Add New Provider</span>
-                </Link>
-
-                {/* Pagination */}
-                <div className="flex items-center justify-center gap-2 font-mono text-sm">
-                    <button className="text-gray-400 hover:text-primary-900">&lt; Previous</button>
-                    <div className="flex items-center gap-1">
-                        <button className="w-8 h-8 rounded bg-primary-50 text-primary-900 font-bold">1</button>
-                        <button className="w-8 h-8 rounded hover:bg-gray-100">2</button>
-                        <button className="w-8 h-8 rounded hover:bg-gray-100">3</button>
-                        <span className="mx-1">...</span>
-                        <button className="w-8 h-8 rounded hover:bg-gray-100">7</button>
-                    </div>
-                    <button className="text-gray-400 hover:text-primary-900">Next &gt;</button>
-                </div>
-            </div>
+    return (
+        <div className="rounded-2xl border border-line bg-card p-5 sm:p-6 shadow-sm overflow-hidden">
+            <DataTable
+                title="Service Providers"
+                headers={tableHeadings}
+                data={filteredProviders}
+                renderRow={renderRow}
+                renderMobileCard={renderMobileCard}
+                headerActions={headerSearch}
+                emptyMessage="No service providers found matching your search."
+                showPagination={false}
+                className="p-0 border-none shadow-none"
+            />
         </div>
     );
 }

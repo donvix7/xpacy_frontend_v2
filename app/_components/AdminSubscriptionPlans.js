@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import EmptyState from "@/app/_components/EmptyState";
+import DataTable from "@/app/_components/DataTable";
 import { saveSubscriptionPlan } from "@/app/_lib/action";
 
 function getPlanId(plan) {
@@ -142,39 +143,135 @@ export default function AdminSubscriptionPlans({ plans = [] }) {
       )}
 
       {plans.length === 0 ? (
-        <div className="rounded-2xl border border-primary-100 bg-white py-8"><EmptyState message="No subscription plans have been created yet." /></div>
-      ) : (
-        <div className="overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-primary-50 text-xs uppercase tracking-wide text-primary-900">
-                <tr><th className="px-5 py-4">Plan</th><th className="px-5 py-4">Price</th><th className="px-5 py-4">Interval</th><th className="px-5 py-4">Limits</th><th className="px-5 py-4">Status</th><th className="px-5 py-4 text-right">Action</th></tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {plans.map((plan, index) => {
-                  const currency = plan.currency || "NGN";
-                  const price = plan.price ?? plan.monthly ?? plan.priceMonthly;
-                  const active = plan.isActive !== false && String(plan.status || "").toUpperCase() !== "INACTIVE";
-                  return (
-                    <tr key={getPlanId(plan) || `${plan.name || plan.title}-${index}`} className="text-gray-700">
-                      <td className="px-5 py-4"><p className="font-semibold text-gray-900">{plan.name || plan.title || "Untitled plan"}</p><p className="mt-1 max-w-xs truncate text-xs text-gray-500">{plan.slug || plan.description || plan.tagline || "No description"}</p></td>
-                      <td className="px-5 py-4">{price == null ? "Custom" : `${currency} ${Number(price).toLocaleString()}`}</td>
-                      <td className="px-5 py-4">{String(plan.interval || "MONTHLY").toLowerCase()}</td>
-                      <td className="px-5 py-4 text-xs">{plan.maxOrganizations ?? 0} orgs · {plan.maxProperties ?? 0} properties</td>
-                      <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>{active ? "Active" : "Inactive"}</span></td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Link href={`/dashboard/admin/subscriptions/${getPlanId(plan)}`} className="rounded-lg border border-gray-200 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50">View</Link>
-                          <button type="button" onClick={() => openEdit(plan)} className="rounded-lg border border-primary-200 px-4 py-2 font-semibold text-primary hover:bg-primary-50">Edit</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        <div className="rounded-2xl border border-line bg-card py-8">
+          <EmptyState message="No subscription plans have been created yet." />
         </div>
+      ) : (
+        <DataTable
+          headers={[
+            { heading: "Plan" },
+            { heading: "Price" },
+            { heading: "Interval" },
+            { heading: "Limits" },
+            { heading: "Status" },
+            { heading: "Action", center: true },
+          ]}
+          data={plans}
+          showPagination={false}
+          renderRow={(plan, index) => {
+            const currency = plan.currency || "NGN";
+            const price = plan.price ?? plan.monthly ?? plan.priceMonthly;
+            const active =
+              plan.isActive !== false &&
+              String(plan.status || "").toUpperCase() !== "INACTIVE";
+            return (
+              <tr
+                key={getPlanId(plan) || `${plan.name || plan.title}-${index}`}
+                className="border-b border-line hover:bg-soft transition-colors text-sm last:border-0"
+              >
+                <td className="p-4">
+                  <p className="font-semibold text-ink">
+                    {plan.name || plan.title || "Untitled plan"}
+                  </p>
+                  <p className="mt-1 max-w-xs truncate text-xs text-mute">
+                    {plan.slug || plan.description || plan.tagline || "No description"}
+                  </p>
+                </td>
+                <td className="p-4 text-ink">
+                  {price == null ? "Custom" : `${currency} ${Number(price).toLocaleString()}`}
+                </td>
+                <td className="p-4 text-mute">
+                  {String(plan.interval || "MONTHLY").toLowerCase()}
+                </td>
+                <td className="p-4 text-xs text-mute">
+                  {plan.maxOrganizations ?? 0} orgs · {plan.maxProperties ?? 0} properties
+                </td>
+                <td className="p-4">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      active
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "bg-soft text-mute"
+                    }`}
+                  >
+                    {active ? "Active" : "Inactive"}
+                  </span>
+                </td>
+                <td className="p-4 text-right">
+                  <div className="flex justify-end gap-2">
+                    <Link
+                      href={`/dashboard/admin/subscriptions/${getPlanId(plan)}`}
+                      className="xp-btn px-3 py-1.5 text-xs font-mono"
+                    >
+                      View
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => openEdit(plan)}
+                      className="xp-btn xp-btn-fill px-3 py-1.5 text-xs font-mono"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          }}
+          renderMobileCard={(plan, index) => {
+            const currency = plan.currency || "NGN";
+            const price = plan.price ?? plan.monthly ?? plan.priceMonthly;
+            const active =
+              plan.isActive !== false &&
+              String(plan.status || "").toUpperCase() !== "INACTIVE";
+            return (
+              <article
+                key={getPlanId(plan) || `${plan.name || plan.title}-${index}`}
+                className="rounded-xl border border-line bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink">
+                      {plan.name || plan.title || "Untitled plan"}
+                    </p>
+                    <p className="text-xs text-mute">
+                      {plan.slug || plan.description || "No description"}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      active
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "bg-soft text-mute"
+                    }`}
+                  >
+                    {active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-xs">
+                  <span className="font-bold text-ink">
+                    {price == null ? "Custom" : `${currency} ${Number(price).toLocaleString()}`}
+                  </span>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/dashboard/admin/subscriptions/${getPlanId(plan)}`}
+                      className="xp-btn px-2.5 py-1 text-xs"
+                    >
+                      View
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => openEdit(plan)}
+                      className="xp-btn xp-btn-fill px-2.5 py-1 text-xs"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              </article>
+            );
+          }}
+          className="p-0 border-none shadow-none"
+        />
       )}
     </div>
   );

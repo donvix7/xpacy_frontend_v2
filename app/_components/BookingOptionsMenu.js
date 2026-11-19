@@ -1,13 +1,50 @@
-"use client"
-import { VscNote } from "react-icons/vsc"
-import { CiEdit } from "react-icons/ci"
-import { RiDeleteBin6Line } from "react-icons/ri"
-import { MdOutlineReceipt } from "react-icons/md"
-import TableItemOptionsMenu from "./TableItemOptionsMenu";
+"use client";
+
 import { useTransition } from "react";
-import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import SpinnerMini from "./SpinnerMini";
+import { VscNote } from "react-icons/vsc";
+import { CiEdit } from "react-icons/ci";
+import { RiDeleteBin6Line } from "react-icons/ri";
+import { MdOutlineReceipt } from "react-icons/md";
+import TableItemOptionsMenu from "./TableItemOptionsMenu";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import toast from "react-hot-toast";
+
+const DeleteBookingModal = ({ bookingId, onClose }) => {
+    const [isPending, startTransition] = useTransition();
+    const router = useRouter();
+
+    const handleDelete = () => {
+        startTransition(async () => {
+            try {
+                // Booking deletion endpoint stub
+                const res = { success: false, message: "Booking deletion is restricted or not yet attached." };
+                if (res?.success) {
+                    toast.success(res?.message || "Booking deleted successfully");
+                    router.refresh();
+                    onClose?.();
+                } else {
+                    toast.error(res?.message || "Failed to delete booking");
+                }
+            } catch (err) {
+                toast.error(err.message || "An error occurred");
+            }
+        });
+    };
+
+    return (
+        <ConfirmDeleteModal
+            heading="Delete this booking?"
+            description="Are you sure you want to delete this booking record? This action cannot be undone."
+            confirmLabel="Delete booking"
+            cancelLabel="Cancel"
+            variant="danger"
+            onConfirm={handleDelete}
+            onClose={onClose}
+            isPending={isPending}
+        />
+    );
+};
 
 export default function BookingOptionsMenu({ id }) {
     const tableOptions = [
@@ -29,58 +66,11 @@ export default function BookingOptionsMenu({ id }) {
         {
             label: "Delete booking",
             icon: <RiDeleteBin6Line className="text-gray-400" />,
-            modal: <DeleteWindow bookingId={id} />
+            modal: <DeleteBookingModal bookingId={id} />
         },
     ];
 
     return (
         <TableItemOptionsMenu actions={tableOptions} menuId={`booking-menu-${id}`} />
     );
-}
-
-const DeleteWindow = ({ onClose, bookingId }) => {
-    const [isPending, startTransition] = useTransition();
-    const router = useRouter();
-
-    const handleDelete = () => {
-        startTransition(async () => {
-            try {
-                // UI stub since endpoint logic wasn't explicitly provided
-                // const res = await deleteBooking(bookingId);
-                const res = { success: false, message: "Endpoint not yet attached." };
-                
-                if (res?.success) {
-                    toast.success(res?.message || "Booking deleted successfully");
-                    router.refresh(); 
-                    onClose?.(); 
-                } else {
-                    toast.error(res?.message || "Failed to delete booking");
-                }
-            } catch (err) {
-                toast.error(err.message || "An error occurred");
-            }
-        });
-    };
-
-    return (
-        <div className="flex flex-col">
-            <p className="px-6 pt-6 font-mono text-error font-bold ">Are you sure you want to delete this booking?</p>
-            <div className="flex items-center justify-between p-6">
-                <button 
-                    disabled={isPending} 
-                    onClick={handleDelete} 
-                    className="px-4 py-2 bg-red-100 flex items-center gap-2 text-primary rounded-lg font-medium cursor-pointer disabled:opacity-50"
-                >
-                    {isPending ? <SpinnerMini /> : "Yes, delete"}
-                </button>
-                <button 
-                    disabled={isPending} 
-                    onClick={onClose} 
-                    className="px-4 py-2 bg-primary text-white rounded-lg font-medium cursor-pointer disabled:opacity-50"
-                >
-                    No, undo
-                </button>
-            </div>
-        </div>
-    )
 }

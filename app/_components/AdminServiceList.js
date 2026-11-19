@@ -2,11 +2,22 @@
 
 import { useState } from "react";
 import { IoSearch } from "react-icons/io5";
-import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import StatusChips from "./StatusChips";
 import ServiceOptionsMenu from "./ServiceOptionsMenu";
 import EmptyState from "./EmptyState";
+import DataTable from "./DataTable";
 import { format } from "date-fns";
+
+const tableHeadings = [
+    { heading: "N/O" },
+    { heading: "Service Type" },
+    { heading: "Property Address" },
+    { heading: "Tenant/Owner" },
+    { heading: "Date/Time" },
+    { heading: "Status", center: true },
+    { heading: "Assigned Provider" },
+    { heading: "" },
+];
 
 export default function AdminServiceList({ services = [], embedded = false }) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -22,141 +33,92 @@ export default function AdminServiceList({ services = [], embedded = false }) {
         );
     });
 
-    if (!services || services.length <= 0) return <EmptyState message={"Oops!... You have no booked services yet."} cta={"Book A Service"} />;
+    if (!services || services.length <= 0) {
+        return <EmptyState message={"Oops!... You have no booked services yet."} cta={"Book A Service"} />;
+    }
+
+    const renderRow = (service, index) => {
+        const dateStr = service.scheduled_date ? format(new Date(service.scheduled_date), "dd/MM/yy") : "N/A";
+        const timeStr = service.scheduled_time || "N/A";
+        const provider = service.serviceProvider || service.assigned_provider;
+        const tenantName = [service.user?.firstname, service.user?.lastname].filter(Boolean).join(" ") || "N/A";
+
+        return (
+            <tr key={service._id || service.id || index} className="border-b border-line hover:bg-soft transition-colors text-[13px] font-mono last:border-0">
+                <td className="p-4 font-bold text-ink">{index + 1}</td>
+                <td className="p-4 font-semibold text-ink">{service.service_type || "N/A"}</td>
+                <td className="p-4 text-mute max-w-[200px] truncate">{service.address || "N/A"}</td>
+                <td className="p-4 text-ink">{tenantName}</td>
+                <td className="p-4">
+                    <div className="flex flex-col">
+                        <span className="text-ink">{dateStr}</span>
+                        <span className="text-mute text-xs">{timeStr}</span>
+                    </div>
+                </td>
+                <td className="p-4 text-center">
+                    <div className="flex justify-center">
+                        <StatusChips status={service.service_status || "Pending"} />
+                    </div>
+                </td>
+                <td className="p-4 text-ink">{provider || "Unassigned"}</td>
+                <td className="p-4 text-right relative">
+                    <ServiceOptionsMenu id={service._id || service.id} hasProvider={!!provider} />
+                </td>
+            </tr>
+        );
+    };
+
+    const renderMobileCard = (service, index) => {
+        const dateStr = service.scheduled_date ? format(new Date(service.scheduled_date), "dd/MM/yy") : "N/A";
+        const timeStr = service.scheduled_time || "N/A";
+        const provider = service.serviceProvider || service.assigned_provider;
+        const tenantName = [service.user?.firstname, service.user?.lastname].filter(Boolean).join(" ") || "N/A";
+
+        return (
+            <article key={service._id || service.id || index} className="rounded-xl border border-line bg-card p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="truncate font-semibold text-ink">{service.service_type || "Service request"}</p>
+                        <p className="mt-1 break-words text-xs text-mute">{service.address || "Address unavailable"}</p>
+                    </div>
+                    <ServiceOptionsMenu id={service._id || service.id} hasProvider={!!provider} />
+                </div>
+                <dl className="mt-4 flex flex-col gap-y-3 border-t border-line pt-3 text-xs">
+                    <div className="flex justify-between"><dt className="text-mute">Tenant / Owner</dt><dd className="break-words font-medium text-ink">{tenantName}</dd></div>
+                    <div className="flex justify-between"><dt className="text-mute">Date / Time</dt><dd className="font-medium text-ink">{dateStr} · {timeStr}</dd></div>
+                    <div className="flex justify-between"><dt className="text-mute">Status</dt><dd><StatusChips status={service.service_status || "Pending"} /></dd></div>
+                    <div className="flex justify-between"><dt className="text-mute">Assigned provider</dt><dd className="break-words font-medium text-ink">{provider || "Unassigned"}</dd></div>
+                </dl>
+            </article>
+        );
+    };
+
+    const headerSearch = (
+        <div className="relative w-full md:w-[320px]">
+            <input 
+                type="text" 
+                placeholder="Search property, type or name"
+                className="w-full pl-9 pr-4 py-2 bg-card border border-line rounded-lg text-sm text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all placeholder:text-mute"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-mute text-base" />
+        </div>
+    );
 
     return (
-        <div className={embedded ? "overflow-hidden" : "bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden"}>
-            {/* Top Bar */}
-            <div className={`${embedded ? "pb-4" : "p-6"} flex flex-col md:flex-row md:items-center justify-between gap-4`}>
-                {!embedded && <p className="text-xl font-bold text-primary-900 font-mono">Service Requests List</p>}
-                
-                <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4 md:ml-auto">
-                    {/* Search */}
-                    <div className="relative w-full md:w-[340px]">
-                        <input 
-                            type="text" 
-                            placeholder="Search property, type or name"
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-                    </div>
-
-                    {/* Sort By */}
-                    <div className="flex items-center gap-2 font-mono text-sm text-gray-500 whitespace-nowrap">
-                        <span>Sort by:</span>
-                        <select className="border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none">
-                            <option>Default</option>
-                            <option>Newest</option>
-                            <option>Oldest</option>
-                        </select>
-                    </div>
-
-                    {/* Filter Icon */}
-                    <button className="p-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors">
-                        <HiOutlineAdjustmentsHorizontal className="text-xl" />
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile cards */}
-            <div className="grid gap-3 px-4 pb-4 lg:hidden">
-                {filteredServices.length > 0 ? filteredServices.map((service, index) => {
-                    const dateStr = service.scheduled_date ? format(new Date(service.scheduled_date), "dd/MM/yy") : "N/A";
-                    const timeStr = service.scheduled_time || "N/A";
-                    const provider = service.serviceProvider || service.assigned_provider;
-                    const tenantName = [service.user?.firstname, service.user?.lastname].filter(Boolean).join(" ") || "N/A";
-
-                    return (
-                        <article key={service._id || index} className="rounded-xl border border-primary-100 bg-white p-4 shadow-sm">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <p className="truncate font-semibold text-gray-900">{service.service_type || "Service request"}</p>
-                                    <p className="mt-1 break-words text-xs text-gray-500">{service.address || "Address unavailable"}</p>
-                                </div>
-                                <ServiceOptionsMenu id={service._id || service.id} hasProvider={!!provider} />
-                            </div>
-                            <dl className="mt-4 flex flex-col gap-y-3 border-t border-gray-100 pt-3 text-xs">
-                                <div className="flex justify-between"><dt className="text-gray-500">Tenant / Owner</dt><dd className="mt-1 break-words font-medium text-gray-900">{tenantName}</dd></div>
-                                <div className="flex justify-between"><dt className="text-gray-500">Date / Time</dt><dd className="mt-1 font-medium text-gray-900">{dateStr} · {timeStr}</dd></div>
-                                <div className="flex justify-between"><dt className="text-gray-500">Status</dt><dd className="mt-1"><StatusChips status={service.service_status || "Pending"} /></dd></div>
-                                <div className="flex justify-between"><dt className="text-gray-500">Assigned provider</dt><dd className="mt-1 break-words font-medium text-gray-900">{provider || "Unassigned"}</dd></div>
-                            </dl>
-                        </article>
-                    );
-                }) : <p className="rounded-xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500">No service requests found matching your search.</p>}
-            </div>
-
-            {/* Desktop table */}
-            <div className="hidden overflow-x-auto lg:block">
-                <table className="w-full text-left border-separate border-spacing-0">
-                    <thead>
-                        <tr className="text-gray-400 font-mono text-[10px] uppercase tracking-wider border-b border-gray-50">
-                            <th className="px-6 py-4 font-bold">N/O</th>
-                            <th className="px-6 py-4 font-bold">Service Type</th>
-                            <th className="px-6 py-4 font-bold">Property Address</th>
-                            <th className="px-6 py-4 font-bold">Tenant/Owner</th>
-                            <th className="px-6 py-4 font-bold">Date/Time</th>
-                            <th className="px-6 py-4 font-bold text-center">Status</th>
-                            <th className="px-6 py-4 font-bold">Assigned Provider</th>
-                            <th className="px-6 py-4 font-bold text-right"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="font-mono text-[13px]">
-                        {filteredServices.length > 0 ? (
-                            filteredServices.map((service, index) => {
-                                const dateStr = service.scheduled_date ? format(new Date(service.scheduled_date), "dd/MM/yy") : "N/A";
-                                const timeStr = service.scheduled_time || "N/A";
-                                const provider = service.serviceProvider || service.assigned_provider;
-
-                                return (
-                                    <tr key={service._id || index} className="group hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-6 py-6 border-t border-gray-50 font-bold">{index + 1}</td>
-                                        <td className="px-6 py-6 border-t border-gray-50">{service.service_type || "N/A"}</td>
-                                        <td className="px-6 py-6 border-t border-gray-50 text-gray-600 max-w-[200px] truncate">{service.address || "N/A"}</td>
-                                        <td className="px-6 py-6 border-t border-gray-50">{service.user?.firstname} {service.user?.lastname}</td>
-                                        <td className="px-6 py-6 border-t border-gray-50">
-                                            <div className="flex flex-col">
-                                                <span>{dateStr}</span>
-                                                <span className="text-gray-400">{timeStr}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-6 border-t border-gray-50">
-                                            <div className="flex justify-center">
-                                                <StatusChips status={service.service_status || "Pending"} />
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-6 border-t border-gray-50">{provider || "Unassigned"}</td>
-                                        <td className="px-6 py-6 border-t border-gray-50 text-right relative">
-                                            <ServiceOptionsMenu id={service._id || service.id} hasProvider={!!provider} />
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        ) : (
-                            <tr>
-                                <td colSpan="8" className="px-6 py-20 text-center text-gray-400">
-                                    No service requests found matching your search.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Pagination */}
-            <div className="p-6 border-t border-gray-50 flex items-center justify-center gap-2 font-mono text-sm">
-                <button className="text-gray-400 hover:text-primary-900">&lt; Previous</button>
-                <div className="flex items-center gap-1">
-                    <button className="w-8 h-8 rounded bg-primary-50 text-primary-900 font-bold">1</button>
-                    <button className="w-8 h-8 rounded hover:bg-gray-100">2</button>
-                    <button className="w-8 h-8 rounded hover:bg-gray-100">3</button>
-                    <span className="mx-1">...</span>
-                    <button className="w-8 h-8 rounded hover:bg-gray-100">7</button>
-                </div>
-                <button className="text-gray-400 hover:text-primary-900">Next &gt;</button>
-            </div>
+        <div className={embedded ? "overflow-hidden" : "rounded-2xl border border-line bg-card p-5 sm:p-6 shadow-sm overflow-hidden"}>
+            <DataTable
+                title={embedded ? "" : "Service Requests List"}
+                headers={tableHeadings}
+                data={filteredServices}
+                renderRow={renderRow}
+                renderMobileCard={renderMobileCard}
+                headerActions={headerSearch}
+                emptyMessage="No service requests found matching your search."
+                showPagination={false}
+                className="p-0 border-none shadow-none"
+            />
         </div>
     );
 }

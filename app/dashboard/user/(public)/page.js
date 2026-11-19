@@ -23,10 +23,10 @@ export default async function Page() {
   const dataErrorMessages = getSettledErrorMessages(results);
 
   const bookingList = [];
-  const invoiceList = [];
+  const invoiceList = await getInvoiceList();
   const savedPropertiesRes = [];
-  const notifications = [];
-   const profile = null;
+  const notifications = await getUserNotifications();
+   const profile = await getUserProfile();
 
   const savedProperties = savedPropertiesRes?.data ?? [];
   const invoices = invoiceList ?? [];

@@ -26,20 +26,26 @@ export default function AdminOrganizationsList({ organizations = [] }) {
     const renderRow = (organization, index) => {
         const id = organizationId(organization);
         return (
-            <tr key={id || organization.name || index} className="border-b border-primary-100 text-sm text-neutrals-900 transition-colors last:border-0 hover:bg-gray-50">
+            <tr key={id || organization.name || index} className="border-b border-line text-sm text-ink transition-colors last:border-0 hover:bg-soft">
                 <td className="p-4">
                     <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary"><Building2 className="h-5 w-5" /></span>
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-soft text-ink">
+                            <Building2 className="h-5 w-5" />
+                        </span>
                         <div className="min-w-0">
-                            <p className="truncate font-semibold text-gray-900">{organization.name || "Unnamed organization"}</p>
-                            <p className="mt-0.5 truncate text-xs text-gray-500">{organization.slug || id || ""}</p>
+                            <p className="truncate font-semibold text-ink">{organization.name || "Unnamed organization"}</p>
+                            <p className="mt-0.5 truncate text-xs text-mute">{organization.slug || id || ""}</p>
                         </div>
                     </div>
                 </td>
-                <td className="p-4 text-gray-600">{location(organization)}</td>
-                <td className="p-4 text-gray-600">{organization.email || "—"}</td>
-                <td className="p-4 text-center text-gray-600">{memberCount(organization) ?? "—"}</td>
-                <td className="p-4 text-center"><Link className="font-semibold text-primary hover:underline" href={`/dashboard/admin/organizations/${id}`}>View</Link></td>
+                <td className="p-4 text-mute">{location(organization)}</td>
+                <td className="p-4 text-mute">{organization.email || "—"}</td>
+                <td className="p-4 text-center text-mute font-mono">{memberCount(organization) ?? "—"}</td>
+                <td className="p-4 text-center">
+                    <Link className="xp-btn px-3 py-1.5 text-xs font-mono" href={`/dashboard/admin/organizations/${id}`}>
+                        View
+                    </Link>
+                </td>
             </tr>
         );
     };
@@ -47,21 +53,25 @@ export default function AdminOrganizationsList({ organizations = [] }) {
     const renderMobileCard = (organization, index) => {
         const id = organizationId(organization);
         return (
-            <article key={id || organization.name || index} className="flex flex-col gap-4 rounded-xl border border-primary-100 bg-white p-4 shadow-sm">
+            <article key={id || organization.name || index} className="flex flex-col gap-4 rounded-xl border border-line bg-card p-4 shadow-sm">
                 <div className="flex items-start gap-3">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary"><Building2 className="h-6 w-6" /></span>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-soft text-ink">
+                        <Building2 className="h-5 w-5" />
+                    </span>
                     <div className="min-w-0 flex-1">
-                        <p className="break-words font-semibold text-gray-900">{organization.name || "Unnamed organization"}</p>
-                        <p className="mt-1 break-all text-xs text-gray-500">{organization.slug || id || ""}</p>
+                        <p className="break-words font-semibold text-ink">{organization.name || "Unnamed organization"}</p>
+                        <p className="mt-1 break-all text-xs text-mute">{organization.slug || id || ""}</p>
                     </div>
                 </div>
-                <dl className="flex flex-col gap-3 border-t border-gray-100 pt-3 text-sm">
-                    <div className="flex items-start justify-between gap-4"><dt className="shrink-0 text-gray-500">Location</dt><dd className="text-right text-gray-900">{location(organization)}</dd></div>
-                    <div className="flex items-start justify-between gap-4"><dt className="shrink-0 text-gray-500">Email</dt><dd className="break-all text-right text-gray-900">{organization.email || "—"}</dd></div>
-                    <div className="flex items-center justify-between gap-4"><dt className="text-gray-500">Members</dt><dd className="font-medium text-gray-900">{memberCount(organization) ?? "—"}</dd></div>
+                <dl className="flex flex-col gap-2.5 border-t border-line pt-3 text-xs">
+                    <div className="flex items-start justify-between gap-4"><dt className="shrink-0 text-mute">Location</dt><dd className="text-right text-ink">{location(organization)}</dd></div>
+                    <div className="flex items-start justify-between gap-4"><dt className="shrink-0 text-mute">Email</dt><dd className="break-all text-right text-ink">{organization.email || "—"}</dd></div>
+                    <div className="flex items-center justify-between gap-4"><dt className="text-mute">Members</dt><dd className="font-mono text-ink">{memberCount(organization) ?? "—"}</dd></div>
                 </dl>
-                <div className="flex justify-end border-t border-gray-100 pt-3">
-                    <Link className="text-sm font-semibold text-primary hover:underline" href={`/dashboard/admin/organizations/${id}`}>View organization</Link>
+                <div className="flex justify-end border-t border-line pt-3">
+                    <Link className="xp-btn px-3 py-1.5 text-xs font-mono" href={`/dashboard/admin/organizations/${id}`}>
+                        View organization
+                    </Link>
                 </div>
             </article>
         );
@@ -75,6 +85,7 @@ export default function AdminOrganizationsList({ organizations = [] }) {
             renderMobileCard={renderMobileCard}
             emptyMessage="No organizations found."
             showPagination={false}
+            className="p-0 border-none shadow-none"
         />
     );
 }
