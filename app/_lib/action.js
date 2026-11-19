@@ -2990,7 +2990,6 @@ export async function refreshVirtualAccount(id){
 
 
 export async function expireVirtualAccount( accountId ) {
-  console.log(accountId)
    const cookieStore = await cookies();
   const token = cookieStore.get("token");
   const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${accountId}`,
@@ -3001,6 +3000,22 @@ export async function expireVirtualAccount( accountId ) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({})
+  });
+  console.log(response)
+  return response.json(); 
+}
+
+export async function manageSubscription(payload) {
+   const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${accountId}`,
+  {
+  method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({payload})
   });
   console.log(response)
   return response.json(); 

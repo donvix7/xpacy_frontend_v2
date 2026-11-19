@@ -1,29 +1,39 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { getAdminProperties, getAdminServices, getPropertyOwner, getAllAdmin, getAllUsers, getAdminBooking, getUserNotifications, getAdminProfile, getAllInvoices } from "@/app/_lib/data-services";
-import { getOrganizationIdFromProperty } from "@/app/_lib/data-services";
+import {
+    getUserNotifications,
+    getUserProfile,
+    getAllAdminOrganization,
+    getAllUsers,
+    getAccountSubscriptions,
+    getOrganizationIdFromProperty,
+    getSubscriptionPlans,
+} from "@/app/_lib/data-services";
 import SummaryCards from "@/app/_components/SummaryCards";
 import OverviewPanel from "@/app/_components/OverviewPanel";
 import HeroBand from "@/app/_components/HeroBand";
 import AdminPropertyList from "@/app/_components/AdminPropertyList";
-import AdminServiceList from "@/app/_components/AdminServiceList";
-import AdminBookingList from "@/app/_components/AdminBookingList";
 import AdminNotificationList from "@/app/_components/AdminNotificationList";
 import {
     ArrowUpRight,
+    Banknote,
     BellRing,
     Building2,
-    CalendarClock,
     CircleAlert,
+    CreditCard,
+    Layers,
     Plus,
-    ReceiptText,
+    UserCircle2,
+    Users,
     Wrench,
+    Package,
+    CheckCircle2,
 } from "lucide-react";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
-const sumAmount = (invoices) => invoices.reduce((sum, invoice) => sum + (parseFloat(invoice?.amount) || 0), 0);
-
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
 function ViewAll({ href, label = "View all" }) {
     return (
         <Link
@@ -36,65 +46,158 @@ function ViewAll({ href, label = "View all" }) {
     );
 }
 
-export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
+function formatPrice(amount, currency = "NGN") {
+    const n = Number(amount);
+    if (!Number.isFinite(n)) return "—";
+    try {
+        return new Intl.NumberFormat("en-NG", {
+            style: "currency",
+            currency,
+            minimumFractionDigits: 0,
+        }).format(n);
+    } catch {
+        return `${currency} ${n.toLocaleString()}`;
+    }
+}
 
+function formatDate(v) {
+    if (!v) return "—";
+    try {
+        return new Date(v).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+        });
+    } catch {
+        return String(v);
+    }
+}
+
+function daysLeft(endDate) {
+    if (!endDate) return null;
+    const ms = new Date(endDate).getTime() - Date.now();
+    if (Number.isNaN(ms)) return null;
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+}
+
+function unwrapPlans(result) {
+    if (!result) return [];
+    if (Array.isArray(result)) return result;
+    if (Array.isArray(result?.plans)) return result.plans;
+    if (Array.isArray(result?.data?.plans)) return result.data.plans;
+    if (Array.isArray(result?.data)) return result.data;
+    return [];
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page                                                                       */
+/* -------------------------------------------------------------------------- */
+export default async function Page() {
     const results = await Promise.allSettled([
-        getAdminProfile(token),
-        getAdminProperties(token),
-        getAdminServices(token),
-        getPropertyOwner(token),
-        getAllAdmin(token),
-        getAllUsers(token),
-        getAdminBooking(token),
-        getAllInvoices(token),
-        getUserNotifications(token),
+        getUserProfile(),
+        getAllAdminOrganization(),
+        getAllUsers(),
+        getUserNotifications(),
+        getAccountSubscriptions(),
+        getSubscriptionPlans(),
     ]);
     const dataErrorMessages = getSettledErrorMessages(results);
 
     const profile = results[0].status === "fulfilled" ? results[0].value : null;
-    const propertiesData = results[1].status === "fulfilled" ? results[1].value : { properties: [], pagination: {} };
-    const services = results[2].status === "fulfilled" ? results[2].value : [];
-    const propertyOwners = results[3].status === "fulfilled" ? results[3].value : [];
-    const admins = results[4].status === "fulfilled" ? results[4].value : [];
-    const users = results[5].status === "fulfilled" ? results[5].value : [];
-    const bookings = results[6].status === "fulfilled" ? results[6].value : [];
-    const invoices = results[7].status === "fulfilled" ? results[7].value : [];
-    const notifications = results[8].status === "fulfilled" ? results[8].value : [];
+    const organizationsRaw =
+        results[1].status === "fulfilled" ? results[1].value : null;
+    const users = results[2].status === "fulfilled" ? results[2].value : [];
+    const notifications = results[3].status === "fulfilled" ? results[3].value : [];
+    const subscriptionsRaw =
+        results[4].status === "fulfilled" ? results[4].value : null;
 
-    const properties = (propertiesData?.properties || []).filter((property) => !getOrganizationIdFromProperty(property));
+    /* ---------- Plans catalog ---------- */
+    const subscriptionPlans =
+        results[5].status === "fulfilled" ? unwrapPlans(results[5].value) : [];
+    const totalPlans = subscriptionPlans.length;
+    const activePlans = subscriptionPlans.filter(
+        (p) =>
+            p?.isActive === true ||
+            p?.active === true ||
+            String(p?.status || "").toUpperCase() === "ACTIVE"
+    ).length;
+
+    /* ---------- Organizations ---------- */
+    const organizations = (() => {
+        if (!organizationsRaw) return [];
+        if (Array.isArray(organizationsRaw)) return organizationsRaw;
+        if (Array.isArray(organizationsRaw?.organizations))
+            return organizationsRaw.organizations;
+        if (Array.isArray(organizationsRaw?.data?.organizations))
+            return organizationsRaw.data.organizations;
+        if (Array.isArray(organizationsRaw?.data)) return organizationsRaw.data;
+        return [];
+    })();
+
+    const totalOrganizations = organizations.length;
+
+    /* ---------- Subscription / payments ---------- */
+    const subscription =
+        subscriptionsRaw?.subscription ??
+        subscriptionsRaw?.data?.subscription ??
+        subscriptionsRaw?.data ??
+        subscriptionsRaw ??
+        null;
+
+    const plan = subscription?.plan ?? null;
+    const limits = subscriptionsRaw?.limits ?? {};
+
+    const planPrices = plan
+        ? {
+              monthly: Number(plan.monthlyPrice) || 0,
+              quarterly: Number(plan.quarterlyPrice) || 0,
+              yearly: Number(plan.yearlyPrice) || 0,
+          }
+        : { monthly: 0, quarterly: 0, yearly: 0 };
+
+    const activeIntervalPrice = (() => {
+        if (!plan) return 0;
+        if (subscription?.interval === "MONTHLY") return planPrices.monthly;
+        if (subscription?.interval === "QUARTERLY") return planPrices.quarterly;
+        if (subscription?.interval === "YEARLY") return planPrices.yearly;
+        return planPrices.monthly;
+    })();
+
+    const remaining = daysLeft(subscription?.endDate);
+    const paymentCount = subscription?._count?.payments ?? 0;
+
+    /* ---------- Properties ---------- */
+    const properties = (organizationsRaw?.properties || []).filter(
+        (property) => !getOrganizationIdFromProperty(property)
+    );
     const totalProperties = properties.length;
+
+    /* ---------- Users ---------- */
     const allUsers = Array.isArray(users) ? users : [];
-    const allBookings = Array.isArray(bookings) ? bookings : [];
-    const allInvoices = Array.isArray(invoices) ? invoices : [];
-    const allServices = Array.isArray(services) ? services : [];
-    const allOwners = Array.isArray(propertyOwners) ? propertyOwners : [];
-    const allAdmins = Array.isArray(admins) ? admins : [];
     const allNotifications = Array.isArray(notifications) ? notifications : [];
-
-    const pendingServices = allServices.filter((service) => (service.status || "").toLowerCase() === "pending");
-    const totalRevenue = Math.round(sumAmount(allInvoices));
-
-    const invoiceStatus = (invoice) => String(invoice?.status || invoice?.payment_status || "").toLowerCase();
-    const paidInvoices = allInvoices.filter((invoice) => invoiceStatus(invoice) === "paid");
-    const unpaidInvoices = allInvoices.filter((invoice) => invoiceStatus(invoice) === "unpaid");
-    const incompleteInvoices = allInvoices.filter((invoice) => invoiceStatus(invoice) === "incomplete");
-    const cancelledInvoices = allInvoices.filter((invoice) => invoiceStatus(invoice) === "cancelled");
-    const openInvoices = [...unpaidInvoices, ...incompleteInvoices];
-    const openInvoiceValue = Math.round(sumAmount(openInvoices));
 
     const now = Date.now();
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
     const newUsers = allUsers.filter((user) => {
-        const created = new Date(user?.createdAt || user?.created_at || user?.date_joined);
-        return !Number.isNaN(created.getTime()) && now - created.getTime() <= thirtyDays;
+        const created = new Date(
+            user?.createdAt || user?.created_at || user?.date_joined
+        );
+        return (
+            !Number.isNaN(created.getTime()) &&
+            now - created.getTime() <= thirtyDays
+        );
     }).length;
-    const upcomingBookings = allBookings.filter((booking) => {
-        const start = new Date(booking?.start_date || booking?.createdAt);
-        return !Number.isNaN(start.getTime()) && start.getTime() >= now;
-    });
 
+    const admins = allUsers.filter((u) =>
+        ["admin", "superadmin", "super_admin"].includes(
+            String(u?.role || "").toLowerCase()
+        )
+    );
+    const owners = allUsers.filter(
+        (u) => String(u?.role || "").toLowerCase() === "owner"
+    );
+
+    /* ---------- Date ---------- */
     const today = new Intl.DateTimeFormat("en-US", {
         weekday: "long",
         month: "long",
@@ -104,64 +207,98 @@ export default async function Page() {
 
     const firstName = profile?.username?.split(" ")[0] || "Admin";
 
+    /* ---------- Summary cards ---------- */
     const summaryCards = [
         {
             label: "Total Properties",
             value: totalProperties,
+            icon: <Building2 className="h-5 w-5 text-blue-600" />,
+            iconBackground: "bg-blue-50",
             accent: "bg-blue-500",
-            meta: pendingServices.length
-                ? `${pendingServices.length} pending service request${pendingServices.length === 1 ? "" : "s"}`
-                : "All service requests handled",
+        },
+        {
+            label: "Organizations",
+            value: totalOrganizations,
+            icon: <Layers className="h-5 w-5 text-fuchsia-600" />,
+            iconBackground: "bg-fuchsia-50",
+            accent: "bg-fuchsia-500",
+            meta:
+                limits?.maxOrganizations != null
+                    ? `${limits.maxOrganizations} max on plan`
+                    : undefined,
         },
         {
             label: "Total Users",
             value: allUsers.length,
+            icon: <Users className="h-5 w-5 text-violet-600" />,
+            iconBackground: "bg-violet-50",
             accent: "bg-violet-500",
-            meta: `${allAdmins.length} admin${allAdmins.length === 1 ? "" : "s"} in the console`,
+            meta: `${admins.length} admin${admins.length === 1 ? "" : "s"}`,
         },
         {
             label: "Property Owners",
-            value: allOwners.length,
+            value: owners.length,
+            icon: <UserCircle2 className="h-5 w-5 text-sky-600" />,
+            iconBackground: "bg-sky-50",
             accent: "bg-sky-500",
-            meta: "Owner accounts on the platform",
         },
         {
-            label: "Total Bookings",
-            value: allBookings.length,
+            label: "Subscription Plans",
+            value: totalPlans,
+            icon: <Package className="h-5 w-5 text-amber-600" />,
+            iconBackground: "bg-amber-50",
             accent: "bg-amber-500",
-            meta: upcomingBookings.length
-                ? `${upcomingBookings.length} upcoming`
-                : "No upcoming check-ins",
+            meta: `${activePlans} active plan${activePlans === 1 ? "" : "s"}`,
         },
         {
             label: "Total Revenue",
-            value: `$${totalRevenue.toLocaleString()}`,
+            value: formatPrice(activeIntervalPrice, plan?.currency ?? "NGN"),
+            icon: <Banknote className="h-5 w-5 text-emerald-600" />,
+            iconBackground: "bg-emerald-50",
             accent: "bg-emerald-500",
-            meta: `$${openInvoiceValue.toLocaleString()} still outstanding`,
+            meta: `${paymentCount} payment${paymentCount === 1 ? "" : "s"} recorded`,
         },
     ];
 
+    /* ---------- Hero stats ---------- */
     const heroStats = [
-        { label: "Pending services", value: pendingServices.length, hint: "Awaiting action" },
-        { label: "Open invoices", value: openInvoices.length, hint: `$${openInvoiceValue.toLocaleString()} outstanding` },
-        { label: "New users", value: newUsers, hint: "Joined in 30 days" },
-        { label: "Notifications", value: allNotifications.length, hint: "Latest activity" },
+        {
+            label: "New users",
+            value: newUsers,
+            hint: "Joined in 30 days",
+        },
+        {
+            label: "Organizations",
+            value: totalOrganizations,
+            hint: "On the platform",
+        },
+        {
+            label: "Plans",
+            value: totalPlans,
+            hint: "Configured tiers",
+        },
+        {
+            label: "Notifications",
+            value: allNotifications.length,
+            hint: "Latest activity",
+        },
     ];
 
+    /* ---------- Attention items ---------- */
     const attentionItems = [
         {
-            label: "Service requests awaiting action",
-            value: pendingServices.length,
-            hint: "Assign providers or close tickets",
-            href: "/dashboard/admin/services",
-            dot: "bg-amber-500",
+            label: "Organizations",
+            value: totalOrganizations,
+            hint: "Registered on the platform",
+            href: "/dashboard/admin/organizations",
+            dot: "bg-fuchsia-500",
         },
         {
-            label: "Invoices still open",
-            value: openInvoices.length,
-            hint: `$${openInvoiceValue.toLocaleString()} outstanding`,
-            href: "/dashboard/admin/payments",
-            dot: "bg-rose-500",
+            label: "Active plans",
+            value: totalPlans,
+            hint: `${activePlans} active · ${totalPlans - activePlans} inactive`,
+            href: "/dashboard/admin/subscriptions",
+            dot: "bg-amber-500",
         },
         {
             label: "New user accounts",
@@ -179,35 +316,30 @@ export default async function Page() {
         },
     ];
 
-    const billingSegments = [
-        { label: "Paid", count: paidInvoices.length, color: "bg-emerald-500" },
-        { label: "Unpaid", count: unpaidInvoices.length, color: "bg-rose-500" },
-        { label: "Incomplete", count: incompleteInvoices.length, color: "bg-amber-500" },
-        { label: "Cancelled", count: cancelledInvoices.length, color: "bg-slate-400" },
-    ];
-    const invoiceCount = Math.max(allInvoices.length, 1);
-
-    const propertyList = properties.slice(0, 6);
-    const slicedServices = allServices.slice(0, 6);
+    /* ---------- Panel data ---------- */
+    const organizationList = organizations.slice(0, 6);
     const slicedNotifications = allNotifications.slice(0, 4);
-    const slicedBookings = allBookings.slice(0, 6);
+    const planList = subscriptionPlans.slice(0, 4);
 
     return (
-        <div className="p-2 flex flex-col gap-5">
-            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
+        <div className="flex flex-col gap-5 p-2">
+            {dataErrorMessages.length > 0 ? (
+                <DataErrorNotice messages={dataErrorMessages} />
+            ) : null}
+
             {/* Hero band */}
             <HeroBand
                 tagline={`Admin console · ${today}`}
                 title={`Welcome back, ${firstName}`}
-                description="Here is the pulse of the portfolio: approvals, service tickets and revenue health in one place."
+                description="Here is the pulse of the platform: organizations, users, plans, and revenue health in one place."
                 actions={
                     <>
                         <Link
-                            href="/dashboard/admin/services"
+                            href="/dashboard/admin/subscriptions"
                             className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
                         >
-                            <Wrench className="h-4 w-4" aria-hidden="true" />
-                            Manage services
+                            <Package className="h-4 w-4" aria-hidden="true" />
+                            Manage plans
                         </Link>
                         <Link
                             href="/admin/add-new-property"
@@ -225,18 +357,22 @@ export default async function Page() {
 
             {/* Sectional grid */}
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+                {/* Properties */}
                 <OverviewPanel
                     className="xl:col-span-8"
                     title="Property portfolio"
-                    subtitle={`${totalProperties} propert${totalProperties === 1 ? "y" : "ies"} under management`}
+                    subtitle={`${totalProperties} propert${
+                        totalProperties === 1 ? "y" : "ies"
+                    } under management`}
                     icon={<Building2 className="h-5 w-5" aria-hidden="true" />}
                     tone="slate"
                     action={<ViewAll href="/dashboard/admin/properties" />}
                     contentClassName="p-3 sm:p-4"
                 >
-                    <AdminPropertyList properties={propertyList} />
+                    <AdminPropertyList properties={properties.slice(0, 6)} />
                 </OverviewPanel>
 
+                {/* Needs attention */}
                 <OverviewPanel
                     className="xl:col-span-4"
                     title="Needs your attention"
@@ -251,92 +387,222 @@ export default async function Page() {
                                     href={item.href}
                                     className={`group flex items-center gap-3 py-3 transition-colors hover:text-side-active ${
                                         index === 0 ? "pt-0" : ""
-                                    } ${index === attentionItems.length - 1 ? "pb-0" : ""}`}
+                                    } ${
+                                        index === attentionItems.length - 1
+                                            ? "pb-0"
+                                            : ""
+                                    }`}
                                 >
-                                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${item.dot}`} aria-hidden="true" />
+                                    <span
+                                        className={`h-2.5 w-2.5 shrink-0 rounded-full ${item.dot}`}
+                                        aria-hidden="true"
+                                    />
                                     <span className="min-w-0 flex-1">
                                         <span className="flex items-baseline justify-between gap-2">
-                                            <span className="truncate text-[13.5px] font-medium text-ink group-hover:text-side-active">{item.label}</span>
-                                            <span className="text-[17px] font-semibold leading-none text-ink tabular-nums">{item.value}</span>
+                                            <span className="truncate text-[13.5px] font-medium text-ink group-hover:text-side-active">
+                                                {item.label}
+                                            </span>
+                                            <span className="text-[17px] font-semibold leading-none text-ink tabular-nums">
+                                                {item.value}
+                                            </span>
                                         </span>
-                                        <span className="mt-1 block truncate text-[12px] text-mute">{item.hint}</span>
+                                        <span className="mt-1 block truncate text-[12px] text-mute">
+                                            {item.hint}
+                                        </span>
                                     </span>
-                                    <ArrowUpRight className="h-4 w-4 shrink-0 text-mute transition-transform group-hover:-translate-y-0.5 group-hover:text-side-active" aria-hidden="true" />
+                                    <ArrowUpRight
+                                        className="h-4 w-4 shrink-0 text-mute transition-transform group-hover:-translate-y-0.5 group-hover:text-side-active"
+                                        aria-hidden="true"
+                                    />
                                 </Link>
                             </li>
                         ))}
                     </ul>
                 </OverviewPanel>
 
+                {/* Organizations */}
                 <OverviewPanel
-                    className="xl:col-span-8"
-                    title="Service requests"
-                    subtitle="Latest maintenance tickets across the portfolio"
-                    icon={<Wrench className="h-5 w-5" aria-hidden="true" />}
+                    className="xl:col-span-6"
+                    title="Organizations"
+                    subtitle={`${totalOrganizations} registered`}
+                    icon={<Layers className="h-5 w-5" aria-hidden="true" />}
                     tone="slate"
-                    action={<ViewAll href="/dashboard/admin/services" />}
+                    action={<ViewAll href="/dashboard/admin/organizations" />}
                     contentClassName="p-3 sm:p-4"
                 >
-                    <AdminServiceList services={slicedServices} embedded />
-                </OverviewPanel>
-
-                <OverviewPanel
-                    className="xl:col-span-4"
-                    title="Billing snapshot"
-                    subtitle="Invoice status across all accounts"
-                    icon={<ReceiptText className="h-5 w-5" aria-hidden="true" />}
-                    tone="slate"
-                    action={<ViewAll href="/dashboard/admin/payments" />}
-                >
-                    <div className="flex flex-col gap-5">
-                        <div>
-                            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-mute">Revenue recorded</p>
-                            <p className="mt-1 text-[30px] font-semibold leading-none tracking-[-1px] text-ink tabular-nums">
-                                ${totalRevenue.toLocaleString()}
-                            </p>
-                            <p className="mt-2 text-[12.5px] leading-snug text-mute">
-                                <span className="font-semibold text-ink">${openInvoiceValue.toLocaleString()}</span> outstanding across {openInvoices.length} open invoice{openInvoices.length === 1 ? "" : "s"}.
-                            </p>
+                    {organizationList.length === 0 ? (
+                        <div className="px-2 py-6 text-center text-[12.5px] text-mute">
+                            No organizations yet.
                         </div>
+                    ) : (
+                        <ul className="flex flex-col divide-y divide-line">
+                            {organizationList.map((org) => {
+                                const orgName =
+                                    org?.name ||
+                                    org?.organizationName ||
+                                    org?.title ||
+                                    "Untitled organization";
+                                const orgId = org?.id ?? org?._id ?? orgName;
+                                const owner =
+                                    org?.owner?.name ||
+                                    org?.ownerName ||
+                                    org?.owner?.email ||
+                                    org?.owner_email ||
+                                    null;
+                                const memberCount =
+                                    org?.memberCount ??
+                                    org?.membersCount ??
+                                    org?._count?.members ??
+                                    null;
 
-                        <div className="flex flex-col gap-3">
-                            {billingSegments.map((segment) => {
-                                const percent = Math.round((segment.count / invoiceCount) * 100);
                                 return (
-                                    <div key={segment.label} className="flex flex-col gap-1.5">
-                                        <div className="flex items-center justify-between gap-2 text-[12.5px]">
-                                            <span className="flex items-center gap-2 text-mute">
-                                                <span className={`h-2 w-2 rounded-sm ${segment.color}`} aria-hidden="true" />
-                                                {segment.label}
+                                    <li key={orgId}>
+                                        <Link
+                                            href={`/dashboard/admin/organizations/${orgId}`}
+                                            className="group flex items-center gap-3 py-3"
+                                        >
+                                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-fuchsia-50 text-[12px] font-semibold text-fuchsia-700 ring-1 ring-black/5">
+                                                {orgName
+                                                    .split(" ")
+                                                    .filter(Boolean)
+                                                    .slice(0, 2)
+                                                    .map((p) => p[0]?.toUpperCase())
+                                                    .join("")}
                                             </span>
-                                            <span className="font-medium text-ink tabular-nums">
-                                                {segment.count} · {percent}%
+                                            <span className="min-w-0 flex-1">
+                                                <span className="flex items-baseline justify-between gap-2">
+                                                    <span className="truncate text-[13.5px] font-medium text-ink group-hover:text-side-active">
+                                                        {orgName}
+                                                    </span>
+                                                    {memberCount != null && (
+                                                        <span className="shrink-0 text-[11px] font-semibold text-mute tabular-nums">
+                                                            {memberCount} member
+                                                            {memberCount === 1
+                                                                ? ""
+                                                                : "s"}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                {owner && (
+                                                    <span className="mt-0.5 block truncate text-[11.5px] text-mute">
+                                                        Owner · {owner}
+                                                    </span>
+                                                )}
                                             </span>
-                                        </div>
-                                        <div className="h-2 overflow-hidden rounded-full bg-soft">
-                                            <div className={`h-full rounded-full ${segment.color}`} style={{ width: `${percent}%` }} />
-                                        </div>
-                                    </div>
+                                            <ArrowUpRight
+                                                className="h-4 w-4 shrink-0 text-mute transition-transform group-hover:-translate-y-0.5 group-hover:text-side-active"
+                                                aria-hidden="true"
+                                            />
+                                        </Link>
+                                    </li>
                                 );
                             })}
-                        </div>
-                    </div>
+                        </ul>
+                    )}
                 </OverviewPanel>
 
+                {/* Plans catalog */}
                 <OverviewPanel
-                    className="xl:col-span-8"
-                    title="Recent bookings"
-                    subtitle="Newest reservations and their payment status"
-                    icon={<CalendarClock className="h-5 w-5" aria-hidden="true" />}
+                    className="xl:col-span-6"
+                    title="Subscription plans"
+                    subtitle={`${totalPlans} configured · ${activePlans} active`}
+                    icon={<Package className="h-5 w-5" aria-hidden="true" />}
                     tone="slate"
-                    action={<ViewAll href="/dashboard/admin/bookings" />}
-                    contentClassName="p-3 sm:p-4"
+                    action={
+                        <ViewAll
+                            href="/dashboard/admin/subscriptions"
+                            label="Manage"
+                        />
+                    }
                 >
-                    <AdminBookingList bookings={slicedBookings} />
+                    {planList.length === 0 ? (
+                        <div className="px-2 py-6 text-center text-[12.5px] text-mute">
+                            No plans configured yet.
+                        </div>
+                    ) : (
+                        <ul className="flex flex-col divide-y divide-line">
+                            {planList.map((p) => {
+                                const isActive =
+                                    p?.isActive === true ||
+                                    p?.active === true ||
+                                    String(p?.status || "").toUpperCase() ===
+                                        "ACTIVE";
+
+                                return (
+                                    <li
+                                        key={p?.id ?? p?.slug ?? p?.name}
+                                        className="py-3 first:pt-0 last:pb-0"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="truncate text-[13.5px] font-semibold text-ink">
+                                                        {p?.name ?? "Untitled plan"}
+                                                    </span>
+                                                    {isActive ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-emerald-700">
+                                                            <CheckCircle2
+                                                                className="h-2.5 w-2.5"
+                                                                aria-hidden="true"
+                                                            />
+                                                            Active
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-gray-600">
+                                                            Inactive
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="mt-0.5 truncate text-[11.5px] text-mute">
+                                                    {formatPrice(
+                                                        p?.monthlyPrice,
+                                                        p?.currency ?? "NGN"
+                                                    )}{" "}
+                                                    / mo ·{" "}
+                                                    {formatPrice(
+                                                        p?.yearlyPrice,
+                                                        p?.currency ?? "NGN"
+                                                    )}{" "}
+                                                    / yr
+                                                </p>
+                                            </div>
+                                            {p?.id && (
+                                                <Link
+                                                    href={`/dashboard/admin/subscriptions/${p.id}`}
+                                                    className="shrink-0 text-[11.5px] font-medium text-primary hover:underline"
+                                                >
+                                                    Edit
+                                                </Link>
+                                            )}
+                                        </div>
+
+                                        {p?.maxUnits != null && (
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[10.5px] font-semibold text-primary">
+                                                    {p.maxUnits} units
+                                                </span>
+                                                {p?.maxOrganizations != null && (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[10.5px] font-semibold text-primary">
+                                                        {p.maxOrganizations} orgs
+                                                    </span>
+                                                )}
+                                                {p?.maxProperties != null && (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[10.5px] font-semibold text-primary">
+                                                        {p.maxProperties} props
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
                 </OverviewPanel>
 
+                {/* Notifications */}
                 <OverviewPanel
-                    className="xl:col-span-4"
+                    className="xl:col-span-12"
                     title="Notifications"
                     subtitle="Latest platform activity"
                     icon={<BellRing className="h-5 w-5" aria-hidden="true" />}

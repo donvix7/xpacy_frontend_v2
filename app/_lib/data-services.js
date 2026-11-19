@@ -1938,6 +1938,28 @@ export async function getSubscriptionPlans(){
   }
 }
 
+export async function getAccountSubscriptions(){
+  const token = await getRawToken();
+  try {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/account/subscription
+`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionList");
+    const data  = await safeJson(response);
+    console.log(data,"data")
+    return data || null;
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionList");
+  }
+}
+
 export async function getActiveOrganizationRole() {
   try {
     const cookieStore = await cookies();
