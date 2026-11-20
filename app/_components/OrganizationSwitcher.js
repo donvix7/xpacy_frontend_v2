@@ -36,7 +36,6 @@ export default function OrganizationSwitcher({ organizations = [], activeOrganiz
 
     return (
         <label className="flex max-w-32 flex-col gap-1 text-xs font-medium text-gray-600 sm:max-w-48">
-            <span>Organization</span>
             <select
                 aria-label="Switch organization"
                 value={selectedOrganizationId}

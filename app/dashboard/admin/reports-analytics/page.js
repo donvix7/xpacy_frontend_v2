@@ -17,6 +17,7 @@ import {
   getPropertyOwner,
   getAllInvoices,
   getAdminBooking,
+  getSubscriptionPayments,
 } from "@/app/_lib/data-services";
 import { toReportArray } from "@/app/_lib/report-utils";
 import { cookies } from "next/headers";
@@ -24,7 +25,7 @@ import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const chartBox =
-  "bg-white p-3 sm:p-6 rounded-lg border border-primary-100 shadow-sm flex items-center justify-center min-h-[320px] min-w-0";
+  "bg-card text-ink p-3 sm:p-6 rounded-lg border border-line shadow-sm flex items-center justify-center min-h-[320px] min-w-0";
 
 const getStatus = (r) => String(r?.status || "").trim().toLowerCase();
 const parseAmount = (r) => {
@@ -37,13 +38,14 @@ export default async function Page() {
   const token = cookieStore.get("token");
 
   const results = await Promise.allSettled([
-    getAdminProperties(token, { limit: 10000 }),
+    getAdminProperties(),
     getAdminServices(token),
     getPropertyOwner(token),
     getAllAdmin(token),
     getAllUsers(token, 10000),
     getAllInvoices(undefined, token),
     getAdminBooking(token),
+    getSubscriptionPayments({ limit: 1000 }),
   ]);
   const dataErrorMessages = getSettledErrorMessages(results);
 
@@ -54,11 +56,14 @@ export default async function Page() {
   const users = results[4].status === "fulfilled" ? results[4].value : [];
   const invoices = results[5].status === "fulfilled" ? results[5].value : [];
   const bookingsData = results[6].status === "fulfilled" ? results[6].value : [];
+  const subscriptionPayments = results[7].status === "fulfilled" ? results[7].value : [];
 
   const properties = toReportArray(propertiesData);
   const services = toReportArray(servicesData);
   const bookings = toReportArray(bookingsData);
-  const payments = toReportArray(invoices);
+  const invoiceRecords = toReportArray(invoices);
+  const subscriptionRecords = toReportArray(subscriptionPayments);
+  const payments = [...invoiceRecords, ...subscriptionRecords];
   const userRecords = toReportArray(users);
   const ownerRecords = toReportArray(propertyOwners);
   const adminRecords = toReportArray(admins);
@@ -223,7 +228,7 @@ export default async function Page() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <DashboardGridItem title="Service Requests by Category (All Time)">
-            <div className="min-h-[400px] rounded-lg border border-primary-100 bg-white p-6 shadow-sm">
+            <div className="min-h-[400px] rounded-lg border border-line bg-card text-ink p-6 shadow-sm">
               <ServicesByTypeChart services={services} />
             </div>
           </DashboardGridItem>
@@ -237,13 +242,13 @@ export default async function Page() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <DashboardGridItem title="Service Request Growth (by Month)">
-            <div className="min-h-[350px] rounded-lg border border-primary-100 bg-white p-6 shadow-sm">
+            <div className="min-h-[350px] rounded-lg border border-line bg-card text-ink p-6 shadow-sm">
               <ServiceGrowthChart services={services} />
             </div>
           </DashboardGridItem>
 
           <DashboardGridItem title="Monthly Revenue Overview">
-            <div className="min-h-[350px] rounded-lg border border-primary-100 bg-white p-6 shadow-sm">
+            <div className="min-h-[350px] rounded-lg border border-line bg-card text-ink p-6 shadow-sm">
               <RevenueOverviewChart payments={payments} />
             </div>
           </DashboardGridItem>

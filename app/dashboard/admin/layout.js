@@ -6,7 +6,7 @@ import { Suspense } from "react";
 
 export default function Layout({ children }) {
     return (
-        <div className="grid h-dvh min-w-0 grid-cols-1 overflow-hidden bg-canvas lg:grid-cols-[265px_minmax(0,1fr)]">
+        <div className="xp-dashboard grid h-dvh min-w-0 grid-cols-1 overflow-hidden bg-canvas lg:grid-cols-[265px_minmax(0,1fr)]">
             {/* ---------- Sidebar (desktop only) ---------- */}
             <aside className="hidden h-full min-h-0 flex-col gap-6 overflow-y-auto bg-side px-4 py-7 lg:flex">
                 <SidebarLogo />

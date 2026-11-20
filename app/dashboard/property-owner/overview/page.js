@@ -4,7 +4,9 @@ import {
   getPropertyOwnerServices,
   getPropertyOwnerProfile,
   getUserNotifications,
-  getPropertyOwnerProperties,
+  getMyProperties,
+  getManagedProperties,
+  getMyRentedProperties,
   getPropertyOwnerInvoices,
 } from "@/app/_lib/data-services";
 import PropertiesOverviewWrapper from "@/app/_components/PropertiesOverviewWrapper";
@@ -28,33 +30,61 @@ export default async function Page() {
 
   const results = await Promise.allSettled([
     getPropertyOwnerProfile(token),
-    getPropertyOwnerProperties(token, { limit: 10000 }),
+    getMyProperties(),
+    getManagedProperties(),
+    getMyRentedProperties(),
     getPropertyOwnerServices(token),
     getPropertyOwnerBookings(token),
     getUserNotifications(token),
     getPropertyOwnerInvoices(token),
   ]);
-    const dataErrorMessages = getSettledErrorMessages(results);
+  const dataErrorMessages = getSettledErrorMessages(results);
+
+  const unwrap = (result) => {
+    if (result.status !== "fulfilled") return [];
+    const val = result.value;
+    if (Array.isArray(val)) return val;
+    if (Array.isArray(val?.data)) return val.data;
+    if (Array.isArray(val?.properties)) return val.properties;
+    return [];
+  };
 
   const profile = results[0].status === "fulfilled" ? results[0].value : null;
-  const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
-  const services = results[2].status === "fulfilled" ? results[2].value : [];
-  const bookings = results[3].status === "fulfilled" ? results[3].value : [];
-  const notifications = results[4].status === "fulfilled" ? results[4].value : [];
-  const invoices = results[5].status === "fulfilled" ? results[5].value : [];
+  const ownedProperties = unwrap(results[1]);
+  const managedProperties = unwrap(results[2]);
+  const rentedProperties = unwrap(results[3]);
+  const services = results[4].status === "fulfilled" ? results[4].value : [];
+  const bookings = results[5].status === "fulfilled" ? results[5].value : [];
+  const notifications = results[6].status === "fulfilled" ? results[6].value : [];
+  const invoices = results[7].status === "fulfilled" ? results[7].value : [];
 
-  const allProperties = Array.isArray(propertiesData?.[0])
-    ? propertiesData[0]
-    : Array.isArray(propertiesData)
-      ? propertiesData
-      : [];
-  const properties = allProperties.filter((p) => p.property_owner_id === profile?.id);
+  const counts = {
+    owned: ownedProperties.length,
+    managed: managedProperties.length,
+    rented: rentedProperties.length,
+  };
+
+  const totalPropertiesCount = counts.owned + counts.managed + counts.rented;
+
+  // Combine and deduplicate properties across owned, managed, and rented
+  const combined = [...ownedProperties, ...managedProperties, ...rentedProperties];
+  const seen = new Set();
+  const properties = combined.filter((p) => {
+    const id = p?.id || p?._id;
+    if (!id) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+
   const myServices = Array.isArray(services) ? services : [];
   const myBookings = Array.isArray(bookings) ? bookings : [];
   const myInvoices = Array.isArray(invoices) ? invoices : [];
 
-  const occupiedCount = properties.filter(
-    (p) => (p.availability_status || "").toLowerCase() === "occupied",
+  const occupiedCount = properties.filter((p) =>
+    ["occupied", "rented", "shortlet"].includes(
+      String(p.property_status || p.availability_status || "").toLowerCase(),
+    ),
   ).length;
   const occupancyRate =
     properties.length > 0 ? Math.round((occupiedCount / properties.length) * 100) : 0;
@@ -90,8 +120,8 @@ export default async function Page() {
   const heroStats = [
     {
       label: "Properties",
-      value: properties.length,
-      hint: "Managed listings",
+      value: totalPropertiesCount,
+      hint: `${counts.owned} owned · ${counts.managed} managed · ${counts.rented} rented`,
     },
     {
       label: "Occupancy",

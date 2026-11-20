@@ -1,11 +1,18 @@
 export function toReportArray(value) {
-    if (Array.isArray(value)) return value;
+    if (!value) return [];
+    if (Array.isArray(value)) {
+        if (value.length > 0 && Array.isArray(value[0])) {
+            return value[0];
+        }
+        return value;
+    }
     const candidates = [
         value?.data,
         value?.properties,
         value?.services,
         value?.bookings,
         value?.invoices,
+        value?.payments,
         value?.users,
         value?.results,
         value?.items,
@@ -13,6 +20,7 @@ export function toReportArray(value) {
         value?.data?.services,
         value?.data?.bookings,
         value?.data?.invoices,
+        value?.data?.payments,
         value?.data?.users,
         value?.data?.results,
         value?.data?.items,
@@ -21,20 +29,28 @@ export function toReportArray(value) {
         value?.data?.data?.services,
         value?.data?.data?.bookings,
         value?.data?.data?.invoices,
+        value?.data?.data?.payments,
         value?.data?.data?.users,
         value?.data?.data?.results,
         value?.data?.data?.items,
     ];
-    return candidates.find(Array.isArray) || [];
+    const match = candidates.find(Array.isArray);
+    if (match) {
+        if (match.length > 0 && Array.isArray(match[0])) {
+            return match[0];
+        }
+        return match;
+    }
+    return [];
 }
 
-export function getReportStatus(record, keys = ["status", "service_status", "payment_status", "invoice_status"]) {
+export function getReportStatus(record, keys = ["status", "service_status", "payment_status", "invoice_status", "booking_status"]) {
     const value = keys.map((key) => record?.[key]).find((candidate) => typeof candidate === "string" && candidate.trim());
     return (value || "Unspecified").trim().toLowerCase().replace(/[_\s]+/g, "-");
 }
 
 export function getReportAmount(record) {
-    const value = record?.balance_due ?? record?.remaining_amount ?? record?.amount_due ?? record?.total ?? record?.amount ?? record?.paid_amount ?? 0;
+    const value = record?.balance_due ?? record?.remaining_amount ?? record?.amount_due ?? record?.total ?? record?.amount ?? record?.paid_amount ?? record?.cost ?? 0;
     const amount = typeof value === "string" ? Number(value.replace(/[^\d.-]/g, "")) : Number(value);
     return Number.isFinite(amount) ? amount : 0;
 }
@@ -52,7 +68,7 @@ function parseReportAmount(value) {
     return Number.isFinite(amount) ? amount : 0;
 }
 
-export function getReportDate(record, keys = ["created_at", "createdAt", "date", "date_added", "scheduled_date", "start_date"]) {
+export function getReportDate(record, keys = ["created_at", "createdAt", "date", "date_added", "scheduled_date", "start_date", "booked_at", "booking_date", "paidAt", "paid_at"]) {
     const value = keys.map((key) => record?.[key]).find(Boolean);
     if (!value) return null;
     const date = value instanceof Date ? value : new Date(value);

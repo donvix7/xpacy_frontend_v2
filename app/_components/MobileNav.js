@@ -11,10 +11,10 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { getPublicNavigationLinks, isPublicNavigationLinkActive } from "@/app/_lib/public-navigation";
 
 
-export default function MobileNav({ children, isSidebar = false, role = "user", isOrganizationAdmin = false }) {
+export default function MobileNav({ children, isSidebar = false, role = "user", isOrganizationAdmin = false, isLoggedIn = false }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const links = getPublicNavigationLinks(searchParams.get("organizationId"));
+    const links = getPublicNavigationLinks(searchParams.get("organizationId"), isLoggedIn);
 
     return (
         <NavMenu>
@@ -41,28 +41,36 @@ export default function MobileNav({ children, isSidebar = false, role = "user", 
 
 const MobileNavBtns = ({ isOpen, open }) => {
     return (
-
         <>
             {isOpen ? (
-                <button onClick={open} aria-label="Close menu" className="-mr-2 grid h-10 w-10 place-items-center rounded-lg text-2xl lg:hidden"><IoCloseSharp /></button>
+                <button
+                    onClick={open}
+                    aria-label="Close menu"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-line bg-card text-ink transition-colors hover:bg-soft text-xl lg:hidden"
+                >
+                    <IoCloseSharp />
+                </button>
             ) : (
-                <button onClick={open} aria-label="Open menu" className="-mr-2 grid h-10 w-10 place-items-center rounded-lg text-2xl lg:hidden"><FaBarsStaggered /></button>
-            )
-            }
-            
+                <button
+                    onClick={open}
+                    aria-label="Open menu"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-line bg-card text-ink transition-colors hover:bg-soft text-xl lg:hidden"
+                >
+                    <FaBarsStaggered />
+                </button>
+            )}
         </>
-    )
-}
-
+    );
+};
 
 const MainAppWindow = ({ children, pathname, links }) => {
     return (
-        <ul className="border border-primary-200 rounded-lg font-mono lg:hidden">
+        <ul className="divide-y divide-line rounded-xl border border-line bg-card font-mono text-ink shadow-sm overflow-hidden lg:hidden">
             {links.map(({ label, href }) => {
                 const active = isPublicNavigationLinkActive(pathname, href);
                 return (
-                    <li key={href} className={`border-b border-primary-100 ${active ? "font-semibold text-primary" : "text-gray-700"}`}>
-                        <Link href={href} aria-current={active ? "page" : undefined} className="flex min-h-11 items-center justify-center px-2">
+                    <li key={href} className={active ? "bg-soft font-semibold text-ink" : "text-mute hover:bg-soft hover:text-ink transition-colors"}>
+                        <Link href={href} aria-current={active ? "page" : undefined} className="flex min-h-11 items-center justify-center px-4 text-sm font-medium">
                             {label}
                         </Link>
                     </li>
@@ -70,8 +78,8 @@ const MainAppWindow = ({ children, pathname, links }) => {
             })}
             {children}
         </ul>
-    )
-}
+    );
+};
 
 
 const MobileSideBarWindow = ({ role, isOrganizationAdmin }) => {

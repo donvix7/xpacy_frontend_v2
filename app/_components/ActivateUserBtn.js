@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { UserCheck } from "lucide-react";
 import toast from "react-hot-toast";
+import Modal from "./Modal";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 export default function ActivateUserButton({ userId, userName, userEmail, onActivate }) {
@@ -50,32 +51,27 @@ export default function ActivateUserButton({ userId, userName, userEmail, onActi
                 Activate user
             </button>
 
-            {open && (
-                <div
-                    className="xp-surface fixed inset-0 z-50 flex items-center justify-center bg-side/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="activate-user-title"
-                    onClick={() => !pending && setOpen(false)}
-                >
-                    <div
-                        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-in zoom-in-95 duration-200"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <ConfirmDeleteModal
-                            heading="Activate user account"
-                            description={subtext}
-                            confirmLabel="Activate user"
-                            cancelLabel="Cancel"
-                            variant="success"
-                            icon={UserCheck}
-                            onConfirm={confirmActivate}
-                            onClose={() => setOpen(false)}
-                            isPending={pending}
-                        />
-                    </div>
-                </div>
-            )}
+            <Modal.Window
+                open={open}
+                onClose={() => !pending && setOpen(false)}
+                hideCloseButton
+                closeOnOverlayClick={!pending}
+                closeOnEscape={!pending}
+                className="max-w-md"
+                ariaLabelledBy="activate-user-title"
+            >
+                <ConfirmDeleteModal
+                    heading="Activate user account"
+                    description={subtext}
+                    confirmLabel="Activate user"
+                    cancelLabel="Cancel"
+                    variant="success"
+                    icon={UserCheck}
+                    onConfirm={confirmActivate}
+                    onClose={() => setOpen(false)}
+                    isPending={pending}
+                />
+            </Modal.Window>
         </>
     );
 }

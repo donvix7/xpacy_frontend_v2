@@ -1,6 +1,5 @@
 import "@/app/_styles/global.css";
 import {Toaster} from "react-hot-toast";
-import Script from "next/script";
 import { UserProvider } from "./_context/UserContext";
 import TokenRefreshModal from "./_components/TokenRefreshModal";
 export const metadata = {
@@ -15,15 +14,15 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
-      <body className="min-h-screen bg-canvas text-ink flex flex-col transition-colors duration-150">
-        <Script
+      <head>
+        <script
           id="theme-initializer"
-          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem("xpacy-theme");if(!t){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.dataset.theme=t;}catch(e){}})();`,
           }}
         />
+      </head>
+      <body className="min-h-screen bg-canvas text-ink flex flex-col font-sans transition-colors duration-150">
         <UserProvider>
           {children}
           <TokenRefreshModal />
@@ -40,7 +39,7 @@ export default function RootLayout({ children }) {
               duration: 5000,
             },
             style: {
-              fontFamily: "Unitext Regular",
+              fontFamily: "Outfit, sans-serif",
               fontSize: "16px",
               maxWidth: "500px",
               padding: "16px 24px",

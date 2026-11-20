@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers"
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getAdminOrganizationMembers, getOrganizationMembers } from "./data-services";
+import { getAdminOrganizationMembers, getOrganizationMembers, getAccountSubscriptions } from "./data-services";
 import { getOrganizationMemberRole, normalizeOrganizationMembers } from "./organization-members";
 import { toDataServiceError } from "./api-error";
 
@@ -37,11 +37,18 @@ const dashboardByOrganizationRole = {
 async function getOrganizationMembershipRole(organizationId, token, userId, email) {
   if (!organizationId || !token) return "";
   try {
-    const response = await safeFetch(`https://services.xpacy.com/api/v1/organizations/${encodeURIComponent(organizationId)}/members?page=1&limit=100`, {
+    let response = await safeFetch(`https://services.xpacy.com/api/v1/admin/organizations/${encodeURIComponent(organizationId)}/members?page=1&limit=100`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       cache: "no-store",
     });
+    if (!response.ok) {
+      response = await safeFetch(`https://services.xpacy.com/api/v1/organizations/${encodeURIComponent(organizationId)}/members?page=1&limit=100`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+    }
     if (!response.ok) return "";
     const payload = await response.json();
     const members = [
@@ -323,6 +330,33 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
   let organizationRole = "";
   if (typeof organizationId === "string" && organizationId.trim()) {
     const selectedOrganizationId = organizationId.trim();
+
+    // Validate account subscription before granting organization workspace access
+    try {
+      const subRaw = await getAccountSubscriptions();
+      const subscription = subRaw?.subscription ?? subRaw?.data?.subscription ?? subRaw?.data ?? null;
+      const status = String(subscription?.status || "").toUpperCase();
+      const isExpired = subscription?.endDate ? new Date(subscription.endDate).getTime() < Date.now() : false;
+      const isSubActive = (status === "ACTIVE" || status === "TRIALING") && !isExpired;
+
+      if (!isSubActive) {
+        return {
+          success: false,
+          requiresSubscription: true,
+          redirectTo: "/auth/subscriptions",
+          message: "An active subscription is required to select and access an organization workspace. Please choose a subscription plan to proceed.",
+        };
+      }
+    } catch (subError) {
+      console.warn("Subscription check failed in completeProceedSelection:", subError?.message || subError);
+      return {
+        success: false,
+        requiresSubscription: true,
+        redirectTo: "/auth/subscriptions",
+        message: "Unable to verify your account's subscription. An active subscription is required to select an organization workspace.",
+      };
+    }
+
     organizationRole = await getOrganizationMembershipRole(
       selectedOrganizationId,
       cookieStore.get("token")?.value,
@@ -674,15 +708,18 @@ export async function handleLogOut() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
 
-  // Best-effort server-side session invalidation — always clear local cookies regardless of result
+  // Best-effort server-side session invalidation with 2.5s timeout — always clear local cookies regardless of result
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
     await safeFetch(`https://services.xpacy.com/api/v1/auth/logout`, {
       method: "POST",
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token?.value}`,
       },
-    });
+    }).finally(() => clearTimeout(timeout));
   } catch (_) {
     // Swallow network errors — local logout must still proceed
   }
@@ -1519,118 +1556,74 @@ export async function inviteStaffMember(formData) {
   return data;
 }
 
-export async function createProperty(formData, token) {
-  const response = await safeFetch(`${URL}/property/create-property`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-    },
-    body: formData
-  });
-  const data = await response.json();
-  return data;
+export async function createProperty(propertyData, token) {
+  return addProperty(propertyData, token);
 }
 
-export async function createPropertyNew(propertyData) {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token?.value) {
-      return { success: false, message: "Please log in to continue" };
-    }
-
-    const payload = {
-      name: propertyData.name,
-      description: propertyData.description || "",
-      propertyType: propertyData.propertyType || "RESIDENTIAL",
-      address: propertyData.address,
-      city: propertyData.city,
-      state: propertyData.state,
-      country: propertyData.country || "Nigeria",
-      postalCode: propertyData.postalCode || "",
-      latitude: Number(propertyData.latitude) || 0,
-      longitude: Number(propertyData.longitude) || 0,
-      yearBuilt: Number(propertyData.yearBuilt) || new Date().getFullYear(),
-      totalFloors: Number(propertyData.totalFloors) || 1,
-      totalUnits: Number(propertyData.totalUnits) || 1,
-      organizationId: propertyData.organizationId || "",
-      owners: Array.isArray(propertyData.owners)
-        ? propertyData.owners.filter(Boolean)
-        : propertyData.owners
-        ? [propertyData.owners]
-        : []
-    };
-
-    const response = await safeFetch(`https://services.xpacy.com/api/v1/properties`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token.value}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    let resData;
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      resData = await response.json();
-    } else {
-      const text = await response.text();
-      resData = { message: text };
-    }
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: resData?.message || resData?.error || `Failed to create property (${response.status})`
-      };
-    }
-
-    revalidatePath("/dashboard/admin/properties");
-    revalidatePath("/dashboard/property-owner/properties");
-    return {
-      success: true,
-      data: resData,
-      message: resData?.message || "Property created successfully!"
-    };
-  } catch (error) {
-    console.warn("Error creating property:", error);
-    return { success: false, message: error.message || "Failed to create property" };
-  }
+export async function createPropertyNew(propertyData, token) {
+  return addProperty(propertyData, token);
 }
 
 
 // Blog Actions
-export async function createBlog(formData) {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    
-    const response = await safeFetch(`${URL}/blog/create-post`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token?.value}`,
-      },
-      body: formData,
-    });
-    
-    let data;
+export async function createBlog(input) {
     try {
-        data = await response.json();
-    } catch (e) {
-        const text = await response.text();
-        return { error: `Server returned non-JSON response: ${text}` };
-    }
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
 
-    if (!response.ok) {
-        return { error: data.message || data.error || data.details || "Failed to create blog post" };
+        const isFormData = typeof input?.get === "function";
+        const getVal = (key) => isFormData ? input.get(key) : input?.[key];
+
+        const payload = {
+            title: getVal("title") || "",
+            slug: getVal("slug") || "",
+            excerpt: getVal("excerpt") || "",
+            content: getVal("content") || "",
+            coverImage: getVal("coverImage") || "",
+            status: getVal("status") || "DRAFT",
+        };
+
+        if (process.env.NODE_ENV !== "production") {
+            console.log("createBlog payload:", payload);
+        }
+
+        const response = await safeFetch(
+            "https://services.xpacy.com/api/v1/admin/blogs",
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            }
+        );
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            const text = await response.text();
+            return { error: `Server returned non-JSON response: ${text}` };
+        }
+
+        if (!response.ok) {
+            return {
+                error: data?.message || data?.error || data?.details || "Failed to create blog post",
+            };
+        }
+
+        revalidateTag("blogs");
+        revalidatePath("/dashboard/admin/blogs");
+        revalidatePath("/blog");
+        return { success: true, ...data };
+    } catch (error) {
+        return {
+            error:
+                error.message ||
+                "An unexpected error occurred during creation",
+        };
     }
-    
-    revalidateTag("blogs");
-    return data;
-  } catch (error) {
-    return { error: error.message || "An unexpected error occurred during creation" };
-  }
 }
 
 export async function updateBlog(id, formData) {
@@ -1892,30 +1885,111 @@ export async function deleteDocument(id){
 /////////////////////////////////////*PROPERTIES*/////////////////////////////////////////////////
 
 
-export async function addProperty(propertyData){
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const role = normalizeRole(cookieStore.get("userRole")?.value);
-  const isOrganizationAdmin = cookieStore.get("organizationAdmin")?.value === "1";
-  const organizationId = cookieStore.get("organizationId")?.value || "";
-  if (role === "propertyowner" && (!isOrganizationAdmin || !organizationId)) {
-    return { success: false, message: "Only organization administrators can create properties." };
-  }
-  if (role === "propertyowner" && String(propertyData?.organizationId || "") !== organizationId) {
-    return { success: false, message: "Select your active organization before creating a property." };
-  }
-  const payload = role === "propertyowner" ? { ...propertyData, organizationId } : propertyData;
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  console.log('this is from the action', response)
-  return response.json(); 
+export async function addProperty(propertyData) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
 
+    const cookieOrgId = cookieStore.get("organizationId")?.value || "";
+    const resolvedOrgId = String(propertyData?.organizationId || cookieOrgId || "").trim();
+
+    // Normalize owners to an array of objects
+    const ownersPayload = Array.isArray(propertyData?.owners)
+      ? propertyData.owners
+          .map((o, index) => {
+            if (typeof o === "string") {
+              const id = o.trim();
+              return id ? { id, role: index === 0 ? "PRIMARY" : "CO_OWNER" } : null;
+            }
+            if (o && typeof o === "object") {
+              const id = String(o.id || o._id || o.ownerId || o.userId || "").trim();
+              if (!id) return null;
+              return {
+                id,
+                role: o.role || (index === 0 ? "PRIMARY" : "CO_OWNER"),
+                ...(o.first_name || o.firstname || o.firstName
+                  ? { first_name: o.first_name || o.firstname || o.firstName }
+                  : {}),
+                ...(o.last_name || o.lastname || o.lastName
+                  ? { last_name: o.last_name || o.lastname || o.lastName }
+                  : {}),
+                ...(o.email ? { email: o.email } : {}),
+              };
+            }
+            return null;
+          })
+          .filter(Boolean)
+      : typeof propertyData?.owners === "string" && propertyData.owners.trim()
+      ? [{ id: propertyData.owners.trim(), role: "PRIMARY" }]
+      : [];
+
+    const payload = {
+      name: String(propertyData?.name || "").trim(),
+      description: String(propertyData?.description || "").trim(),
+      propertyType: propertyData?.propertyType || "RESIDENTIAL",
+      address: String(propertyData?.address || "").trim(),
+      city: String(propertyData?.city || "").trim(),
+      state: String(propertyData?.state || "").trim(),
+      country: String(propertyData?.country || "Nigeria").trim(),
+      postalCode: String(propertyData?.postalCode || "").trim(),
+      latitude: Number(propertyData?.latitude) || 0,
+      longitude: Number(propertyData?.longitude) || 0,
+      yearBuilt: Number(propertyData?.yearBuilt) || 0,
+      totalFloors: Number(propertyData?.totalFloors) || 0,
+      totalUnits: Number(propertyData?.totalUnits) || 0,
+      owners: ownersPayload,
+      ...(resolvedOrgId ? { organizationId: resolvedOrgId } : {}),
+    };
+    console.log("addProperty payload:", payload);
+
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/properties`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenVal}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    let resData;
+    try {
+      resData = await response.json();
+    } catch (_) {
+      resData = { message: response.statusText };
+    }
+    console.log("addProperty response:", resData);
+    
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message || resData?.error || `Failed to create property (${response.status})`;
+      return {
+        success: false,
+        message: errorMessage,
+        error: errorMessage,
+        status: response.status,
+      };
+    }
+
+
+    revalidatePath("/dashboard/admin/properties");
+    revalidatePath("/dashboard/property-owner/properties");
+    revalidatePath("/dashboard/property-manager/properties");
+
+    return {
+      success: true,
+      data: resData?.data || resData,
+      message: resData?.message || "Property created successfully!",
+    };
+  } catch (error) {
+    console.warn("addProperty error:", error);
+    return {
+      success: false,
+      message: error?.message || "Failed to create property. Please try again.",
+    };
+  }
 }
 
 export async function addOwner(payload){
@@ -1978,7 +2052,7 @@ export async function updateExpense(id, data, organizationId){
 }
   
   const cookieStore = await cookies();
-  const token = cookieStore.get("token");
+  const token = await getRawToken()
 
 const response = await safeFetch(`https://services.xpacy.com/api/v1/expenses/${id}
 `,{
@@ -2571,37 +2645,8 @@ export async function updateOrganization(id, data){
 /////////////////////////////////////*PROPERTY MANAGEMENTS*/////////////////////////////////////////////////
 
 
-export async function createNewProperty(data){
-  const payload = {
-  "name": data.name,
-  "description": data.description,
-  "propertyType": data.propertyType,
-  "address": data.address,
-  "city": data.city,
-  "state": data.state,
-  "country": data.country,
-  "postalCode": data.postalCode,
-  "latitude": data.latitude,
-  "longitude": data.longitude,
-  "yearBuilt": data.yearBuilt,
-  "totalFloors": data.totalFloors,
-  "totalUnits": data.totalUnits,
-  "organizationId": data.organizationId,
-  "owners": data.owners
-}
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties
-`,
-  {
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
+export async function createNewProperty(data, token){
+  return addProperty(data, token);
 }
 
 export async function updateProperty(id,data){
@@ -3011,6 +3056,39 @@ export async function manageSubscription(payload) {
   const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${accountId}`,
   {
   method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({payload})
+  });
+  console.log(response)
+  return response.json(); 
+}
+
+
+export async function recordSubscription(payload) {
+   const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${accountId}`,
+  {
+  method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token?.value}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({payload})
+  });
+  console.log(response)
+  return response.json(); 
+}
+
+export async function refundSubscriptionPayment(id, payload) {
+   const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/admin/subscription-payments/${id}`,
+  {
+  method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
       "Content-Type": "application/json"

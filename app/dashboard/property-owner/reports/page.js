@@ -26,7 +26,7 @@ import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 const chartBox =
-  "bg-white p-3 sm:p-6 rounded-lg border border-primary-100 shadow-sm min-h-[320px] min-w-0";
+  "bg-card text-ink p-3 sm:p-6 rounded-lg border border-line shadow-sm min-h-[320px] min-w-0";
 
 export default async function Page() {
   const cookieStore = await cookies();
@@ -158,11 +158,11 @@ export default async function Page() {
   ];
 
   const toneClasses = {
-    emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    red: "bg-red-50 text-red-700 border-red-100",
-    amber: "bg-amber-50 text-amber-700 border-amber-100",
-    slate: "bg-slate-50 text-slate-700 border-slate-100",
-    pink: "bg-pink-50 text-pink-700 border-pink-100",
+    emerald: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
+    red: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20",
+    amber: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
+    slate: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20",
+    pink: "bg-pink-500/10 text-pink-700 dark:text-pink-300 border-pink-500/20",
   };
 
   const today = new Date().toLocaleDateString("en-NG", {
@@ -297,22 +297,22 @@ export default async function Page() {
         </DashboardGridItem>
 
         <DashboardGridItem title="Financial Summary">
-          <div className="h-full rounded-lg border border-primary-100 bg-white p-6 shadow-sm">
+          <div className="h-full rounded-lg border border-line bg-card text-ink p-6 shadow-sm">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <div className="rounded-lg border border-primary-100 p-4 text-center">
-                <p className="mb-1 text-sm text-gray-500">Total Revenue</p>
+              <div className="rounded-lg border border-line bg-soft/50 p-4 text-center">
+                <p className="mb-1 text-sm text-mute">Total Revenue</p>
                 <p className="text-2xl font-bold text-primary">
                   {formatCurrency(totalRevenue)}
                 </p>
               </div>
-              <div className="rounded-lg border border-primary-100 p-4 text-center">
-                <p className="mb-1 text-sm text-gray-500">Total Expenses</p>
+              <div className="rounded-lg border border-line bg-soft/50 p-4 text-center">
+                <p className="mb-1 text-sm text-mute">Total Expenses</p>
                 <p className="text-2xl font-bold text-red-600">
                   {formatCurrency(maintenanceCost)}
                 </p>
               </div>
-              <div className="rounded-lg border border-primary-100 p-4 text-center">
-                <p className="mb-1 text-sm text-gray-500">Net Income</p>
+              <div className="rounded-lg border border-line bg-soft/50 p-4 text-center">
+                <p className="mb-1 text-sm text-mute">Net Income</p>
                 <p className="text-2xl font-bold text-green-600">
                   {formatCurrency(netIncome)}
                 </p>

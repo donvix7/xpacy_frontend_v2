@@ -3,7 +3,7 @@ import ProfileForm from "@/app/_components/ProfileForm";
 import ProfilePhoto from "@/app/_components/ProfilePhoto";
 import UpdatePasswordForm from "@/app/_components/UpdatePasswordForm";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import { getCities, getPropertyOwnerProfile } from "@/app/_lib/data-services";
+import { getCities, getPropertyOwnerProfile, getUserProfile } from "@/app/_lib/data-services";
 import { updatePropertyOwnerDisplayPicture, updatePropertyOwnerProfile } from "@/app/_lib/action";
 import { cookies } from "next/headers";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
@@ -12,7 +12,7 @@ import { getSettledErrorMessages } from "@/app/_lib/api-error";
 export default async function Page() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")
-    const results = await Promise.allSettled([getPropertyOwnerProfile(token), getCities()])
+    const results = await Promise.allSettled([getUserProfile(), getCities()])
     const dataErrorMessages = getSettledErrorMessages(results);
     const profile = results[0].status === "fulfilled" ? results[0].value : null;
     const cities = results[1].status === "fulfilled" ? results[1].value : [];

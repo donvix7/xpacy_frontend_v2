@@ -34,7 +34,7 @@ export default async function Page() {
             </div>
 
             <DashboardGridItem title={`Organizations (${organizations.length})`}>
-                <AdminOrganizationsList organizations={organizations} />
+                <AdminOrganizationsList organizations={organizations} basePath="/dashboard/user/organizations" />
             </DashboardGridItem>
         </div>
     );

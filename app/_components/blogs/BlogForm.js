@@ -1,397 +1,551 @@
 "use client";
 
-import { useState, useTransition, useEffect, useMemo, useCallback } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Camera, Save, Trash2, X, AlertCircle } from "lucide-react";
+import {
+    Save,
+    AlertCircle,
+    Eye,
+    EyeOff,
+    Hash,
+    Type,
+    Image as ImageIcon,
+    FileText,
+    ArrowLeft,
+    Quote,
+    Link2,
+    Upload,
+    X,
+} from "lucide-react";
 import SpinnerMini from "../SpinnerMini";
-import { createBlog, updateBlog, deleteBlog } from "../../_lib/action";
-import { getBlogCategoriesForForm } from "../../_lib/form-data-actions";
+import { createBlog, updateBlog } from "../../_lib/action";
 import { compressImages } from "../../_lib/image-compression";
 
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
+function slugify(v = "") {
+    return v
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-");
+}
+
+function Field({ label, required, hint, error, children, htmlFor }) {
+    return (
+        <div>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                <label
+                    htmlFor={htmlFor}
+                    className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500"
+                >
+                    {label}
+                    {required && <span className="ml-0.5 text-red-500">*</span>}
+                </label>
+                {hint && (
+                    <span className="text-[10.5px] text-gray-400">{hint}</span>
+                )}
+            </div>
+            {children}
+            {error && (
+                <p className="mt-1 flex items-center gap-1 text-[11.5px] text-red-600">
+                    <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                    {error}
+                </p>
+            )}
+        </div>
+    );
+}
+
+const inputBase =
+    "w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-[13px] text-ink outline-none transition-colors placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20";
+
+/* -------------------------------------------------------------------------- */
+/* Form                                                                       */
+/* -------------------------------------------------------------------------- */
 export default function BlogForm({ initialData = null, isEditMode = false }) {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
-    const [imagePreviews, setImagePreviews] = useState([]);
-    const [featured, setFeatured] = useState(initialData?.is_featured ?? false);
-    const [published, setPublished] = useState(initialData?.is_published ?? false);
+
     const [title, setTitle] = useState(initialData?.title ?? "");
     const [slug, setSlug] = useState(initialData?.slug ?? "");
-    const [category_id, setCategory_id] = useState(initialData?.category_id ?? "");
+    const [slugTouched, setSlugTouched] = useState(!!initialData?.slug);
+    const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? "");
     const [content, setContent] = useState(initialData?.content ?? "");
-    
-    // Track images properly - separate new file from existing URL
-    const [newImageFile, setNewImageFile] = useState(null);
-    const [existingImageUrl, setExistingImageUrl] = useState("");
-    const [isImageRemoved, setIsImageRemoved] = useState(false);
-    
+    const [coverImage, setCoverImage] = useState(
+        initialData?.coverImage ?? ""
+    );
+    const [status, setStatus] = useState(
+        initialData?.status ?? "DRAFT"
+    );
+    const [isCompressing, setIsCompressing] = useState(false);
+
     const [errors, setErrors] = useState({});
-    const [categories, setCategories] = useState([]);
 
+    /* ---- Auto-slug from title (only if not manually edited) ---- */
     useEffect(() => {
-        const loadCategories = async () => {
-            try {
-                const data = await getBlogCategoriesForForm();
-                setCategories(data || []);
-            } catch (error) {
-                console.error("Failed to fetch blog categories:", error);
-                toast.error("Failed to load categories");
-            }
-        };
-        loadCategories();
-    }, []);
+        if (!slugTouched && title) setSlug(slugify(title));
+    }, [title, slugTouched]);
 
-    // Initialize existing image from initialData
-    useEffect(() => {
-        if (initialData?.images && initialData.images.length > 0 && !existingImageUrl && !isImageRemoved) {
-            let imageUrl = initialData.images[0];
-            // Handle both string and array cases
-            if (Array.isArray(imageUrl)) {
-                imageUrl = imageUrl[0] || "";
-            }
-            setExistingImageUrl(imageUrl);
-        }
-    }, [initialData, existingImageUrl, isImageRemoved]);
+    /* ---- Cover image upload ---- */
+    const handleCoverChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-    // Handle preview for new image
-    useEffect(() => {
-        if (newImageFile instanceof File) {
-            const objectUrl = URL.createObjectURL(newImageFile);
-            setImagePreviews([objectUrl]);
-            return () => URL.revokeObjectURL(objectUrl);
-        } else {
-            setImagePreviews([]);
-        }
-    }, [newImageFile]);
-
-    const handleImageChange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            try {
-                const compressedFile = await compressImages(file);
-                setNewImageFile(compressedFile);
-                // Clear existing image when new one is added
-                setExistingImageUrl("");
-                setIsImageRemoved(true);
-            } catch (error) {
-                console.error("Blog image compression error:", error);
-                toast.error("Failed to compress image");
-                // Fallback to original file
-                setNewImageFile(file);
-                setExistingImageUrl("");
-                setIsImageRemoved(true);
-            }
+        setIsCompressing(true);
+        try {
+            const compressed = await compressImages(file);
+            // If createBlog/updateBlog accept a File via FormData, we keep it.
+            // If they expect a URL, you'd upload first and set the returned URL.
+            const previewUrl = URL.createObjectURL(compressed);
+            setCoverImage(previewUrl);
+            // Stash the File on a ref-like state so we can send it:
+            setCoverFile(compressed);
+            toast.success("Cover image ready");
+        } catch (err) {
+            console.error("Compression error:", err);
+            toast.error("Failed to process image");
+        } finally {
+            setIsCompressing(false);
         }
     };
 
-    const removeExistingImage = () => {
-        setExistingImageUrl("");
-        setIsImageRemoved(true);
-        setNewImageFile(null);
-        setImagePreviews([]);
-        toast.success("Image removed");
+    const [coverFile, setCoverFile] = useState(null);
+
+    const removeCover = () => {
+        setCoverImage("");
+        setCoverFile(null);
+        toast.success("Cover removed");
     };
 
-    const removeNewImage = () => {
-        setNewImageFile(null);
-        setImagePreviews([]);
-        toast.success("New image removed");
-    };
-
+    /* ---- Submit ---- */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrors({});
 
-        const submitData = new FormData();
-        submitData.append("title", title);
-        submitData.append("slug", slug);
-        submitData.append("category_id", category_id);
-        submitData.append("content", content);
-        submitData.append("is_featured", featured);
-        submitData.append("is_published", published);
+        /* Build JSON payload exactly as specified */
+        const payload = {
+            title,
+            slug,
+            excerpt,
+            content,
+            coverImage: coverFile ? undefined : coverImage || undefined,
+            status,
+        };
 
-        // CRITICAL: Handle images properly for editing
-        if (isEditMode && initialData?.id) {
-            // For edit mode, we need to tell the backend what to do with images
-            
-            if (newImageFile instanceof File) {
-                // Case 1: User uploaded a new image - replace the old one
-                submitData.append("images", newImageFile);
-                submitData.append("image_action", "replace");
-                submitData.append("old_image", existingImageUrl);
-            } else if (isImageRemoved && !existingImageUrl) {
-                // Case 2: User removed the image - delete it
-                submitData.append("image_action", "delete");
-                submitData.append("old_image", initialData?.images?.[0] || "");
-            } else if (existingImageUrl && !isImageRemoved) {
-                // Case 3: Keep existing image (no changes)
-                submitData.append("image_action", "keep");
-                submitData.append("existing_images", JSON.stringify(initialData?.images || []));
-                // Send the existing image URL to the backend
-                if (typeof existingImageUrl === 'string') {
-                    submitData.append("images", existingImageUrl);
-                }
-            }
-        } else {
-            // Create mode - just upload new image if exists
-            if (newImageFile instanceof File) {
-                submitData.append("images", newImageFile);
-            } else if (existingImageUrl) {
-                // This shouldn't happen in create mode, but handle it anyway
-                submitData.append("images", existingImageUrl);
-            }
-        }
+        /* If coverFile exists, we need multipart. Otherwise JSON. */
+        const submit = async () => {
+            try {
+                let result;
+                if (coverFile) {
+                    const fd = new FormData();
+                    fd.append("title", title);
+                    fd.append("slug", slug);
+                    fd.append("excerpt", excerpt);
+                    fd.append("content", content);
+                    fd.append("status", status);
+                    fd.append("coverImage", coverFile);
 
-        startTransition(async () => {
-            let result;
-            if (isEditMode && initialData?.id) {
-                result = await updateBlog(initialData.id, submitData);
-            } else {
-                result = await createBlog(submitData);
-            }
-
-            if (result?.error) {
-                if (typeof result.error === 'string') {
-                    toast.error(result.error);
+                    result =
+                        isEditMode && initialData?.id
+                            ? await updateBlog(initialData.id, fd)
+                            : await createBlog(fd);
                 } else {
-                    toast.error("Failed to save. Please check the fields.");
-                    setErrors(result.error);
+                    result =
+                        isEditMode && initialData?.id
+                            ? await updateBlog(initialData.id, payload)
+                            : await createBlog(payload);
                 }
-            } else {
-                toast.success(isEditMode ? "Blog updated successfully" : "Blog created successfully");
+
+                if (result?.error) {
+                    if (typeof result.error === "string") {
+                        toast.error(result.error);
+                    } else {
+                        toast.error("Please check the fields.");
+                        setErrors(result.error);
+                    }
+                    return;
+                }
+
+                toast.success(
+                    isEditMode
+                        ? "Post updated successfully"
+                        : status === "PUBLISHED"
+                        ? "Post published"
+                        : "Draft saved"
+                );
                 router.push("/dashboard/admin/blogs");
+            } catch (err) {
+                console.error("Submit error:", err);
+                toast.error(err?.message ?? "Something went wrong.");
             }
-        });
+        };
+
+        startTransition(submit);
     };
 
-    // Determine which image to display
-    const displayImage = useMemo(() => {
-        if (newImageFile) {
-            return null; // Preview is handled separately
-        }
-        if (existingImageUrl && !isImageRemoved) {
-            return existingImageUrl;
-        }
-        return null;
-    }, [newImageFile, existingImageUrl, isImageRemoved]);
+    /* ---- Derived ---- */
+    const isPublished = status === "PUBLISHED";
+    const coverPreview = coverImage || "";
 
-    
-
+    /* ---- Render ---- */
     return (
-        <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto pb-20">
-            <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden font-sans ring-1 ring-black/5">
-                <div className="p-8 space-y-8">
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-gray-50 pb-6">
-                        <p className="text-2xl font-black text-gray-900 tracking-tight">
-                            {isEditMode ? "Update Story" : "New Story"}
-                        </p>
-                        <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-2">
-                                <label className="flex items-center gap-2.5 cursor-pointer group">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={featured}
-                                        onChange={(e) => setFeatured(e.target.checked)}
-                                        className="w-5 h-5 rounded-lg border-gray-300 text-primary focus:ring-primary/20 transition-all cursor-pointer" 
-                                    />
-                                    <span className="text-sm font-bold text-gray-600 group-hover:text-primary transition-colors capitalize">
-                                        Featured
-                                    </span>
-                                </label>
-                                <label className="flex items-center gap-2.5 cursor-pointer group">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={published}
-                                        onChange={(e) => setPublished(e.target.checked)}
-                                        className="w-5 h-5 rounded-lg border-gray-300 text-primary focus:ring-primary/20 transition-all cursor-pointer" 
-                                    />
-                                    <span className="text-sm font-bold text-gray-600 group-hover:text-primary transition-colors capitalize">
-                                        Published
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+        <form onSubmit={handleSubmit} className="mx-auto max-w-6xl pb-24">
+            {/* ---------- Top bar ---------- */}
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
+                >
+                    <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                    Back
+                </button>
+                <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider ${
+                        isPublished
+                            ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                            : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"
+                    }`}
+                >
+                    <span className="h-1 w-1 rounded-full bg-current" />
+                    {isPublished ? "Published" : "Draft"}
+                </span>
+            </div>
 
-                    {/* Inputs */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="md:col-span-2 space-y-2">
-                            <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
-                                Title <span className="text-red-500">*</span>
-                            </label>
-                            <input 
+            {/* ---------- Main grid ---------- */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+                {/* =============================================== */}
+                {/* LEFT — Writing area                              */}
+                {/* =============================================== */}
+                <div className="space-y-6">
+                    {/* Title */}
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                        <Field
+                            label="Title"
+                            required
+                            hint={`${title.length}/70`}
+                            error={errors.title?.message}
+                            htmlFor="title"
+                        >
+                            <input
+                                id="title"
+                                type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 required
-                                placeholder="Enter a compelling title..." 
-                                className="w-full px-5 py-4 rounded-2xl border-2 border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all font-medium text-gray-800" 
+                                placeholder="Give your story a compelling title…"
+                                className={`${inputBase} !border-0 !bg-transparent !px-0 !py-1 !text-[22px] !font-semibold !ring-0 focus:!ring-0`}
                             />
-                            {errors.title && (
-                                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                    <AlertCircle size={12} /> {errors.title.message}
-                                </p>
-                            )}
-                        </div>
-                        
-                        <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
-                            Category <span className="text-red-500">*</span>
-                        </label>
-                        <select 
-                            value={category_id}
-                            onChange={(e) => setCategory_id(e.target.value)}
-                            required
-                            className="w-full px-5 py-4 rounded-2xl border-2 border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all font-medium text-gray-800 appearance-none cursor-pointer"
-                        >
-                            <option value="">Select Category</option>
-                            {categories.map(cat => (
-                                <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
-                            ))}
-                        </select>
-                        {errors.category_id && (
-                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                <AlertCircle size={12} /> {errors.category_id.message}
-                            </p>
-                        )}
-                        </div>
+                        </Field>
                     </div>
-                    <div className="space-y-2">
-                            <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
-                                Slug <span className="text-red-500">*</span>
-                            </label>
-                            <input 
-                                value={slug}
-                                onChange={(e) => setSlug(e.target.value)}
-                                required
-                                placeholder="url-friendly-slug" 
-                                className="w-full px-5 py-4 rounded-2xl border-2 border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all font-medium text-gray-800 font-mono text-sm" 
-                            />
-                            {errors.slug && (
-                                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                    <AlertCircle size={12} /> {errors.slug.message}
-                                </p>
-                            )}
-                        </div>
 
-                    
+                    {/* Excerpt */}
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                        <Field
+                            label="Excerpt"
+                            hint={`${excerpt.length} chars`}
+                            error={errors.excerpt?.message}
+                            htmlFor="excerpt"
+                        >
+                            <textarea
+                                id="excerpt"
+                                value={excerpt}
+                                onChange={(e) => setExcerpt(e.target.value)}
+                                rows={2}
+                                placeholder="A short summary shown in listings and social previews…"
+                                className={`${inputBase} resize-none`}
+                            />
+                        </Field>
+                    </div>
 
                     {/* Content */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
-                            Content <span className="text-red-500">*</span>
-                            <span className="text-[10px] font-normal text-gray-300 ml-2">(HTML Supported)</span>
-                        </label>
-                        <textarea 
+                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <header className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-5 py-3 sm:px-6">
+                            <FileText
+                                className="h-4 w-4 text-primary"
+                                aria-hidden="true"
+                            />
+                            <h2 className="text-[13.5px] font-semibold text-ink">
+                                Content
+                            </h2>
+                            <span className="ml-auto text-[10.5px] text-gray-400">
+                                HTML or Markdown
+                            </span>
+                        </header>
+                        <textarea
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             required
-                            rows={12} 
-                            className="w-full px-6 py-5 rounded-3xl border-2 border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all font-mono text-sm leading-relaxed" 
-                            placeholder="Start writing your masterpiece here..." 
+                            rows={20}
+                            placeholder="Write your story…"
+                            className="block w-full resize-y border-0 bg-white px-5 py-4 font-mono text-[13px] leading-relaxed text-ink outline-none placeholder:text-gray-400 focus:ring-0 sm:px-6"
                         />
-                        {errors.content && (
-                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                <AlertCircle size={12} /> {errors.content.message}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Media Gallery */}
-                    <div className="space-y-4">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Media Gallery</label>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {/* Existing Image */}
-                            {displayImage && !isImageRemoved && !newImageFile && (
-                                <div className="relative aspect-4/3 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group bg-gray-50">
-                                    <img 
-                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                        width={500}
-                                        height={500}
-                                        src={displayImage.startsWith('http') ? displayImage : `https://app.xpacy.com/src/upload/blog/${displayImage}`} 
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                                        alt="Existing" 
+                        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/60 px-5 py-2.5 sm:px-6">
+                            {errors.content?.message ? (
+                                <p className="flex items-center gap-1 text-[11.5px] text-red-600">
+                                    <AlertCircle
+                                        className="h-3 w-3"
+                                        aria-hidden="true"
                                     />
-                                    <button 
-                                        type="button" 
-                                        onClick={removeExistingImage} 
-                                        className="absolute top-3 right-3 p-1.5 bg-red-500/90 backdrop-blur-md text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110 active:scale-90"
-                                        aria-label="Remove image"
-                                    >
-                                        <X size={14} strokeWidth={3} />
-                                    </button>
-                                    <div className="absolute top-3 left-3 px-2 py-0.5 bg-blue-500 text-[10px] font-black text-white rounded-md shadow-sm uppercase tracking-tighter">
-                                        Current
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* New Image Preview */}
-                            {imagePreviews.map((preview, idx) => (
-                                <div key={`new-${idx}`} className="relative aspect-4/3 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group bg-gray-50">
-                                    <img 
-                                        src={preview} 
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                                        alt={`Preview ${idx + 1}`} 
-                                    />
-                                    <button 
-                                        type="button" 
-                                        onClick={removeNewImage} 
-                                        className="absolute top-3 right-3 p-1.5 bg-red-500/90 backdrop-blur-md text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110 active:scale-90"
-                                        aria-label="Remove image"
-                                    >
-                                        <X size={14} strokeWidth={3} />
-                                    </button>
-                                    <div className="absolute top-3 left-3 px-2 py-0.5 bg-green-400 text-[10px] font-black text-yellow-900 rounded-md shadow-sm uppercase tracking-tighter">
-                                        New
-                                    </div>
-                                </div>
-                            ))}
-
-                            {/* Upload Button */}
-                            <label className="aspect-4/3 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all group bg-gray-50/30">
-                                <Camera className="w-8 h-8 text-gray-300 group-hover:text-primary transition-colors" />
-                                <span className="text-[10px] font-black text-gray-400 mt-2 tracking-widest uppercase group-hover:text-primary/70">
-                                    {displayImage ? "Replace" : "Upload"}
+                                    {errors.content.message}
+                                </p>
+                            ) : (
+                                <span className="text-[11px] text-gray-400">
+                                    Content supports inline HTML.
                                 </span>
-                                <input 
-                                    type="file" 
-                                    accept="image/jpeg,image/png,image/gif,image/webp" 
-                                    onChange={handleImageChange} 
-                                    className="hidden" 
-                                />
-                            </label>
+                            )}
+                            <span className="font-mono text-[10.5px] text-gray-400">
+                                {content.length.toLocaleString()} chars
+                            </span>
                         </div>
-                        <p className="text-xs text-gray-400 ml-1">Maximum file size: 5MB. Supported formats: JPG, PNG, GIF, WebP</p>
-                        {isEditMode && (
-                            <p className="text-xs text-blue-500 ml-1 mt-1">
-                                Upload a new image to replace the current one, or click the X to remove it
-                            </p>
-                        )}
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div className="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-                    {isEditMode ? (
-                        <button 
-                            type="button" 
-                            onClick={() => router.back()} 
-                            className="text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
+                {/* =============================================== */}
+                {/* RIGHT — Sidebar                                  */}
+                {/* =============================================== */}
+                <aside className="space-y-6 lg:sticky lg:top-4 lg:self-start">
+                    {/* Cover image */}
+                    <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <header className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3">
+                            <ImageIcon
+                                className="h-4 w-4 text-primary"
+                                aria-hidden="true"
+                            />
+                            <h3 className="text-[12.5px] font-semibold text-ink">
+                                Cover image
+                            </h3>
+                        </header>
+
+                        <div className="space-y-3 p-4">
+                            {coverPreview ? (
+                                <div className="group relative aspect-[1200/630] overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                                    <img
+                                        src={coverPreview}
+                                        alt="Cover"
+                                        className="h-full w-full object-cover"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={removeCover}
+                                        aria-label="Remove cover"
+                                        className="absolute right-2 top-2 rounded-full bg-red-500/90 p-1.5 text-white opacity-0 shadow-lg backdrop-blur-md transition-all hover:scale-110 active:scale-95 group-hover:opacity-100"
+                                    >
+                                        <X className="h-3 w-3" strokeWidth={3} />
+                                    </button>
+                                    {coverFile ? (
+                                        <span className="absolute left-2 top-2 rounded-md bg-emerald-600 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                            New
+                                        </span>
+                                    ) : (
+                                        <span className="absolute left-2 top-2 rounded-md bg-primary px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                            Current
+                                        </span>
+                                    )}
+                                </div>
+                            ) : (
+                                <label className="group flex aspect-[1200/630] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50/40 transition-all hover:border-primary/40 hover:bg-primary/5">
+                                    {isCompressing ? (
+                                        <SpinnerMini />
+                                    ) : (
+                                        <>
+                                            <Upload className="h-7 w-7 text-gray-300 transition-colors group-hover:text-primary" />
+                                            <span className="mt-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 transition-colors group-hover:text-primary/70">
+                                                Upload cover
+                                            </span>
+                                        </>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/gif,image/webp"
+                                        onChange={handleCoverChange}
+                                        className="hidden"
+                                        disabled={isCompressing}
+                                    />
+                                </label>
+                            )}
+
+                            {coverPreview && (
+                                <label className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-gray-700 transition-colors hover:bg-gray-50">
+                                    <ImageIcon
+                                        className="h-3.5 w-3.5"
+                                        aria-hidden="true"
+                                    />
+                                    Replace image
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/gif,image/webp"
+                                        onChange={handleCoverChange}
+                                        className="hidden"
+                                        disabled={isCompressing}
+                                    />
+                                </label>
+                            )}
+
+                            <p className="text-[11px] text-gray-500">
+                                Recommended 1200×630 · max 5 MB
+                            </p>
+                        </div>
+                    </section>
+
+                    {/* Details */}
+                    <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <header className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3">
+                            <Hash
+                                className="h-4 w-4 text-primary"
+                                aria-hidden="true"
+                            />
+                            <h3 className="text-[12.5px] font-semibold text-ink">
+                                Details
+                            </h3>
+                        </header>
+
+                        <div className="space-y-4 p-4">
+                            {/* Slug */}
+                            <Field
+                                label="Slug"
+                                required
+                                error={errors.slug?.message}
+                                htmlFor="slug"
+                            >
+                                <div className="flex overflow-hidden rounded-lg border border-gray-300 bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                                    <span className="flex items-center border-r border-gray-200 bg-gray-50 px-2.5 font-mono text-[11px] text-gray-500">
+                                        /blog/
+                                    </span>
+                                    <input
+                                        id="slug"
+                                        type="text"
+                                        value={slug}
+                                        onChange={(e) => {
+                                            setSlug(e.target.value);
+                                            setSlugTouched(true);
+                                        }}
+                                        required
+                                        placeholder="url-friendly-slug"
+                                        className="min-w-0 flex-1 border-0 bg-white px-3 py-2.5 font-mono text-[12px] text-ink outline-none placeholder:text-gray-400"
+                                    />
+                                </div>
+                            </Field>
+
+                            {/* Status */}
+                            <Field
+                                label="Status"
+                                required
+                                error={errors.status?.message}
+                                htmlFor="status"
+                            >
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatus("DRAFT")}
+                                        className={`inline-flex items-center justify-center gap-1.5 rounded-lg border-[1.5px] px-3 py-2 text-[12px] font-semibold transition-colors ${
+                                            status === "DRAFT"
+                                                ? "border-amber-300 bg-amber-50 text-amber-700"
+                                                : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                                        }`}
+                                    >
+                                        <EyeOff
+                                            className="h-3.5 w-3.5"
+                                            aria-hidden="true"
+                                        />
+                                        Draft
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatus("PUBLISHED")}
+                                        className={`inline-flex items-center justify-center gap-1.5 rounded-lg border-[1.5px] px-3 py-2 text-[12px] font-semibold transition-colors ${
+                                            status === "PUBLISHED"
+                                                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                                                : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                                        }`}
+                                    >
+                                        <Eye
+                                            className="h-3.5 w-3.5"
+                                            aria-hidden="true"
+                                        />
+                                        Publish
+                                    </button>
+                                </div>
+                            </Field>
+                        </div>
+                    </section>
+
+                    {/* Payload preview */}
+                    <section className="overflow-hidden rounded-2xl border border-primary-100 bg-primary-50/40">
+                        <header className="flex items-center gap-2 border-b border-primary-100 bg-primary-50 px-4 py-2.5">
+                            <Quote
+                                className="h-3.5 w-3.5 text-primary"
+                                aria-hidden="true"
+                            />
+                            <h3 className="text-[11.5px] font-bold uppercase tracking-[0.14em] text-primary">
+                                Payload preview
+                            </h3>
+                        </header>
+                        <pre className="overflow-x-auto px-4 py-3 font-mono text-[10.5px] leading-relaxed text-primary-900/80">
+{JSON.stringify(
+    {
+        title: title || "…",
+        slug: slug || "…",
+        excerpt: excerpt || "…",
+        content: content ? `${content.slice(0, 24)}…` : "…",
+        coverImage: coverFile ? "(file)" : coverImage || "…",
+        status,
+    },
+    null,
+    2
+)}
+                        </pre>
+                    </section>
+                </aside>
+            </div>
+
+            {/* ---------- Sticky action bar ---------- */}
+            <div className="sticky bottom-4 z-20 mt-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white/95 px-4 py-3 shadow-lg shadow-black/5 backdrop-blur-sm sm:px-5">
+                    <p className="hidden text-[11.5px] text-gray-500 sm:block">
+                        {isEditMode
+                            ? "Changes are applied on save."
+                            : isPublished
+                            ? "The post will be visible to readers immediately."
+                            : "The post will be saved as a draft."}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-[12.5px] font-semibold text-gray-700 transition-colors hover:bg-gray-100"
                         >
                             Cancel
                         </button>
-                    ) : <div />}
-                    <div className="flex items-center gap-4">
-                        
-                        <button 
-                            type="submit" 
-                            disabled={isPending} 
-                            className="flex items-center gap-3 px-10 py-3.5 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:cursor-not-allowed"
+                        <button
+                            type="submit"
+                            disabled={isPending || isCompressing}
+                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[12.5px] font-semibold text-white shadow-sm shadow-primary/20 transition-colors hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            {isPending ? <SpinnerMini /> : <Save size={18} />}
-                            {isEditMode ? "SAVE UPDATES" : "PUBLISH NOW"}
+                            {isPending ? (
+                                <>
+                                    <SpinnerMini />
+                                    Saving…
+                                </>
+                            ) : (
+                                <>
+                                    <Save
+                                        className="h-3.5 w-3.5"
+                                        aria-hidden="true"
+                                    />
+                                    {isEditMode
+                                        ? "Save changes"
+                                        : isPublished
+                                        ? "Publish post"
+                                        : "Save draft"}
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>

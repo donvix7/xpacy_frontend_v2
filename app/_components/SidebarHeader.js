@@ -4,11 +4,9 @@ import SearchInput from "./SearchInput";
 import ProfileDisplay from "./ProfileDisplay";
 import DashboardHeading from "./DashboardHeading";
 import MobileProfileMenu from "./MobileProfileMenu";
-import { getAdminProfile, getPropertyOwnerProfile, getUserProfile } from "../_lib/data-services";
+import { getPropertyOwnerProfile, getUserProfile } from "../_lib/data-services";
 import { cookies } from "next/headers";
 import MobileNav from "./MobileNav";
-import OrganizationSwitcher from "./OrganizationSwitcher";
-import { getAllOrganization } from "../_lib/data-services";
 import ShareOrganizationListings from "./ShareOrganizationListings";
 import { isValidOrganizationId } from "../_lib/public-navigation";
 import { getDashboardRole } from "../_lib/role-routing";
@@ -25,9 +23,6 @@ export default async function SidebarHeader({ role = "user", isOrganizationAdmin
         && ["property-owner", "property-manager", "facility-manager"].includes(role)
         && ["property-owner", "property-manager", "facility-manager"].includes(activeRole)
         && isValidOrganizationId(cookieStore.get("organizationId")?.value);
-    const organizations = activeOrganizationAdmin && activeRole === "property-owner"
-        ? getOrganizationList(await getAllOrganization())
-        : [];
     const activeOrganizationId = cookieStore.get("organizationId")?.value || "";
     return (
         <div className="sticky top-0 z-[10] flex items-center justify-between gap-3 border-b border-line bg-card px-3 py-3 shadow-[0_1px_2px_rgba(31,58,82,0.05)] md:px-8 lg:py-4">
@@ -49,24 +44,23 @@ export default async function SidebarHeader({ role = "user", isOrganizationAdmin
                 
                 {activeRole === "admin" && (
                     <>
-                        
                         <div className="hidden h-10 w-px bg-line lg:block"></div>
                     </>
                 )}
                 
                 {activeRole === "property-owner" && (
                     <>
-                        {activeOrganizationAdmin && <OrganizationSwitcher organizations={organizations} activeOrganizationId={activeOrganizationId} />}
+                        <Link href="/auth/proceed" className="xp-btn xp-btn-fill hidden text-sm lg:inline-flex">Switch organization</Link>
                         {canShareListings && (
                             <ShareOrganizationListings organizationId={activeOrganizationId} inHeader />
                         )}
                         {activeOrganizationAdmin && <Link href="/admin/add-new-property" className="xp-btn xp-btn-fill px-3 py-2 text-sm lg:px-5 lg:py-3 lg:text-[15px]">Add Property</Link>}
-                        {activeOrganizationAdmin && <Link href="/property-owner/invite-manager" className="xp-btn xp-btn-fill px-3 py-2 text-sm lg:px-5 lg:py-3 lg:text-[15px]">Add Manager</Link>}
                         <div className="hidden h-10 w-px bg-line lg:block"></div>
                     </>
                 )}
                 {activeRole === "property-manager" && (
                     <>
+                        <Link href="/auth/proceed" className="xp-btn xp-btn-fill hidden text-sm lg:inline-flex">Switch organization</Link>
                         {canShareListings && (
                             <ShareOrganizationListings organizationId={activeOrganizationId} inHeader />
                         )}
@@ -75,8 +69,14 @@ export default async function SidebarHeader({ role = "user", isOrganizationAdmin
                         <div className="hidden h-10 w-px bg-line lg:block"></div>
                     </>
                 )}
-                {activeRole === "facility-manager" && canShareListings && (
-                    <ShareOrganizationListings organizationId={activeOrganizationId} inHeader />
+                {activeRole === "facility-manager" && (
+                    <>
+                        <Link href="/auth/proceed" className="xp-btn xp-btn-fill hidden text-sm lg:inline-flex">Switch organization</Link>
+                        {canShareListings && (
+                            <ShareOrganizationListings organizationId={activeOrganizationId} inHeader />
+                        )}
+                        <div className="hidden h-10 w-px bg-line lg:block"></div>
+                    </>
                 )}
 
                 <Suspense fallback={<HeaderSkeleton />}>
@@ -91,29 +91,20 @@ function normalizeOrganizationRole(role) {
     return String(role || "").trim().toLowerCase().replace(/[\s_-]/g, "");
 }
 
-function getOrganizationList(payload) {
-    return [payload, payload?.data, payload?.organizations, payload?.data?.organizations, payload?.items]
-        .find(Array.isArray) || [];
-}
-
 async function ProfileWrapper({ role }) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
+
 
     let profile;
     if (["property-owner", "property-manager", "facility-manager"].includes(role)) {
-        profile = await getPropertyOwnerProfile(token);
+        profile = await getUserProfile();
     } else if (role === "admin") {
-        profile = await getAdminProfile(token);
+        profile = await getUserProfile();
     } else {
-        profile = await getUserProfile(token);
+        profile = await getUserProfile();
     }
 
     return (
-        <>
-            <ProfileDisplay role={role} profile={profile} />
-            <MobileProfileMenu profile={profile} role={role} />
-        </>
+        <ProfileDisplay role={role} profile={profile} />
     );
 }
 

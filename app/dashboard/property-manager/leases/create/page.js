@@ -2,6 +2,7 @@
 
 import FormInput from "@/app/_components/FormInput";
 import SpinnerMini from "@/app/_components/SpinnerMini";
+import Modal from "@/app/_components/Modal";
 import { url } from "@/app/_lib/constants";
 import axios from "axios";
 import { useState } from "react";
@@ -493,20 +494,17 @@ const AddNewLeaseForm = ({
             </form>
 
             {/* ---------- Preview Modal ---------- */}
-            {isPreviewOpen && previewPayload && (
-                <div
-                    className="xp-surface fixed inset-0 z-50 flex items-center justify-center bg-side/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
-                    onClick={() => !isPending && setIsPreviewOpen(false)}
-                >
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="lease-preview-title"
-                        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-in zoom-in-95 duration-200"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div className="flex items-start justify-between gap-4 border-b border-line p-5 sm:p-6">
+            <Modal.Window
+                open={isPreviewOpen && Boolean(previewPayload)}
+                onClose={() => !isPending && setIsPreviewOpen(false)}
+                closeOnOverlayClick={!isPending}
+                closeOnEscape={!isPending}
+                hideCloseButton
+                className="flex max-h-[90vh] w-full max-w-2xl flex-col"
+                ariaLabelledBy="lease-preview-title"
+            >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-4 border-b border-line p-5 sm:p-6">
                             <div className="flex min-w-0 flex-col gap-1">
                                 <p id="lease-preview-title" className="text-[17px] font-semibold text-ink">
                                     {isEditMode
@@ -616,9 +614,7 @@ const AddNewLeaseForm = ({
                                 {isPending && <SpinnerMini />}
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
+            </Modal.Window>
         </div>
     );
 };

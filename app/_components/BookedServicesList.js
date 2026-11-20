@@ -1,4 +1,4 @@
-import { getAdminProfile, getBookedServices, getUserProfile } from "../_lib/data-services";
+import { getBookedServices, getUserProfile } from "../_lib/data-services";
 import { cookies } from "next/headers";
 import EmptyState from "./EmptyState";
 import StatusChips from "./StatusChips";

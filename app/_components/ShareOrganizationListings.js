@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, Copy, ExternalLink, Link2, Share2, X } from "lucide-react";
+import Modal from "./Modal";
 
 export default function ShareOrganizationListings({ organizationId, inHeader = false }) {
     const [message, setMessage] = useState("");
@@ -10,10 +11,20 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
     const [sharing, setSharing] = useState(false);
+    const [origin, setOrigin] = useState("");
 
     const listingsPath = `/listings?organizationId=${encodeURIComponent(organizationId)}`;
-    const getListingsUrl = () =>
-        typeof window !== "undefined" ? `${window.location.origin}${listingsPath}` : listingsPath;
+
+    useEffect(() => {
+        setOrigin(window.location.origin);
+    }, []);
+
+    const displayUrl = origin ? `${origin}${listingsPath}` : listingsPath;
+    const getShareUrl = () => {
+        if (origin) return `${origin}${listingsPath}`;
+        if (typeof window !== "undefined") return `${window.location.origin}${listingsPath}`;
+        return listingsPath;
+    };
 
     /* ------------------------------------------------------------------ */
     /* Lock scroll & close on Escape when modal is open                    */
@@ -43,7 +54,7 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
 
     const copyInviteLink = async () => {
         try {
-            await navigator.clipboard.writeText(getListingsUrl());
+            await navigator.clipboard.writeText(getShareUrl());
             setCopied(true);
             setMessageType("success");
             setMessage("Invite link copied — you can now send it to your guest.");
@@ -54,7 +65,7 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
     };
 
     const shareInviteLink = async () => {
-        const url = getListingsUrl();
+        const url = getShareUrl();
         const shareData = {
             title: "Explore our property listings",
             text: "View properties listed by our organization.",
@@ -142,8 +153,8 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5">
                             <Link2 size={15} className="shrink-0 text-gray-400" />
-                            <code className="min-w-0 flex-1 truncate font-mono text-xs text-gray-700">
-                                {getListingsUrl()}
+                            <code suppressHydrationWarning className="min-w-0 flex-1 truncate font-mono text-xs text-gray-700">
+                                {displayUrl}
                             </code>
                         </div>
 
@@ -214,99 +225,80 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
                     <span className="sm:hidden">Share</span>
                 </button>
 
-                {isOpen && (
-                    <div
-                        className="xp-surface fixed inset-0 z-[11000] flex items-center justify-center bg-side/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
-                        onMouseDown={(event) => {
-                            if (event.target === event.currentTarget) setIsOpen(false);
-                        }}
-                    >
-                        <div
-                            role="dialog"
-                            aria-modal="true"
-                            aria-label="Share organization listings"
-                            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-in zoom-in-95 duration-200"
-                        >
-                            <button
-                                type="button"
-                                onClick={() => setIsOpen(false)}
-                                aria-label="Close sharing dialog"
-                                title="Close"
-                                className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-lg text-mute transition-colors hover:bg-soft hover:text-ink"
+            <Modal.Window
+                open={isOpen}
+                onClose={() => setIsOpen(false)}
+                className="max-w-md"
+                ariaLabel="Share organization listings"
+            >
+                <div className="flex flex-col items-center gap-4 p-5 text-center sm:p-6">
+                    <span className="grid h-12 w-12 place-items-center rounded-xl bg-soft text-side-active">
+                        <Share2 className="h-6 w-6" aria-hidden="true" />
+                    </span>
+
+                    <div className="max-w-xs">
+                        <h2 className="text-[17px] font-semibold leading-tight text-ink">
+                            Share your listings
+                        </h2>
+                        <p className="mt-1.5 text-[13px] leading-6 text-mute">
+                            Send this link to let people explore properties listed by your organization.
+                        </p>
+                    </div>
+
+                    <div className="w-full rounded-xl border border-line bg-soft/50 p-3">
+                        <div className="flex min-w-0 items-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-left">
+                            <Link2 size={15} className="shrink-0 text-mute" aria-hidden="true" />
+                            <code suppressHydrationWarning className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink">
+                                {displayUrl}
+                            </code>
+                        </div>
+                        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <Link
+                                href={listingsPath}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center justify-center gap-1.5 text-[13px] font-medium text-side-active transition-colors hover:text-ink"
                             >
-                                <X className="h-4 w-4" />
-                            </button>
-
-                            <div className="flex flex-col items-center gap-4 p-5 text-center sm:p-6">
-                                <span className="grid h-12 w-12 place-items-center rounded-xl bg-soft text-side-active">
-                                    <Share2 className="h-6 w-6" aria-hidden="true" />
-                                </span>
-
-                                <div className="max-w-xs">
-                                    <h2 className="text-[17px] font-semibold leading-tight text-ink">
-                                        Share your listings
-                                    </h2>
-                                    <p className="mt-1.5 text-[13px] leading-6 text-mute">
-                                        Send this link to let people explore properties listed by your organization.
-                                    </p>
-                                </div>
-
-                                <div className="w-full rounded-xl border border-line bg-soft/50 p-3">
-                                    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-left">
-                                        <Link2 size={15} className="shrink-0 text-mute" aria-hidden="true" />
-                                        <code className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink">
-                                            {getListingsUrl()}
-                                        </code>
-                                    </div>
-                                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <Link
-                                            href={listingsPath}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="inline-flex items-center justify-center gap-1.5 text-[13px] font-medium text-side-active transition-colors hover:text-ink"
-                                        >
-                                            Preview listings <ExternalLink size={14} aria-hidden="true" />
-                                        </Link>
-                                        <div className="flex shrink-0 gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={copyInviteLink}
-                                                aria-label="Copy invite link"
-                                                className={`xp-btn flex-1 px-3 py-2 font-mono text-[12.5px] sm:flex-initial ${
-                                                    copied ? "border-up bg-up-bg text-up hover:bg-up-bg" : ""
-                                                }`}
-                                            >
-                                                {copied ? <Check size={15} /> : <Copy size={15} />}
-                                                {copied ? "Copied" : "Copy"}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={shareInviteLink}
-                                                disabled={sharing}
-                                                aria-label="Share listings link"
-                                                className="xp-btn flex-1 px-3 py-2 font-mono text-[12.5px] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-initial"
-                                            >
-                                                <Share2 size={15} aria-hidden="true" />
-                                                {sharing ? "Sharing…" : "Share"}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {message && (
-                                    <p
-                                        role="status"
-                                        className={`w-full text-left text-[12.5px] leading-5 ${
-                                            messageType === "success" ? "text-up" : messageType === "error" ? "text-down" : "text-mute"
-                                        }`}
-                                    >
-                                        {message}
-                                    </p>
-                                )}
+                                Preview listings <ExternalLink size={14} aria-hidden="true" />
+                            </Link>
+                            <div className="flex shrink-0 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={copyInviteLink}
+                                    aria-label="Copy invite link"
+                                    className={`xp-btn flex-1 px-3 py-2 font-mono text-[12.5px] sm:flex-initial ${
+                                        copied ? "border-up bg-up-bg text-up hover:bg-up-bg" : ""
+                                    }`}
+                                >
+                                    {copied ? <Check size={15} /> : <Copy size={15} />}
+                                    {copied ? "Copied" : "Copy"}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={shareInviteLink}
+                                    disabled={sharing}
+                                    aria-label="Share listings link"
+                                    className="xp-btn flex-1 px-3 py-2 font-mono text-[12.5px] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-initial"
+                                >
+                                    <Share2 size={15} aria-hidden="true" />
+                                    {sharing ? "Sharing…" : "Share"}
+                                </button>
                             </div>
                         </div>
                     </div>
-                )}
+
+                    {message && (
+                        <p
+                            role="status"
+                            className={`w-full text-left text-[12.5px] leading-5 ${
+                                messageType === "success" ? "text-up" : messageType === "error" ? "text-down" : "text-mute"
+                            }`}
+                        >
+                            {message}
+                        </p>
+                    )}
+                </div>
+            </Modal.Window>
             </>
         );
     }

@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ImageUp, LoaderCircle, UploadCloud, X } from 'lucide-react';
+import Modal from './Modal';
 import { compressImages } from '../_lib/image-compression';
 
 const FileUploadModal = ({ isOpen, onClose, onFileUpload }) => {
@@ -112,24 +113,16 @@ const FileUploadModal = ({ isOpen, onClose, onFileUpload }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="xp-surface fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-side/60 p-4 backdrop-blur-sm">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0"
-        onClick={handleClose}
-        aria-hidden="true"
-      />
-
-      {/* Modal */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="upload-modal-title"
-        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-line bg-card shadow-2xl"
-      >
+    <Modal.Window
+      open={isOpen}
+      onClose={handleClose}
+      hideCloseButton
+      closeOnOverlayClick={!isUploading}
+      closeOnEscape={!isUploading}
+      className="max-w-md"
+      ariaLabelledBy="upload-modal-title"
+    >
         {/* Header */}
         <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">
@@ -279,8 +272,7 @@ const FileUploadModal = ({ isOpen, onClose, onFileUpload }) => {
             )}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal.Window>
   );
 };
 

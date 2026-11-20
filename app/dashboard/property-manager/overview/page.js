@@ -36,7 +36,8 @@ export default async function Page() {
     const invoices = results[5].status === "fulfilled" ? results[5].value : [];
 
     const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
+    const matchedProperties = allProperties.filter(p => p.property_owner_id === profile?.id);
+    const properties = matchedProperties.length > 0 ? matchedProperties : allProperties;
     const myServices = Array.isArray(services) ? services : [];
     const myBookings = Array.isArray(bookings) ? bookings : [];
     const myInvoices = Array.isArray(invoices) ? invoices : [];

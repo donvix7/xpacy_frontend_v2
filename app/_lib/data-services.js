@@ -123,13 +123,40 @@ export async function getRentProperties() {
   }
 }
 
-export async function getProperties(search = {}) {
-  return []
+export async function getProperties(id) {
+  const token = getRawToken()
+if (!token || !id) return null;
+  try {
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/properties?organizationId=${id}&page=1&limit=20&sortBy=createdAt&sortOrder=desc
+`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    const data = await response.json();
+    console.log(response)
+    return data || null;
+  } catch (error) {
+    throw toDataServiceError(error, "getProperties");
+  }
+
 }
 
 export async function getLatestPropertie(){
-  return []
-}
+    const token = await getRawToken();
+
+  try {
+    const response = await safeFetch(`${SERVICES_URL}/property/fetch-property/${id}`);
+    await logApiFailure(response, "getProperty");
+    const { property } = await response.json();
+    return property || null;
+  } catch (error) {
+    console.warn("Error fetching property:", error);
+    return null;
+  }}
 
 export async function getProperty(id) {
   try {
@@ -144,30 +171,11 @@ export async function getProperty(id) {
 }
 
 export async function getOtherProperties() {
-  try {
-    const response = await safeFetch(`${url}/property/fetch-properties?limit=6`);
-    await logApiFailure(response, "getOtherProperties");
-    const { properties } = await response.json();
-    return properties || [];
-  } catch (error) {
-    console.warn("Error fetching other properties:", error);
-    return [];
-  }
+ return []
 }
 
 export async function getCities() {
-  try {
-    const response = await safeFetch(`${url}/location/fetch-states`, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-    });
-    await logApiFailure(response, "getCities");
-    const { state } = await response.json();
-    return state || [];
-  } catch (error) {
-    console.warn("Error fetching states:", error);
-    return [];
-  }
+ return []
 }
 
 /* ----------------------------------------------------------------
@@ -175,15 +183,7 @@ export async function getCities() {
  * ---------------------------------------------------------------- */
 
 export async function getBlogs() {
-  try {
-    const response = await safeFetch(`${url}/blog/all-posts`);
-    await logApiFailure(response, "getBlogs");
-    const { data } = await response.json();
-    return data || [];
-  } catch (error) {
-    console.warn("Error fetching blogs:", error);
-    return [];
-  }
+  return []
 }
 export async function getAdminBlogs() {
   const token = await getRawToken();
@@ -208,14 +208,24 @@ export async function getAdminBlogs() {
 }
 
 export async function getBlog(id) {
+ const token = await getRawToken();
   try {
-    const response = await safeFetch(`${url}/blog/post/${id}`);
-    await logApiFailure(response, "getBlog");
+    const response = await safeFetch(
+      `${SERVICE_URL}/blogs?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      {
+        method: "GET",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    await ensureApiSuccess(response, "getAdminBlogById");
     const { data } = await response.json();
-    return data || null;
+    return data || [];
   } catch (error) {
-    console.warn("Error fetching blog:", error);
-    return null;
+    throw toDataServiceError(error, "getAdminBloById");
   }
 }
 
@@ -259,29 +269,8 @@ export async function getUserProfile() {
   }
 }
 
-export async function getPropertyOwnerProfile(token) {
-  const raw = await getRawToken(token);
-  if (!raw) return null;
-  try {
-    const response = await safeFetch(`${url}/property-owner/fetch-profile`, {
-      next: { tags: ["property-owner-profile"] },
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${raw}`,
-        "Content-type": "application/json",
-      },
-    });
-    await logApiFailure(response, "getPropertyOwnerProfile");
-    if (!response.ok) {
-      return null;
-    }
-    const data = await response.json();
-    if (!response.ok || data?.success === false) return null;
-    return data.owner || data.user || data.data || data;
-  } catch (error) {
-    console.warn("Error fetching property owner profile:", error);
-    return null;
-  }
+export async function getPropertyOwnerProfile() {
+  return {}
 }
 
 export async function getPropertyOwnerInfo(tokenKey) {
@@ -931,11 +920,11 @@ export async function getAdminOrganizationById(id) {
   }
 }
 
-export async function getAdminOrganizationMembers(id) {
+export async function getAdminOrganizationMembers(id, limit = 100) {
   const token = await getRawToken();
   try {
     const response = await safeFetch(
-      `${SERVICE_URL}/admin/organizations/${id}/members?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      `${SERVICE_URL}/admin/organizations/${id}/members?page=1&limit=${encodeURIComponent(limit)}&sortBy=createdAt&sortOrder=desc`,
       {
         method: "GET",
         headers: {
@@ -1308,27 +1297,7 @@ export async function getMyBookings() {
  * ---------------------------------------------------------------- */
 
 export async function getAdminProfile(token) {
-  const raw = await getRawToken(token);
-  if (!raw) return null;
-  try {
-    const response = await safeFetch(`${url}/admin/fetch-admin-profile`, {
-      next: { tags: ["admin-profile"] },
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${raw}`,
-        "Content-type": "application/json",
-      },
-    });
-    await logApiFailure(response, "getAdminProfile");
-    if (!response.ok) {
-      return null;
-    }
-    const { admin } = await response.json();
-    return admin;
-  } catch (error) {
-    console.warn("Error fetching admin profile (catch):", error);
-    return null;
-  }
+  return []
 }
 
 export async function getAdminProperties() {
@@ -1479,11 +1448,30 @@ export async function getAllAdmin(token) {
   }
 }
 
-export async function getAdminBooking(propertyId, token) {
+export async function getAdminBooking(propertyIdOrToken, passedToken) {
+  let propertyId = null;
+  let token = passedToken;
+
+  if (
+    propertyIdOrToken &&
+    typeof propertyIdOrToken === "string" &&
+    !propertyIdOrToken.startsWith("eyJ") &&
+    !propertyIdOrToken.includes(".") &&
+    propertyIdOrToken.length < 50
+  ) {
+    propertyId = propertyIdOrToken;
+  } else if (!passedToken && propertyIdOrToken) {
+    token = propertyIdOrToken;
+  }
+
   const raw = await getRawToken(token);
   if (!raw) return [];
   try {
-    const response = await safeFetch(`${SERVICE_URL}/properties/${propertyId}/bookings?page=1&limit=20&sortBy=createdAt&sortOrder=desc`, {
+    const endpoint = propertyId
+      ? `${SERVICE_URL}/properties/${encodeURIComponent(propertyId)}/bookings?page=1&limit=10000&sortBy=createdAt&sortOrder=desc`
+      : `${url}/admin/fetch-bookings`;
+
+    const response = await safeFetch(endpoint, {
       next: { tags: ["admin-bookings"] },
       method: "GET",
       headers: {
@@ -1491,9 +1479,13 @@ export async function getAdminBooking(propertyId, token) {
         "Content-type": "application/json",
       },
     });
+
+    if (!response.ok && response.status === 404 && !propertyId) {
+      return [];
+    }
     await ensureApiSuccess(response, "getAdminBooking");
-    const { data } = await response.json();
-    return data || [];
+    const json = await response.json();
+    return json?.data || json?.bookings || (Array.isArray(json) ? json : []);
   } catch (error) {
     throw toDataServiceError(error, "getAdminBooking");
   }
@@ -1874,11 +1866,9 @@ export async function getSingleListing(id) {
 }
 
 export async function getTrialPlans(){
-  
    const token = await getRawToken();
   try {
-    const response = await safeFetch(`${SERVICE_URL}/subscription-plans/trial
-`,
+    const response = await safeFetch(`${SERVICE_URL}/subscription-plans/trial`,
     {
       method: "GET",
       headers: {
@@ -1887,20 +1877,18 @@ export async function getTrialPlans(){
       },
       cache: "no-store",
     });
-    await ensureApiSuccess(response, "getSubscriptionList");
+    await ensureApiSuccess(response, "getTrialPlans");
     const data  = await safeJson(response);
-    console.log(data)
     return data || null;
   } catch (error) {
-    throw toDataServiceError(error, "getSubscriptionList");
+    throw toDataServiceError(error, "getTrialPlans");
   }
 }
 
 export async function getSubscriptionList(){
   const token = await getRawToken();
   try {
-    const response = await safeFetch(`${SERVICE_URL}/subscription-plans
-`,
+    const response = await safeFetch(`${SERVICE_URL}/subscription-plans`,
     {
       method: "GET",
       headers: {
@@ -1911,7 +1899,6 @@ export async function getSubscriptionList(){
     });
     await ensureApiSuccess(response, "getSubscriptionList");
     const data  = await safeJson(response);
-    console.log(data)
     return data || null;
   } catch (error) {
     throw toDataServiceError(error, "getSubscriptionList");
@@ -1930,19 +1917,18 @@ export async function getSubscriptionPlans(){
       },
       cache: "no-store",
     });
-    await ensureApiSuccess(response, "getSubscriptionList");
+    await ensureApiSuccess(response, "getSubscriptionPlans");
     const { data } = await safeJson(response);
     return data || null;
   } catch (error) {
-    throw toDataServiceError(error, "getSubscriptionList");
+    throw toDataServiceError(error, "getSubscriptionPlans");
   }
 }
 
 export async function getAccountSubscriptions(){
   const token = await getRawToken();
   try {
-    const response = await safeFetch(`https://services.xpacy.com/api/v1/account/subscription
-`,
+    const response = await safeFetch(`${SERVICE_URL}/account/subscription`,
     {
       method: "GET",
       headers: {
@@ -1951,12 +1937,11 @@ export async function getAccountSubscriptions(){
       },
       cache: "no-store",
     });
-    await ensureApiSuccess(response, "getSubscriptionList");
-    const data  = await safeJson(response);
-    console.log(data,"data")
+    await ensureApiSuccess(response, "getAccountSubscriptions");
+    const data = await safeJson(response);
     return data || null;
   } catch (error) {
-    throw toDataServiceError(error, "getSubscriptionList");
+    throw toDataServiceError(error, "getAccountSubscriptions");
   }
 }
 
@@ -1971,7 +1956,6 @@ export async function getActiveOrganizationRole() {
 
 
 export async function getWallet() {
-  
    const token = await getRawToken();
   try {
     const response = await safeFetch(`${SERVICE_URL}/wallet`,
@@ -1983,17 +1967,15 @@ export async function getWallet() {
       },
       cache: "no-store",
     });
-    await ensureApiSuccess(response, "getSubscriptionList");
-    const  data  = await safeJson(response);
-    console.log(data)
+    await ensureApiSuccess(response, "getWallet");
+    const data = await safeJson(response);
     return data || null;
   } catch (error) {
-    throw toDataServiceError(error, "getSubscriptionList");
+    throw toDataServiceError(error, "getWallet");
   }
 }
 
 export async function getWalletTransactions() {
-  
    const token = await getRawToken();
   try {
     const response = await safeFetch(`${SERVICE_URL}/wallet/transactions?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
@@ -2005,22 +1987,18 @@ export async function getWalletTransactions() {
       },
       cache: "no-store",
     });
-    await ensureApiSuccess(response, "getSubscriptionList");
-    const  data  = await safeJson(response);
-    console.log(response,"data")
+    await ensureApiSuccess(response, "getWalletTransactions");
+    const data = await safeJson(response);
     return data || null;
   } catch (error) {
-    throw toDataServiceError(error, "getSubscriptionList");
+    throw toDataServiceError(error, "getWalletTransactions");
   }
 }
 
 export async function getVirtualAccounts() {
-  
    const token = await getRawToken();
   try {
-    const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts
-
-`,
+    const response = await safeFetch(`${SERVICE_URL}/virtual-accounts`,
     {
       method: "GET",
       headers: {
@@ -2029,22 +2007,43 @@ export async function getVirtualAccounts() {
       },
       cache: "no-store",
     });
-    await ensureApiSuccess(response, "getSubscriptionList");
-    const  data  = await safeJson(response);
-    console.log(data,"data")
+    await ensureApiSuccess(response, "getVirtualAccounts");
+    const data = await safeJson(response);
     return data || [];
   } catch (error) {
-    throw toDataServiceError(error, "getSubscriptionList");
+    throw toDataServiceError(error, "getVirtualAccounts");
+  }
+}
+
+export async function getAdminVirtualAccounts(params = {}) {
+   const token = await getRawToken();
+   const page = params?.page || 1;
+   const limit = params?.limit || 20;
+   const sortBy = params?.sortBy || "createdAt";
+   const sortOrder = params?.sortOrder || "desc";
+   const searchParam = params?.search ? `&search=${encodeURIComponent(params.search)}` : "";
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/admin/virtual-accounts?page=${page}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}${searchParam}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getAdminVirtualAccounts");
+    const data = await safeJson(response);
+    return data || [];
+  } catch (error) {
+    throw toDataServiceError(error, "getAdminVirtualAccounts");
   }
 }
 
 export async function getVirtualAccountById(id) {
-  
    const token = await getRawToken();
   try {
-    const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${id}
-
-`,
+    const response = await safeFetch(`${SERVICE_URL}/virtual-accounts/${encodeURIComponent(id)}`,
     {
       method: "GET",
       headers: {
@@ -2053,23 +2052,18 @@ export async function getVirtualAccountById(id) {
       },
       cache: "no-store",
     });
-    await ensureApiSuccess(response, "getSubscriptionList");
-    const  data  = await safeJson(response);
-    console.log(data,"data")
+    await ensureApiSuccess(response, "getVirtualAccountById");
+    const data = await safeJson(response);
     return data || [];
   } catch (error) {
-    throw toDataServiceError(error, "getSubscriptionList");
+    throw toDataServiceError(error, "getVirtualAccountById");
   }
 }
 
-
-export async function getVirtualAccountTransactions() {
-  
+export async function getAdminVirtualAccountById(id) {
    const token = await getRawToken();
   try {
-    const response = await safeFetch(`https://services.xpacy.com/api/v1/virtual-accounts/${id}/transactions
-
-`,
+    const response = await safeFetch(`${SERVICE_URL}/admin/virtual-accounts/${encodeURIComponent(id)}`,
     {
       method: "GET",
       headers: {
@@ -2078,11 +2072,95 @@ export async function getVirtualAccountTransactions() {
       },
       cache: "no-store",
     });
-    await ensureApiSuccess(response, "getSubscriptionList");
-    const  data  = await safeJson(response);
-    console.log(data,"data")
+    await ensureApiSuccess(response, "getAdminVirtualAccountById");
+    const data = await safeJson(response);
+    console.log(data)
     return data || [];
   } catch (error) {
-    throw toDataServiceError(error, "getSubscriptionList");
+    throw toDataServiceError(error, "getAdminVirtualAccountById");
+  }
+}
+
+export async function getVirtualAccountTransactions(id) {
+   const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/virtual-accounts/${encodeURIComponent(id)}/transactions`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getVirtualAccountTransactions");
+    const data = await safeJson(response);
+    return data || [];
+  } catch (error) {
+    throw toDataServiceError(error, "getVirtualAccountTransactions");
+  }
+}
+
+export async function getAdminVirtualAccountTransactions(id) {
+   const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/admin/virtual-accounts/${encodeURIComponent(id)}/transactions`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getAdminVirtualAccountTransactions");
+    const data = await safeJson(response);
+    return data || [];
+  } catch (error) {
+    throw toDataServiceError(error, "getAdminVirtualAccountTransactions");
+  }
+}
+
+export async function getSubscriptionPayments(params = {}) {
+   const token = await getRawToken();
+   const page = params?.page || 1;
+   const limit = params?.limit || 1000;
+   const sortBy = params?.sortBy || "createdAt";
+   const sortOrder = params?.sortOrder || "desc";
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/admin/subscription-payments?page=${page}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionPayments");
+    const data = await safeJson(response);
+    return data || [];
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionPayments");
+  }
+}
+
+export async function getSubscriptionPaymentById(id) {
+   const token = await getRawToken();
+  try {
+    const response = await safeFetch(`${SERVICE_URL}/admin/subscription-payments/${encodeURIComponent(id)}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    await ensureApiSuccess(response, "getSubscriptionPaymentById");
+    const data = await safeJson(response);
+    return data || [];
+  } catch (error) {
+    throw toDataServiceError(error, "getSubscriptionPaymentById");
   }
 }

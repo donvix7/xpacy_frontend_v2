@@ -116,6 +116,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             link: "/dashboard/admin/blogs",
             icon: <MessageSquare />
         },
+             {
+            text: "My Wallet",
+            link: "/dashboard/admin/wallet",
+            icon: <FaWallet />
+        },
         {
             text: "Payments",
             link: "/dashboard/admin/payments",
@@ -159,6 +164,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             link: "/dashboard/property-owner/properties",
             icon: <BiBuildingHouse className="w-5 h-5" />,
         },
+          {
+            text: "Organizations",
+            link: "/dashboard/property-owner/organizations",
+            icon: <TbBuildingCommunity />
+        },
         {
             text: "Tenants",
             link: "/dashboard/property-owner/tenants",
@@ -193,6 +203,16 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             text: "Services Requests",
             link: "/dashboard/property-owner/services",
             icon: <BsTools className="w-5 h-5" />,
+        },
+         {
+            text: "Subscriptions",
+            link: "/dashboard/property-owner/subscriptions",
+            icon: <IoDocumentOutline />
+        },
+             {
+            text: "My Wallet",
+            link: "/dashboard/property-owner/wallet",
+            icon: <FaWallet />
         },
         {
             text: "Bookings",
@@ -349,6 +369,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             text: "Notifications",
             link: "/dashboard/property-manager/notifications",
             icon: <LuBell className="w-5 h-5" /> // Bell for notifications
+        },
+        {
+            text: "Organizations",
+            link: "/dashboard/property-manager/organizations",
+            icon: <TbBuildingCommunity className="w-5 h-5" /> // Building community represents organizations
         },
         {
             text: "My Properties",

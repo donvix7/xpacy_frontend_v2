@@ -14,7 +14,7 @@ function location(organization) {
     return [organization.city, organization.state, organization.country].filter(Boolean).join(", ") || "—";
 }
 
-export default function AdminOrganizationsList({ organizations = [] }) {
+export default function AdminOrganizationsList({ organizations = [], basePath = "/dashboard/admin/organizations" }) {
     const headers = [
         { heading: "Organization" },
         { heading: "Location" },
@@ -42,7 +42,7 @@ export default function AdminOrganizationsList({ organizations = [] }) {
                 <td className="p-4 text-mute">{organization.email || "—"}</td>
                 <td className="p-4 text-center text-mute font-mono">{memberCount(organization) ?? "—"}</td>
                 <td className="p-4 text-center">
-                    <Link className="xp-btn px-3 py-1.5 text-xs font-mono" href={`/dashboard/admin/organizations/${id}`}>
+                    <Link className="xp-btn px-3 py-1.5 text-xs font-mono" href={`${basePath}/${id}`}>
                         View
                     </Link>
                 </td>
@@ -69,7 +69,7 @@ export default function AdminOrganizationsList({ organizations = [] }) {
                     <div className="flex items-center justify-between gap-4"><dt className="text-mute">Members</dt><dd className="font-mono text-ink">{memberCount(organization) ?? "—"}</dd></div>
                 </dl>
                 <div className="flex justify-end border-t border-line pt-3">
-                    <Link className="xp-btn px-3 py-1.5 text-xs font-mono" href={`/dashboard/admin/organizations/${id}`}>
+                    <Link className="xp-btn px-3 py-1.5 text-xs font-mono" href={`${basePath}/${id}`}>
                         View organization
                     </Link>
                 </div>

@@ -16,6 +16,7 @@ import DataTable from "@/app/_components/DataTable";
 import EmptyState from "@/app/_components/EmptyState";
 import StatusChips from "@/app/_components/StatusChips";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import WalletBalanceCard from "@/app/_components/WalletBalanceCard";
 import { formatCurrency } from "@/app/_lib/utils";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 import { getWallet, getWalletTransactions } from "@/app/_lib/data-services";
@@ -405,152 +406,22 @@ export default async function WalletPage() {
                 </div>
             </section>
 
-            {/* ---------- Balance card + wallet info ---------- */}
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                {/* Big balance card */}
-                <div className="relative overflow-hidden rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 p-5 text-white shadow-lg lg:col-span-2">
-                    <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary-400/20 blur-3xl" />
-                    <div className="pointer-events-none absolute -bottom-12 -left-10 h-40 w-40 rounded-full bg-amber-300/10 blur-3xl" />
-
-                    <div className="relative flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
-                                <Wallet className="h-4 w-4 text-white" />
-                            </div>
-                            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary-100">
-                                Available balance
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-100">
-                                <span className="h-1 w-1 rounded-full bg-current" />
-                                {currency}
-                            </span>
-                        </div>
-                    </div>
-
-                    <p className="relative mt-4 text-[40px] font-bold leading-none tracking-[-1.5px] text-white tabular-nums sm:text-[48px]">
-                        {formatCurrency(balance)}
-                    </p>
-
-                    <div className="relative mt-5 flex flex-wrap items-center gap-2 border-t border-white/15 pt-4">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white">
-                            <TrendingUp className="h-3 w-3 text-emerald-300" />
-                            {net >= 0 ? "+" : "−"}
-                            {formatCurrency(Math.abs(net))} net
-                        </span>
-                        {pending > 0 && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-2.5 py-1 text-[11px] font-medium text-amber-100">
-                                <Clock className="h-3 w-3" />
-                                {formatCurrency(pending)} pending
-                            </span>
-                        )}
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white">
-                            {transactions.length} transaction
-                            {transactions.length === 1 ? "" : "s"}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Wallet info card */}
-                <div className="flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <div>
-                        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">
-                            <Building2
-                                className="h-3.5 w-3.5"
-                                aria-hidden="true"
-                            />
-                            Wallet details
-                        </div>
-
-                        <div className="mt-3 flex flex-col gap-2.5 text-[12.5px]">
-                            {/* Wallet ID */}
-                            <div className="flex items-start justify-between gap-2">
-                                <span className="shrink-0 text-gray-500">
-                                    Wallet ID
-                                </span>
-                                <span className="truncate text-right font-mono text-[10.5px] font-semibold text-ink">
-                                    {walletId}
-                                </span>
-                            </div>
-
-                            {/* Currency */}
-                            <div className="flex justify-between gap-2">
-                                <span className="text-gray-500">Currency</span>
-                                <span className="font-semibold text-ink">
-                                    {currency}
-                                </span>
-                            </div>
-
-                            {/* Virtual account */}
-                            <div className="border-t border-gray-100 pt-2.5">
-                                <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-gray-500">
-                                        <ShieldCheck className="h-3 w-3" />
-                                        Virtual account
-                                    </span>
-                                    {hasVirtualAccount && (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-emerald-700">
-                                            Active
-                                        </span>
-                                    )}
-                                </div>
-
-                                {hasVirtualAccount ? (
-                                    <div className="mt-2 flex flex-col gap-1">
-                                        <p className="font-mono text-[14px] font-bold tabular-nums text-ink">
-                                            {vaNumber || "—"}
-                                        </p>
-                                        <p className="truncate text-[11.5px] text-gray-600">
-                                            {vaName || "—"}
-                                        </p>
-                                        <p className="text-[11px] text-gray-500">
-                                            {vaBank || "—"}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="mt-2 rounded-lg border border-dashed border-gray-200 bg-gray-50/50 px-3 py-2.5 text-center">
-                                        <p className="text-[11px] text-gray-500">
-                                            No virtual account assigned yet.
-                                        </p>
-                                        <p className="mt-0.5 text-[10.5px] text-gray-400">
-                                            Fund your wallet to get one
-                                            automatically.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Last updated */}
-                            {updatedAt && (
-                                <div className="flex justify-between gap-2 border-t border-gray-100 pt-2.5">
-                                    <span className="text-gray-500">
-                                        Updated
-                                    </span>
-                                    <span className="text-right text-[11px] text-gray-600">
-                                        {formatDateTime(updatedAt)}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Actions: Sync + Manage */}
-                    <div className="mt-4 flex items-center gap-2">
-                        <SyncWalletButton onSync={syncWallet} />
-                        <Link
-                            href="/dashboard/user/wallet/settings"
-                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12px] font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-                        >
-                            <CreditCard
-                                className="h-3.5 w-3.5"
-                                aria-hidden="true"
-                            />
-                            Manage
-                        </Link>
-                    </div>
-                </div>
-            </div>
+            {/* ---------- Wallet balance & ledger card (Reusable Glassmorphic Design) ---------- */}
+            <WalletBalanceCard
+                balance={balance}
+                currency={currency}
+                pending={pending}
+                credits={credits}
+                debits={debits}
+                net={net}
+                transactionsCount={transactions.length}
+                updatedAt={updatedAt}
+                virtualAccount={virtualAccount}
+                fundHref="/dashboard/admin/wallet/fund"
+                withdrawHref="/dashboard/admin/wallet/withdraw"
+                settingsHref="/dashboard/admin/wallet/settings"
+                onSync={syncWallet}
+            />
 
             {/* ---------- Transaction history ---------- */}
             <DashboardGridItem title="Transaction history">

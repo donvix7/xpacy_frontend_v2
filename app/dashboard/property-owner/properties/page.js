@@ -1,127 +1,47 @@
-import { cookies } from "next/headers";
 import PropertiesTableList from "@/app/_components/PropertiesTableList";
-import { getPropertyOwnerProperties } from "@/app/_lib/data-services";
-import PropertiesSummary from "@/app/_components/PropertiesSummary";
-import ExportButton from "@/app/_components/ExportButton";
-import DateFilter from "@/app/_components/DateFilter";
-import { checkDateInRange } from "@/app/_lib/utils";
+import {
+  getManagedProperties,
+  getMyProperties,
+  getMyRentedProperties,
+} from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import { Suspense } from "react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
-const getPrice = (p) => {
-  const n = Number(p?.property_price ?? p?.price ?? 0);
-  return Number.isFinite(n) ? n : 0;
-};
-
-export default async function Page({ searchParams }) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const params = await searchParams;
-  const filterRange = params?.range;
-
-  // Fetch data - explicitly query full unpaginated list
+export default async function Page() {
   const results = await Promise.allSettled([
-    getPropertyOwnerProperties(token, { limit: 10000 }),
+    getMyProperties(),
+    getManagedProperties(),
+    getMyRentedProperties(),
   ]);
-  const dataErrorMessages = getSettledErrorMessages(results);
-  const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
-  const allPropertiesForSummary = Array.isArray(propertiesData?.[0])
-    ? propertiesData[0]
-    : Array.isArray(propertiesData)
-      ? propertiesData
+    const dataErrorMessages = getSettledErrorMessages(results);
+
+  const unwrap = (result) =>
+    result.status === "fulfilled" && Array.isArray(result.value)
+      ? result.value
       : [];
 
-  let propertiesList = allPropertiesForSummary || [];
+  const ownedProperties = unwrap(results[0]);
+  const managedProperties = unwrap(results[1]);
+  const rentedProperties = unwrap(results[2]);
 
-  // Filter by Date Range
-  if (filterRange && filterRange !== "all_time") {
-    propertiesList = propertiesList.filter((p) => {
-      const dateStr = p.createdAt || p.created_at || p.date_added;
-      return checkDateInRange(dateStr, filterRange);
-    });
-  }
-
-  // Local Filtering exactly matching frontend query params
-  if (params.status) {
-    propertiesList = propertiesList.filter(
-      (p) => p.property_status?.toLowerCase() === params.status.toLowerCase(),
-    );
-  }
-  if (params.type) {
-    propertiesList = propertiesList.filter(
-      (p) => p.property_type?.toLowerCase() === params.type.toLowerCase(),
-    );
-  }
-  if (params.minPrice) {
-    propertiesList = propertiesList.filter(
-      (p) => Number(p.property_price) >= Number(params.minPrice),
-    );
-  }
-  if (params.maxPrice) {
-    propertiesList = propertiesList.filter(
-      (p) => Number(p.property_price) <= Number(params.maxPrice),
-    );
-  }
-  if (params.location) {
-    const query = params.location.toLowerCase();
-    propertiesList = propertiesList.filter(
-      (p) =>
-        p.city?.toLowerCase().includes(query) ||
-        p.state?.toLowerCase().includes(query) ||
-        p.property_name?.toLowerCase().includes(query),
-    );
-  }
-
-  // Manual Pagination
-  const page = Number(params.page) || 1;
-  const limit = 10;
-  const totalItems = propertiesList.length;
-  const totalPages = Math.ceil(totalItems / limit) || 1;
-  const paginatedProperties = propertiesList.slice(
-    (page - 1) * limit,
-    page * limit,
-  );
-
-  const pagination = {
-    page,
-    limit,
-    totalPages,
-    total: totalItems,
+  const counts = {
+    owned: ownedProperties.length,
+    managed: managedProperties.length,
+    rented: rentedProperties.length,
   };
 
-  // ---- Hero stats ----------------------------------------------------------
-  const available = propertiesList.filter((p) =>
-    ["available", "vacant", "for_rent", "for_sale"].includes(
-      String(p.property_status || "").toLowerCase(),
-    ),
-  ).length;
-  const occupied = propertiesList.filter(
-    (p) => String(p.property_status || "").toLowerCase() === "occupied",
-  ).length;
-  const prices = propertiesList.map(getPrice).filter((n) => n > 0);
-  const avgPrice = prices.length
-    ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
-    : 0;
+  const total =
+    counts.owned + counts.managed + counts.rented;
 
+  // ---- Hero stats ----------------------------------------------------------
   const heroStats = [
-    { label: "Properties", value: totalItems, hint: "Matching filter" },
-    {
-      label: "Available",
-      value: available,
-      hint: "Ready for listing",
-    },
-    {
-      label: "Occupied",
-      value: occupied,
-      hint: "Currently leased",
-    },
-    {
-      label: "Avg. Price",
-      value: `₦${avgPrice.toLocaleString()}`,
-      hint: "Across matching",
-    },
+    { label: "Owned", value: counts.owned, hint: "Properties you own" },
+    { label: "Managed", value: counts.managed, hint: "Under management" },
+    { label: "Rented", value: counts.rented, hint: "Currently rented" },
+    { label: "Total", value: total, hint: "Across all categories" },
   ];
 
   const today = new Date().toLocaleDateString("en-NG", {
@@ -132,7 +52,7 @@ export default async function Page({ searchParams }) {
   });
 
   return (
-    <div className="space-y-8 p-2">
+    <div className="space-y-6 p-2">
       {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
       <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
@@ -143,33 +63,21 @@ export default async function Page({ searchParams }) {
                 Property console · {today}
               </p>
               <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
-                Properties
+                My Properties
               </h1>
               <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
-                Your full portfolio at a glance — filter, review and export your listings.
+                Everything you own, manage and rent — with the details and status you need, in one place.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* DateFilter re-styled to match the hero's glassy secondary */}
-              <div className="[&_button]:inline-flex [&_button]:items-center [&_button]:gap-2 [&_button]:rounded-lg [&_button]:border [&_button]:border-white/30 [&_button]:bg-white/10 [&_button]:px-4 [&_button]:py-2.5 [&_button]:text-[13px] [&_button]:font-medium [&_button]:text-white [&_button]:backdrop-blur-sm [&_button]:transition-colors [&_button:hover]:bg-white/20">
-                <Suspense fallback={<div className="h-10 w-32" />}>
-                  <DateFilter />
-                </Suspense>
-              </div>
-
-              {/* ExportButton re-styled to match the hero's primary */}
-              <div className="[&_button]:inline-flex [&_button]:items-center [&_button]:gap-2 [&_button]:rounded-lg [&_button]:bg-white/95 [&_button]:px-4 [&_button]:py-2.5 [&_button]:text-[13px] [&_button]:font-semibold [&_button]:text-side [&_button:hover]:bg-white">
-                <ExportButton
-                  data={propertiesList}
-                  filename="property_summary"
-                  options={[
-                    { id: "all", label: "All data" },
-                    { id: "summary", label: "Summary" },
-                    { id: "overview", label: "properties overview" },
-                  ]}
-                />
-              </div>
+              <Link
+                href="/dashboard/property-owner/properties/new"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add property
+              </Link>
             </div>
           </div>
 
@@ -197,15 +105,16 @@ export default async function Page({ searchParams }) {
       </section>
 
       {/* ---------- Existing content ---------- */}
-      <DashboardGridItem title="Property Summary">
-        <PropertiesSummary properties={allPropertiesForSummary || []} />
+      <DashboardGridItem title="My Properties List">
+        <PropertiesTableList properties={ownedProperties} />
       </DashboardGridItem>
 
-      <DashboardGridItem title="Property List">
-        <PropertiesTableList
-          properties={paginatedProperties}
-          pagination={pagination}
-        />
+      <DashboardGridItem title="Managed Properties List">
+        <PropertiesTableList properties={managedProperties} />
+      </DashboardGridItem>
+
+      <DashboardGridItem title="Rented Properties List">
+        <PropertiesTableList properties={rentedProperties} />
       </DashboardGridItem>
     </div>
   );

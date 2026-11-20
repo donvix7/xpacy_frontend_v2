@@ -17,6 +17,7 @@ import { getUserById } from "@/app/_lib/data-services";
 import StatusChips from "@/app/_components/StatusChips";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
+import DataTable from "@/app/_components/DataTable";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 import DeleteUserButton from "@/app/_components/DeleteUserBtn";
@@ -407,48 +408,30 @@ export default async function Page({ params }) {
                         message={`No organization membership found for ${name}.`}
                     />
                 ) : (
-                    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                    <th className="px-4 py-3.5">
-                                        Organization
-                                    </th>
-                                    <th className="px-4 py-3.5">Role</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {memberships.map((membership, index) => (
-                                    <tr
-                                        key={
-                                            membership.id ??
-                                            membership.organization?.id ??
-                                            index
-                                        }
-                                        className="transition-colors hover:bg-gray-50/60"
-                                    >
-                                        <td className="px-4 py-3.5 text-sm text-gray-800">
-                                            <div className="flex items-center gap-2">
-                                                <Building2
-                                                    className="h-4 w-4 shrink-0 text-gray-400"
-                                                    aria-hidden="true"
-                                                />
-                                                <span className="break-words capitalize">
-                                                    {membership.organization
-                                                        ?.name ?? "—"}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3.5 text-sm capitalize text-gray-800">
-                                            <span className="break-words">
-                                                {membership.role ?? "—"}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <DataTable
+                        data={memberships}
+                        showPagination={false}
+                        className="p-0 border-none shadow-none"
+                        rowKey={(membership, index) => membership.id ?? membership.organization?.id ?? index}
+                        columns={[
+                            {
+                                heading: "Organization",
+                                render: (membership) => (
+                                    <div className="flex items-center gap-2">
+                                        <Building2 className="h-4 w-4 shrink-0 text-mute" aria-hidden="true" />
+                                        <span className="break-words capitalize text-ink">
+                                            {membership.organization?.name ?? "—"}
+                                        </span>
+                                    </div>
+                                ),
+                            },
+                            {
+                                heading: "Role",
+                                className: "capitalize text-mute",
+                                render: (membership) => membership.role ?? "—",
+                            },
+                        ]}
+                    />
                 )}
             </DashboardGridItem>
         </div>

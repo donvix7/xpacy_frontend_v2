@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { RefreshCw, Clock, LogOut, X, AlertCircle } from "lucide-react";
+import Modal from "./Modal";
 import { refreshToken, checkTokenStatus, handleLogOut } from "@/app/_lib/action";
 import { notifyTokenRefreshed } from "@/app/_lib/token-utils";
 
@@ -147,16 +148,14 @@ export default function TokenRefreshModal() {
     });
   }
 
-  if (!isOpen) return null;
-
   return (
-    <div className="xp-surface fixed inset-0 z-[9999] flex items-center justify-center bg-side/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div 
-        className="relative flex w-full max-w-md flex-col items-center rounded-2xl border border-line bg-card p-6 text-center shadow-2xl animate-in zoom-in-95 duration-200 sm:p-8"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="token-modal-title"
-      >
+    <Modal.Window
+      open={isOpen}
+      onClose={() => setIsOpen(false)}
+      hideCloseButton
+      className="relative flex w-full max-w-md flex-col items-center rounded-2xl border border-line bg-card p-6 text-center shadow-2xl sm:p-8"
+      ariaLabelledBy="token-modal-title"
+    >
         {/* Subtle close button if user wishes to temporarily dismiss */}
         <button
           onClick={() => setIsOpen(false)}
@@ -231,7 +230,6 @@ export default function TokenRefreshModal() {
             <span>{isPendingLogout ? "Logging out…" : "Log out"}</span>
           </button>
         </div>
-      </div>
-    </div>
+    </Modal.Window>
   );
 }

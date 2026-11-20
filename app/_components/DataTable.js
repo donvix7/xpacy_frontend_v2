@@ -3,32 +3,121 @@ import { Suspense } from "react";
 import EmptyState from "./EmptyState";
 
 /**
- * A generic data table component that handles both desktop table and mobile card views.
- * 
- * @param {string} title - The title of the table section.
- * @param {Array} headers - Array of header objects { heading: string, center: boolean }.
- * @param {Array} data - The data to display.
- * @param {Function} renderRow - Function to render a desktop table row <tr>.
- * @param {Function} renderMobileCard - Function to render a mobile card element.
- * @param {Object} pagination - Pagination object { page, limit, total, totalPages }.
- * @param {string} emptyMessage - Message to show when data is empty.
- * @param {ReactNode} headerActions - Actions/Filters to show in the header.
- * @param {string} className - Additional CSS classes for the container.
- * @param {boolean} showPagination - Whether to show pagination.
+ * Unified data table used across all dashboards.
+ *
+ * Two ways to use it:
+ *
+ * 1. Declarative (preferred) — pass `columns`; rows and mobile cards are generated:
+ *      columns = [{ heading, key, center, align: "right", className, render: (item, index) => node }]
+ *
+ * 2. Custom — pass `headers` + `renderRow` (+ optional `renderMobileCard`).
+ *
+ * @param {string}    title            Optional section title.
+ * @param {Array}     columns          Declarative column definitions.
+ * @param {Array}     headers          Legacy header objects { heading, center, key }.
+ * @param {Array}     data             Rows to display.
+ * @param {Function}  renderRow        Custom desktop <tr> renderer.
+ * @param {Function}  renderMobileCard Custom mobile card renderer.
+ * @param {Function}  rowKey           (item, index) => unique key.
+ * @param {Object}    pagination       { page, limit, total, totalPages }.
+ * @param {string}    emptyMessage     Message when there is no data.
+ * @param {ReactNode} emptyState       Custom empty state node (overrides emptyMessage).
+ * @param {ReactNode} headerActions    Actions / filters shown beside the title.
+ * @param {ReactNode} footer           Optional node rendered under the table (e.g. totals).
+ * @param {string}    className        Extra classes for the wrapper.
+ * @param {boolean}   showPagination   Whether to render pagination.
  */
 export default function DataTable({
     title,
+    columns,
     headers = [],
     data = [],
     renderRow,
     renderMobileCard,
+    rowKey,
     pagination,
     emptyMessage = "No items found.",
+    emptyState,
     headerActions,
+    footer,
     className = "",
     showPagination = true,
-    children
+    children,
 }) {
+    const rows = Array.isArray(data) ? data : [];
+    const cols = Array.isArray(columns) && columns.length ? columns : null;
+    const heads = cols || headers;
+    const keyOf = (item, index) =>
+        (rowKey ? rowKey(item, index) : null) ?? item?.id ?? item?._id ?? index;
+
+    const alignClass = (col) =>
+        col?.align === "right" ? "text-right" : col?.center ? "text-center" : "";
+
+    const cellValue = (col, item, index) => {
+        if (typeof col.render === "function") return col.render(item, index);
+        const value = col.key ? item?.[col.key] : undefined;
+        return value === undefined || value === null || value === "" ? "—" : value;
+    };
+
+    const defaultRow = (item, index) => (
+        <tr
+            key={keyOf(item, index)}
+            className="border-b border-line text-sm text-ink transition-colors last:border-0 hover:bg-soft"
+        >
+            {cols.map((col, i) => (
+                <td key={col.heading || col.key || i} className={`p-4 align-middle ${alignClass(col)} ${col.className || ""}`}>
+                    {cellValue(col, item, index)}
+                </td>
+            ))}
+        </tr>
+    );
+
+    const defaultCard = (item, index) => {
+        const [primary, ...rest] = cols || [];
+        return (
+            <article key={keyOf(item, index)} className="rounded-xl border border-line bg-card p-4 shadow-sm">
+                {primary && (
+                    <div className="mb-3 min-w-0 text-sm font-semibold text-ink">
+                        {cellValue(primary, item, index)}
+                    </div>
+                )}
+                <dl className="grid grid-cols-1 gap-2.5">
+                    {rest.map((col, i) => (
+                        <div
+                            key={col.heading || col.key || i}
+                            className="flex items-start justify-between gap-4 border-t border-line pt-2.5"
+                        >
+                            {col.heading ? (
+                                <dt className="shrink-0 text-xs font-medium text-mute">{col.heading}</dt>
+                            ) : (
+                                <dt className="sr-only">Actions</dt>
+                            )}
+                            <dd className={`min-w-0 text-right text-sm text-ink ${col.heading ? "" : "ml-auto"}`}>
+                                {cellValue(col, item, index)}
+                            </dd>
+                        </div>
+                    ))}
+                </dl>
+            </article>
+        );
+    };
+
+    const legacyCard = (item, index) => (
+        <article key={keyOf(item, index)} className="rounded-xl border border-line bg-card p-4 shadow-sm">
+            <dl className="grid grid-cols-1 gap-3">
+                {heads.map((header, columnIndex) => (
+                    <div key={header.heading ?? columnIndex} className="flex items-start justify-between gap-4 border-b border-line pb-2 last:border-0 last:pb-0">
+                        <dt className="text-xs font-medium text-mute">{header.heading}</dt>
+                        <dd className="min-w-0 text-right text-sm text-ink">{item?.[header.key] ?? "—"}</dd>
+                    </div>
+                ))}
+            </dl>
+        </article>
+    );
+
+    const rowRenderer = renderRow || (cols ? defaultRow : null);
+    const cardRenderer = renderMobileCard || (cols ? defaultCard : legacyCard);
+
     return (
         <div className={`flex flex-col gap-6 rounded-lg ${className}`}>
             {(title || headerActions) && (
@@ -38,58 +127,45 @@ export default function DataTable({
                 </div>
             )}
 
-            {!data?.length && <EmptyState message={emptyMessage} />}
+            {!rows.length && (emptyState || <EmptyState message={emptyMessage} />)}
 
-            {/* Desktop View - Table */}
-            {data?.length > 0 && (
-                <div className="bg-card border border-line rounded-xl overflow-x-auto shadow-sm hidden lg:block">
-                    <table className="w-full text-left border-collapse">
-                        <thead className="bg-soft text-ink text-sm font-mono font-bold border-b border-line">
+            {/* Desktop view */}
+            {rows.length > 0 && rowRenderer && (
+                <div className="hidden overflow-x-auto rounded-xl border border-line bg-card shadow-sm lg:block">
+                    <table className="w-full border-collapse text-left">
+                        <thead className="border-b border-line bg-soft font-mono text-sm font-bold text-ink">
                             <tr>
-                                {headers.map((h, i) => (
-                                    <th key={i} className={`p-4 font-bold ${h.center ? "text-center" : ""}`}>
+                                {heads.map((h, i) => (
+                                    <th key={i} className={`p-4 font-bold ${alignClass(h)}`}>
                                         {h.heading}
                                     </th>
                                 ))}
                             </tr>
                         </thead>
-                        <tbody>
-                            {data.map((item, index) => renderRow(item, index))}
-                        </tbody>
+                        <tbody>{rows.map((item, index) => rowRenderer(item, index))}</tbody>
                     </table>
+                    {footer}
                 </div>
             )}
 
-            {/* Mobile View - Cards */}
-            {data?.length > 0 && (
-                <div className="lg:hidden grid gap-3">
-                    {renderMobileCard
-                        ? data.map((item, index) => renderMobileCard(item, index))
-                        : data.map((item, index) => (
-                            <article key={item?.id ?? item?._id ?? index} className="rounded-xl border border-line bg-card p-4 shadow-sm">
-                                <dl className="grid grid-cols-1 gap-3">
-                                    {headers.map((header, columnIndex) => (
-                                        <div key={header.heading ?? columnIndex} className="flex items-start justify-between gap-4 border-b border-line pb-2 last:border-0 last:pb-0">
-                                            <dt className="text-xs font-medium text-mute">{header.heading}</dt>
-                                            <dd className="min-w-0 text-right text-sm text-ink">{item?.[header.key] ?? "—"}</dd>
-                                        </div>
-                                    ))}
-                                </dl>
-                            </article>
-                        ))}
+            {/* Mobile view */}
+            {rows.length > 0 && (
+                <div className="grid gap-3 lg:hidden">
+                    {rows.map((item, index) => cardRenderer(item, index))}
+                    {footer && <div className="rounded-xl border border-line bg-card">{footer}</div>}
                 </div>
             )}
 
-            {data?.length > 0 && showPagination && pagination && (
+            {rows.length > 0 && showPagination && pagination && (
                 <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-sm font-mono text-mute">
-                            Showing <span>{(pagination.page - 1) * pagination.limit + 1}</span> - <span>{pagination?.page === pagination?.totalPages ? pagination.total : pagination?.page * pagination?.limit}</span> of <span>{pagination?.total}</span> results 
-                        </span>
-                        <Suspense fallback={<div className="h-10" />}>
-                            <Pagination pagination={pagination} />
-                        </Suspense>
-                    </div>
+                    <span className="font-mono text-sm text-mute">
+                        Showing <span>{(pagination.page - 1) * pagination.limit + 1}</span> -{" "}
+                        <span>{pagination?.page === pagination?.totalPages ? pagination.total : pagination?.page * pagination?.limit}</span> of{" "}
+                        <span>{pagination?.total}</span> results
+                    </span>
+                    <Suspense fallback={<div className="h-10" />}>
+                        <Pagination pagination={pagination} />
+                    </Suspense>
                 </div>
             )}
             {children}

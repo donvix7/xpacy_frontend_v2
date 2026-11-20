@@ -1,9 +1,13 @@
 import { cookies } from "next/headers";
 import {
     getPropertyOwnerProperties,
+    getManagedProperties,
     getPropertyOwnerServices,
+    getBookedServices,
     getPropertyOwnerBookings,
+    getAdminBooking,
     getPropertyOwnerInvoices,
+    getInvoiceList,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import SummaryCards from "@/app/_components/SummaryCards";
@@ -24,7 +28,7 @@ import { getReportAmount, getReportPaidAmount, getReportStatus, toReportArray } 
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
-const chartBox = "bg-white p-3 sm:p-6 rounded-lg border border-primary-100 shadow-sm min-h-[320px] min-w-0";
+const chartBox = "bg-card text-ink p-3 sm:p-6 rounded-lg border border-line shadow-sm min-h-[320px] min-w-0";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -32,21 +36,63 @@ export default async function Page() {
 
     const results = await Promise.allSettled([
         getPropertyOwnerProperties(token, { limit: 10000 }),
+        getManagedProperties(10000),
         getPropertyOwnerServices(token),
+        getBookedServices(token),
         getPropertyOwnerBookings(token),
+        getAdminBooking(token),
         getPropertyOwnerInvoices(token),
+        getInvoiceList(),
     ]);
     const dataErrorMessages = getSettledErrorMessages(results);
 
-    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [];
-    const services = results[1].status === "fulfilled" ? results[1].value : [];
-    const bookings = results[2].status === "fulfilled" ? results[2].value : [];
-    const invoices = results[3].status === "fulfilled" ? results[3].value : [];
+    const rawOwnerProperties = results[0].status === "fulfilled" ? results[0].value : [];
+    const rawManagedProperties = results[1].status === "fulfilled" ? results[1].value : [];
+    const ownerProps = toReportArray(rawOwnerProperties);
+    const managedProps = toReportArray(rawManagedProperties);
+    const propertyMap = new Map();
+    [...managedProps, ...ownerProps].forEach((p) => {
+        const id = p?.id || p?._id || p?.property_id;
+        if (id && !propertyMap.has(id)) propertyMap.set(id, p);
+        else if (!id) propertyMap.set(Math.random(), p);
+    });
+    const properties = Array.from(propertyMap.values());
 
-    const properties = toReportArray(Array.isArray(propertiesData?.[0]) ? propertiesData[0] : propertiesData);
-    const myServices = toReportArray(services);
-    const myBookings = toReportArray(bookings);
-    const myInvoices = toReportArray(invoices);
+    const rawServices1 = results[2].status === "fulfilled" ? results[2].value : [];
+    const rawServices2 = results[3].status === "fulfilled" ? results[3].value : [];
+    const servList1 = toReportArray(rawServices1);
+    const servList2 = toReportArray(rawServices2);
+    const serviceMap = new Map();
+    [...servList1, ...servList2].forEach((s) => {
+        const id = s?.id || s?._id || s?.service_id;
+        if (id && !serviceMap.has(id)) serviceMap.set(id, s);
+        else if (!id) serviceMap.set(Math.random(), s);
+    });
+    const myServices = Array.from(serviceMap.values());
+
+    const rawBookings1 = results[4].status === "fulfilled" ? results[4].value : [];
+    const rawBookings2 = results[5].status === "fulfilled" ? results[5].value : [];
+    const bookList1 = toReportArray(rawBookings1);
+    const bookList2 = toReportArray(rawBookings2);
+    const bookingMap = new Map();
+    [...bookList1, ...bookList2].forEach((b) => {
+        const id = b?.id || b?._id || b?.booking_id;
+        if (id && !bookingMap.has(id)) bookingMap.set(id, b);
+        else if (!id) bookingMap.set(Math.random(), b);
+    });
+    const myBookings = Array.from(bookingMap.values());
+
+    const rawInvoices1 = results[6].status === "fulfilled" ? results[6].value : [];
+    const rawInvoices2 = results[7].status === "fulfilled" ? results[7].value : [];
+    const invList1 = toReportArray(rawInvoices1);
+    const invList2 = toReportArray(rawInvoices2);
+    const invoiceMap = new Map();
+    [...invList1, ...invList2].forEach((inv) => {
+        const id = inv?.id || inv?._id || inv?.invoice_id;
+        if (id && !invoiceMap.has(id)) invoiceMap.set(id, inv);
+        else if (!id) invoiceMap.set(Math.random(), inv);
+    });
+    const myInvoices = Array.from(invoiceMap.values());
 
     const occupiedCount = properties.filter(p => ["occupied", "rented", "leased"].includes(getReportStatus(p, ["availability_status", "occupancy_status", "status"]))).length;
     const occupancyRate = properties.length > 0 ? Math.round((occupiedCount / properties.length) * 100) : 0;
@@ -173,18 +219,18 @@ const summaryCards = [
                 </DashboardGridItem>
 
                 <DashboardGridItem title="Monthly Report Summary">
-                    <div className="bg-white p-6 rounded-lg border border-primary-100 shadow-sm h-full">
+                    <div className="bg-card text-ink p-6 rounded-lg border border-line shadow-sm h-full">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="text-center p-4 border border-primary-100 rounded-lg">
-                                <p className="text-sm text-gray-500 mb-1">Properties Managed</p>
+                            <div className="text-center p-4 border border-line bg-soft/50 rounded-lg">
+                                <p className="text-sm text-mute mb-1">Properties Managed</p>
                                 <p className="text-2xl font-bold text-primary">{properties.length}</p>
                             </div>
-                            <div className="text-center p-4 border border-primary-100 rounded-lg">
-                                <p className="text-sm text-gray-500 mb-1">Service Requests</p>
+                            <div className="text-center p-4 border border-line bg-soft/50 rounded-lg">
+                                <p className="text-sm text-mute mb-1">Service Requests</p>
                                 <p className="text-2xl font-bold text-[#73A0BE]">{myServices.length}</p>
                             </div>
-                            <div className="text-center p-4 border border-primary-100 rounded-lg">
-                                <p className="text-sm text-gray-500 mb-1">Leases Active</p>
+                            <div className="text-center p-4 border border-line bg-soft/50 rounded-lg">
+                                <p className="text-sm text-mute mb-1">Leases Active</p>
                                 <p className="text-2xl font-bold text-green-600">{activeLeases.length}</p>
                             </div>
                         </div>

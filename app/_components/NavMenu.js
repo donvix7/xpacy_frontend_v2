@@ -25,8 +25,8 @@ const Window = ({children, isSidebar}) => {
     const {isOpen, open} = useContext(NavMenuContext);
     
     return (
-        <div className={`absolute top-full left-0 ${isSidebar ? "backdrop-blur-xs h-screen" : "bg-white p-6"} w-full z-40 flex flex-col gap-4 text-center ${isOpen ? "translate-x-0" : "-translate-x-[150%]"} transition-transform duration-300 ease-in-out`}>
-            {!isSidebar && <p className='text-md'>Menu</p>}
+        <div className={`absolute top-full left-0 ${isSidebar ? "backdrop-blur-xs h-screen" : "bg-card border-b border-line shadow-2xl p-5 text-ink"} w-full z-40 flex flex-col gap-3 text-center ${isOpen ? "translate-x-0" : "-translate-x-[150%]"} transition-transform duration-300 ease-in-out`}>
+            {!isSidebar && <p className='text-xs font-semibold text-mute uppercase tracking-widest'>Menu</p>}
             {cloneElement(children, {open})}
         </div>
     )
