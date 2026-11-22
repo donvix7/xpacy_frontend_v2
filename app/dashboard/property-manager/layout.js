@@ -9,9 +9,11 @@ export default function Layout({children}){
                 <SidebarLogo/>
                 <SidebarNav role={"property-manager"} />
             </div>
-            <SidebarHeader role={"property-manager"} />
             <main className="min-w-0 overflow-y-auto bg-canvas lg:row-[2/3] lg:col-[2/-2]">
+
                 <div>
+            <SidebarHeader role={"property-manager"} />
+
                     {children}
                 </div>
             </main>

@@ -25,7 +25,7 @@ export default async function SidebarHeader({ role = "user", isOrganizationAdmin
         && isValidOrganizationId(cookieStore.get("organizationId")?.value);
     const activeOrganizationId = cookieStore.get("organizationId")?.value || "";
     return (
-        <div className="sticky top-0 z-[10] flex items-center justify-between gap-3 border-b border-line bg-card px-3 py-3 shadow-[0_1px_2px_rgba(31,58,82,0.05)] md:px-8 lg:py-4">
+        <div className=" top-0 z-[10] flex items-center justify-between gap-3 border-b border-line bg-card px-3 py-3 shadow-[0_1px_2px_rgba(31,58,82,0.05)] md:px-8 lg:py-4">
             <DashboardHeading />
             <Suspense fallback={<div className="h-8 w-8" />}>
                 <MobileNav isSidebar={true} role={activeRole} isOrganizationAdmin={activeOrganizationAdmin} />

@@ -35,9 +35,15 @@ const stepMeta = [
 const propertyTypeLabels = {
   RESIDENTIAL: "Residential",
   COMMERCIAL: "Commercial",
-  INDUSTRIAL: "Industrial",
-  MIXED_USE: "Mixed use",
+  MIXED_USE: "Mixed Use",
+  APARTMENT_COMPLEX: "Apartment Complex",
+  ESTATE: "Estate",
+  HOTEL: "Hotel",
+  OFFICE: "Office",
+  RETAIL: "Retail",
   LAND: "Land",
+  VILLA: "Villa",
+  OTHER: "Other",
 };
 
 const getOwnerName = (owner) => {
@@ -56,19 +62,22 @@ export default function CreatePropertyWithPreview({
   organizations = [],
   organizationId = "",
   userRole = "admin",
+  initialData = null,
+  isEditMode = false,
+  returnTo = "",
 }) {
   const defaultOwnerName = currentOwner ? getOwnerName(currentOwner) : "";
 
-  const [preview, setPreview] = useState({
-    title: "",
-    description: "",
-    property_type: "RESIDENTIAL",
-    city: "",
-    state: "",
-    address: "",
-    country: "",
+  const [preview, setPreview] = useState(() => ({
+    title: initialData?.name || "",
+    description: initialData?.description || "",
+    property_type: initialData?.propertyType || "RESIDENTIAL",
+    city: initialData?.city || "",
+    state: initialData?.state || "",
+    address: initialData?.address || "",
+    country: initialData?.country || "Nigeria",
     owners: defaultOwnerName ? [defaultOwnerName] : [],
-  });
+  }));
 
   const [step, setStep] = useState(1);
 
@@ -102,22 +111,28 @@ export default function CreatePropertyWithPreview({
   const completion = Math.round((filled / required.length) * 100);
 
   const backHref =
-    userRole === "propertyowner"
+    returnTo ||
+    (userRole === "propertyowner"
       ? "/dashboard/property-owner/properties"
-      : "/dashboard/admin/properties";
+      : userRole === "propertymanager"
+        ? "/dashboard/property-manager/properties"
+        : "/dashboard/admin/properties");
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-canvas text-ink">
       {/* ---------- Navigation ---------- */}
-      <AdminHeader title="New Property" backHref={backHref} />
+      <AdminHeader
+        title={isEditMode ? "Edit Property" : "New Property"}
+        backHref={backHref}
+      />
 
       {/* ---------- Three-column layout ---------- */}
-      <main className="grid w-full flex-1 grid-cols-1 items-start gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[280px_minmax(0,1fr)_400px] lg:px-8 xl:grid-cols-[300px_minmax(0,1fr)_440px]">
+      <main className="grid w-6xl mx-auto flex-1 grid-cols-1 items-start gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-3 lg:px-8 ">
         {/* ---------- LEFT: Steps rail ---------- */}
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <div className="rounded-2xl border border-primary-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] dark:border-line dark:bg-card">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-mute">
-              Add property
+              {isEditMode ? "Edit property" : "Add property"}
             </p>
             <p className="mt-1 text-[13.5px] font-semibold text-ink">
               What you'll fill in
@@ -199,42 +214,7 @@ export default function CreatePropertyWithPreview({
               choose to publish.
             </p>
           </div>
-        </aside>
-
-        {/* ---------- MIDDLE: Form ---------- */}
-        <section className="flex flex-col rounded-2xl border border-primary-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] dark:border-line dark:bg-card">
-          <div className="flex items-start justify-between gap-3 border-b border-primary-200/60 px-5 py-4 sm:px-7 sm:py-5 dark:border-line">
-            <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700 dark:bg-soft dark:text-ink">
-                <Building2 className="h-4 w-4" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[13.5px] font-semibold text-ink">
-                  Property details
-                </p>
-                <p className="mt-0.5 text-[12.5px] text-gray-500 dark:text-mute">
-                  Step {step} of {stepMeta.length} ·{" "}
-                  {stepMeta.find((s) => s.id === step)?.title}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-5 sm:p-7">
-            <CreateNewPropertyForm
-              owners={owners}
-              currentOwner={currentOwner}
-              organizations={organizations}
-              organizationId={organizationId}
-              userRole={userRole}
-              onChange={handleFormChange}
-              step={step}
-              onStepChange={setStep}
-            />
-          </div>
-        </section>
-
-        {/* ---------- RIGHT: Preview ---------- */}
+           {/* ---------- RIGHT: Preview ---------- */}
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <div className="overflow-hidden rounded-2xl border border-primary-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] dark:border-line dark:bg-card">
             <div className="flex items-center justify-between gap-3 border-b border-primary-200/60 px-4 py-3 dark:border-line">
@@ -342,6 +322,45 @@ export default function CreatePropertyWithPreview({
             This is how your listing will look to tenants and buyers.
           </p>
         </aside>
+        </aside>
+
+        {/* ---------- MIDDLE: Form ---------- */}
+        <section className="flex col-span-2 h-screen overflow-scroll flex-col rounded-2xl border border-primary-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)] dark:border-line dark:bg-card">
+          <div className="flex items-start justify-between gap-3 border-b border-primary-200/60 px-5 py-4 sm:px-7 sm:py-5 dark:border-line">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700 dark:bg-soft dark:text-ink">
+                <Building2 className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13.5px] font-semibold text-ink">
+                  Property details
+                </p>
+                <p className="mt-0.5 text-[12.5px] text-gray-500 dark:text-mute">
+                  Step {step} of {stepMeta.length} ·{" "}
+                  {stepMeta.find((s) => s.id === step)?.title}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 sm:p-7">
+            <CreateNewPropertyForm
+              owners={owners}
+              currentOwner={currentOwner}
+              organizations={organizations}
+              organizationId={organizationId}
+              userRole={userRole}
+              initialData={initialData}
+              isEditMode={isEditMode}
+              returnTo={returnTo}
+              onChange={handleFormChange}
+              step={step}
+              onStepChange={setStep}
+            />
+          </div>
+        </section>
+
+       
       </main>
     </div>
   );

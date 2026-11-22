@@ -4,14 +4,27 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Autocomplete, TextField } from "@mui/material";
 import toast from "react-hot-toast";
-import { addProperty } from "@/app/_lib/action";
+import { addProperty, updateProperty } from "@/app/_lib/action";
+
+const propertyStatuses = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "INACTIVE", label: "Inactive" },
+  { value: "UNDER_MAINTENANCE", label: "Under Maintenance" },
+  { value: "ARCHIVED", label: "Archived" },
+];
 
 const propertyTypes = [
   { value: "RESIDENTIAL", label: "Residential" },
   { value: "COMMERCIAL", label: "Commercial" },
-  { value: "INDUSTRIAL", label: "Industrial" },
-  { value: "MIXED_USE", label: "Mixed use" },
+  { value: "MIXED_USE", label: "Mixed Use" },
+  { value: "APARTMENT_COMPLEX", label: "Apartment Complex" },
+  { value: "ESTATE", label: "Estate" },
+  { value: "HOTEL", label: "Hotel" },
+  { value: "OFFICE", label: "Office" },
+  { value: "RETAIL", label: "Retail" },
   { value: "LAND", label: "Land" },
+  { value: "VILLA", label: "Villa" },
+  { value: "OTHER", label: "Other" },
 ];
 
 const initialForm = {
@@ -63,21 +76,50 @@ export default function CreateNewPropertyForm({
   organizations = [],
   organizationId = "",
   userRole = "admin",
+  initialData = null,
+  isEditMode = false,
+  returnTo = "",
   onChange,
   step,
   onStepChange,
 }) {
   const router = useRouter();
   const defaultOwnerId = currentOwner ? getOwnerId(currentOwner) : "";
+  const propertyId = initialData?.id || initialData?._id || "";
 
   const [form, setForm] = useState(() => ({
     ...initialForm,
-    organizationId: organizationId || "",
+    name: initialData?.name || "",
+    description: initialData?.description || "",
+    propertyType: initialData?.propertyType || "RESIDENTIAL",
+    address: initialData?.address || "",
+    city: initialData?.city || "",
+    state: initialData?.state || "",
+    country: initialData?.country || "Nigeria",
+    postalCode: initialData?.postalCode || "",
+    latitude:
+      initialData?.latitude !== null && initialData?.latitude !== undefined
+        ? String(initialData.latitude)
+        : "",
+    longitude:
+      initialData?.longitude !== null && initialData?.longitude !== undefined
+        ? String(initialData.longitude)
+        : "",
+    yearBuilt: initialData?.yearBuilt ?? new Date().getFullYear(),
+    totalFloors: initialData?.totalFloors ?? 1,
+    totalUnits: initialData?.totalUnits ?? 1,
+    organizationId: initialData?.organizationId || organizationId || "",
+    status: (initialData?.status || "ACTIVE").toUpperCase(),
   }));
 
-  const [selectedOwners, setSelectedOwners] = useState(() =>
-    defaultOwnerId ? [defaultOwnerId] : []
-  );
+  const [selectedOwners, setSelectedOwners] = useState(() => {
+    if (Array.isArray(initialData?.owners) && initialData.owners.length > 0) {
+      return initialData.owners
+        .map((o) => (typeof o === "string" ? o : getOwnerId(o)))
+        .filter(Boolean);
+    }
+    return defaultOwnerId ? [defaultOwnerId] : [];
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Auto-select current owner if set or updated
@@ -165,8 +207,8 @@ export default function CreateNewPropertyForm({
   };
 
   function validateStep(currentStep) {
-    if (currentStep === 1 && !selectedOwners.length) {
-      return "Select at least one property owner.";
+    if (currentStep === 1 && !String(form.organizationId || "").trim()) {
+      return "Select an organization.";
     }
     if (currentStep === 2) {
       if (!form.name.trim()) return "Property name is required.";
@@ -177,6 +219,18 @@ export default function CreateNewPropertyForm({
       if (!form.city.trim()) return "City is required.";
       if (!form.state.trim()) return "State / Province is required.";
       if (!form.country.trim()) return "Country is required.";
+      if (form.latitude !== "") {
+        const lat = Number(form.latitude);
+        if (Number.isNaN(lat) || lat < -90 || lat > 90) {
+          return "Latitude must be between -90 and 90 (e.g. 6.5244).";
+        }
+      }
+      if (form.longitude !== "") {
+        const lng = Number(form.longitude);
+        if (Number.isNaN(lng) || lng < -180 || lng > 180) {
+          return "Longitude must be between -180 and 180 (e.g. 3.3792).";
+        }
+      }
     }
     return null;
   }
@@ -191,7 +245,7 @@ export default function CreateNewPropertyForm({
   }
 
   async function handleSubmit(event) {
-    event.preventDefault();
+    event?.preventDefault?.();
 
     // Prioritize the current step, then check the rest.
     const error =
@@ -202,88 +256,120 @@ export default function CreateNewPropertyForm({
       return;
     }
 
-    // Build an array of owner objects, preserving selection order.
-    const ownersPayload = selectedOwners.map((id, index) => {
-      const owner = ownerById.get(id) || {};
-      return {
-        id,
-        role: index === 0 ? "PRIMARY" : "CO_OWNER",
-        first_name: owner.first_name || owner.firstname || owner.firstName || "",
-        last_name: owner.last_name || owner.lastname || owner.lastName || "",
-        email: owner.email || "",
-      };
-    });
+    // CreatePropertyDto expects owners: [string] (array of owner IDs)
+    const ownersPayload = selectedOwners
+      .map((id) => String(id).trim())
+      .filter(Boolean);
+
     const parsedYear = parseInt(form.yearBuilt, 10);
     const validYear =
-      Number.isFinite(parsedYear) && parsedYear >= 1800
-        ? parsedYear
-        : new Date().getFullYear();
+      Number.isFinite(parsedYear) && parsedYear >= 1800 ? parsedYear : null;
 
     const cleanOrgId = form.organizationId
       ? String(form.organizationId).trim()
       : "";
 
+    const hasLat = form.latitude !== "" && !Number.isNaN(Number(form.latitude));
+    const hasLng = form.longitude !== "" && !Number.isNaN(Number(form.longitude));
+    const totalFloors = Number(form.totalFloors);
+    const totalUnits = Number(form.totalUnits);
+
     const payload = {
       name: form.name.trim(),
-      description: form.description.trim(),
       propertyType: form.propertyType,
       address: form.address.trim(),
       city: form.city.trim(),
       state: form.state.trim(),
       country: form.country.trim() || "Nigeria",
-      postalCode: form.postalCode.trim(),
-      latitude:
-        form.latitude !== "" && !Number.isNaN(Number(form.latitude))
-          ? Number(form.latitude)
-          : 0,
-      longitude:
-        form.longitude !== "" && !Number.isNaN(Number(form.longitude))
-          ? Number(form.longitude)
-          : 0,
-      yearBuilt: validYear || 0,
-      totalFloors: Number(form.totalFloors) || 0,
-      totalUnits: Number(form.totalUnits) || 0,
-      owners: ownersPayload,
+      ...(form.description.trim() ? { description: form.description.trim() } : {}),
+      ...(form.postalCode.trim() ? { postalCode: form.postalCode.trim() } : {}),
+      ...(hasLat ? { latitude: Number(form.latitude) } : {}),
+      ...(hasLng ? { longitude: Number(form.longitude) } : {}),
+      ...(validYear ? { yearBuilt: validYear } : {}),
+      ...(Number.isFinite(totalFloors) && totalFloors > 0 ? { totalFloors } : {}),
+      ...(Number.isFinite(totalUnits) && totalUnits > 0 ? { totalUnits } : {}),
+      ...(ownersPayload.length > 0 ? { owners: ownersPayload } : {}),
       ...(cleanOrgId ? { organizationId: cleanOrgId } : {}),
+      ...(isEditMode && form.status ? { status: form.status } : {}),
     };
 
     setIsSubmitting(true);
     try {
-      const result = await addProperty(payload);
+      const result =
+        isEditMode && propertyId
+          ? await updateProperty(propertyId, payload)
+          : await addProperty(payload);
+
       if (result?.success === false || result?.error) {
         toast.error(
-          result.message || result.error || "Could not create the property."
+          result.message ||
+            result.error ||
+            (isEditMode
+              ? "Could not update the property."
+              : "Could not create the property.")
         );
         return;
       }
 
-      toast.success(result?.message || "Property created successfully!");
+      toast.success(
+        result?.message ||
+          (isEditMode
+            ? "Property updated successfully!"
+            : "Property created successfully!")
+      );
+
+      if (isEditMode) {
+        router.refresh();
+        const redirectPath =
+          returnTo ||
+          (userRole === "propertyowner"
+            ? `/dashboard/property-owner/properties/${propertyId}`
+            : userRole === "propertymanager"
+              ? `/dashboard/property-manager/properties/${propertyId}`
+              : `/dashboard/admin/properties/${propertyId}`);
+        setTimeout(() => {
+          router.push(redirectPath);
+        }, 600);
+        return;
+      }
+
       setForm({ ...initialForm, organizationId });
       setSelectedOwners(defaultOwnerId ? [defaultOwnerId] : []);
       setActiveStep(1);
 
       // Redirect to properties view after brief delay so user can see toast
       const redirectPath =
-        userRole === "propertyowner"
+        returnTo ||
+        (userRole === "propertyowner"
           ? "/dashboard/property-owner/properties"
-          : "/dashboard/admin/properties";
+          : userRole === "propertymanager"
+            ? "/dashboard/property-manager/properties"
+            : "/dashboard/admin/properties");
 
       setTimeout(() => {
         router.push(redirectPath);
       }, 1000);
     } catch (error) {
-      toast.error(error?.message || "Could not create the property.");
+      toast.error(
+        error?.message ||
+          (isEditMode
+            ? "Could not update the property."
+            : "Could not create the property.")
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col">
+    <form
+      onSubmit={(e) => e.preventDefault()}
+      className="flex w-full flex-col"
+    >
       <div className="grid gap-5 md:grid-cols-2">
         {activeStep === 1 && (
           <div className="md:col-span-2">
-            <Field label="Owners *" htmlFor="owners">
+            <Field label="Owners (optional)" htmlFor="owners">
               <Autocomplete
                 id="owners"
                 multiple
@@ -420,6 +506,26 @@ export default function CreateNewPropertyForm({
               </Field>
             </div>
 
+            {isEditMode && (
+              <div className="md:col-span-2">
+                <Field label="Property status" htmlFor="status">
+                  <select
+                    id="status"
+                    name="status"
+                    value={form.status}
+                    onChange={updateField}
+                    className={inputClass}
+                  >
+                    {propertyStatuses.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            )}
+
             <div className="md:col-span-2">
               <Field label="Description" htmlFor="description">
                 <textarea
@@ -493,24 +599,28 @@ export default function CreateNewPropertyForm({
                 placeholder="Postal code"
               />
             </Field>
-            <Field label="Latitude" htmlFor="latitude">
+            <Field label="Latitude (-90 to 90)" htmlFor="latitude">
               <input
                 id="latitude"
                 name="latitude"
                 type="number"
                 step="any"
+                min="-90"
+                max="90"
                 value={form.latitude}
                 onChange={updateField}
                 className={inputClass}
                 placeholder="e.g. 6.5244"
               />
             </Field>
-            <Field label="Longitude" htmlFor="longitude">
+            <Field label="Longitude (-180 to 180)" htmlFor="longitude">
               <input
                 id="longitude"
                 name="longitude"
                 type="number"
                 step="any"
+                min="-180"
+                max="180"
                 value={form.longitude}
                 onChange={updateField}
                 className={inputClass}
@@ -534,23 +644,52 @@ export default function CreateNewPropertyForm({
           <span />
         )}
 
-        {activeStep < 3 ? (
-          <button
-            type="button"
-            onClick={goToNextStep}
-            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
-          >
-            Next step
-          </button>
-        ) : (
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
-          >
-            {isSubmitting ? "Creating property..." : "Publish property"}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {isEditMode && activeStep < 3 && (
+            <button
+              key="save-changes-inline-btn"
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSubmitting ? "Saving changes..." : "Save changes"}
+            </button>
+          )}
+
+          {activeStep < 3 && (
+            <button
+              key="next-step-btn"
+              type="button"
+              onClick={goToNextStep}
+              className={`rounded-lg px-6 py-2.5 text-sm font-semibold transition cursor-pointer ${
+                isEditMode
+                  ? "border border-primary text-primary hover:bg-primary/5"
+                  : "bg-primary text-white shadow-sm hover:bg-primary/90"
+              }`}
+            >
+              Next step
+            </button>
+          )}
+
+          {activeStep === 3 && (
+            <button
+              key="publish-property-btn"
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSubmitting
+                ? isEditMode
+                  ? "Saving changes..."
+                  : "Creating property..."
+                : isEditMode
+                  ? "Save changes"
+                  : "Publish property"}
+            </button>
+          )}
+        </div>
       </div>
     </form>
   );

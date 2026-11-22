@@ -11,9 +11,11 @@ export default async function Layout({children}){
                 <SidebarLogo/>
                 <SidebarNav role="property-owner" isOrganizationAdmin={isOrganizationAdmin} />
             </div>
-            <SidebarHeader role="property-owner" isOrganizationAdmin={isOrganizationAdmin} />
             <main className="min-w-0 overflow-y-auto bg-canvas lg:row-[2/3] lg:col-[2/-2]">
-                <div>{children}</div>
+                <div>
+            <SidebarHeader role="property-owner" isOrganizationAdmin={isOrganizationAdmin} />
+
+                    {children}</div>
             </main>
         </section>
     );

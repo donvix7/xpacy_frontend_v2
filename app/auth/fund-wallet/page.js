@@ -15,7 +15,7 @@ import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 import { getWallet } from "@/app/_lib/data-services";
 import FundWalletForm from "./FundWalletForm";
-import AppHeader from "../_components/AppHeader";
+import AppHeader from "../../_components/AppHeader";
 
 export const metadata = {
     title: "Fund Wallet | XPACY",
@@ -55,7 +55,7 @@ export default async function FundWalletPage() {
     const balance = Number(wallet?.balance ?? 0);
 
     return (
-        <div>
+        <div className="">
 
             <AppHeader/>
 

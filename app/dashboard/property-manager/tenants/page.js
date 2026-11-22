@@ -1,165 +1,114 @@
 import { cookies } from "next/headers";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import {
-    getPropertyOwnerProfile,
-    getPropertyOwnerProperties,
+  getAllTenants,
+  getPropertyOwnerProfile,
+  getPropertyOwnerProperties,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import SummaryCards from "@/app/_components/SummaryCards";
-import EmptyState from "@/app/_components/EmptyState";
-import { Building2, DoorOpen, Home, Users } from "lucide-react";
-import DashboardMobileCards from "@/app/_components/DashboardMobileCards";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import HeroBand from "@/app/_components/HeroBand";
+import TenantsManager from "@/app/_components/TenantsManager";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
+import { SAMPLE_TENANTS } from "@/app/_lib/sample-tenants";
+
+export const metadata = {
+  title: "Tenants | Property Manager Dashboard",
+  description: "Manage registered tenants, identity verifications, leases, and occupations across managed properties.",
+};
 
 export default async function Page() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
 
-    const results = await Promise.allSettled([
-        token ? getPropertyOwnerProfile(token) : Promise.resolve(null),
-        token ? getPropertyOwnerProperties(token, { limit: 10000 }) : Promise.resolve([]),
-    ]);
-    const dataErrorMessages = getSettledErrorMessages(results);
+  const results = await Promise.allSettled([
+    token ? getPropertyOwnerProfile(token) : Promise.resolve(null),
+    token ? getPropertyOwnerProperties(token, { limit: 10000 }) : Promise.resolve([]),
+    getAllTenants(),
+  ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
 
-    const profile = results[0].status === "fulfilled" ? results[0].value : null;
-    const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
+  const rawTenants = results[2].status === "fulfilled" ? results[2].value : null;
 
-    const allProperties = Array.isArray(propertiesData?.[0])
-        ? propertiesData[0]
-        : Array.isArray(propertiesData)
-        ? propertiesData
-        : [];
+  const tenantsList = Array.isArray(rawTenants?.data)
+    ? rawTenants.data
+    : Array.isArray(rawTenants) && rawTenants.length > 0
+      ? rawTenants
+      : SAMPLE_TENANTS;
 
-    // Only filter by owner if we actually have a profile id
-    const properties = profile?.id
-        ? allProperties.filter((p) => p.property_owner_id === profile.id)
-        : allProperties;
+  const totalTenants = tenantsList.length;
+  const activeTenants = tenantsList.filter(
+    (t) => (t.status || "").toUpperCase() === "ACTIVE"
+  ).length;
+  const verifiedIdTenants = tenantsList.filter(
+    (t) => Boolean(t.identification?.number || t.idNumber)
+  ).length;
+  const employedTenants = tenantsList.filter((t) => {
+    const emp = t.employmentInformation || t.employmentInfo || {};
+    return Boolean(emp.employer || emp.jobTitle || t.occupation);
+  }).length;
 
-    const rentedProperties = properties.filter(
-        (p) => (p.property_status || p.purpose || "").toLowerCase() === "rent"
-    );
-    const vacantProperties = properties.filter((p) =>
-        ["vacant", "available", "active"].includes(
-            (p.availability_status || "").toLowerCase()
-        )
-    );
+  const today = new Date().toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
-    const summaryCards = [
-        {
-            title: "Total Tenants",
-            count: rentedProperties.length,
-            icon: <Users className="text-blue-700" size={20} />,
-            color: "bg-blue-100 border-blue-700",
-            bgColor: "bg-blue-100",
-        },
-        {
-            title: "Occupied Units",
-            count: rentedProperties.length,
-            icon: <Home className="text-green-700" size={20} />,
-            color: "bg-green-100 border-green-700",
-            bgColor: "bg-green-100",
-        },
-        {
-            title: "Vacant Units",
-            count: vacantProperties.length,
-            icon: <DoorOpen className="text-amber-700" size={20} />,
-            color: "bg-amber-100 border-amber-700",
-            bgColor: "bg-amber-100",
-        },
-        {
-            title: "Total Properties",
-            count: properties.length,
-            icon: <Building2 className="text-violet-700" size={20} />,
-            color: "bg-violet-100 border-violet-700",
-            bgColor: "bg-violet-100",
-        },
-    ];
+  const heroStats = [
+    {
+      label: "Total Tenants",
+      value: totalTenants,
+      hint: "Registered tenants",
+    },
+    {
+      label: "Active Tenancies",
+      value: activeTenants,
+      hint: "Current active records",
+    },
+    {
+      label: "Verified ID",
+      value: verifiedIdTenants,
+      hint: "Valid document on file",
+    },
+    {
+      label: "Employed",
+      value: employedTenants,
+      hint: "With verified occupation",
+    },
+  ];
 
-    return (
-        <div className="space-y-8 p-2">
-            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
-            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">
-                Tenants
-            </p>
+  return (
+    <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? (
+        <DataErrorNotice messages={dataErrorMessages} />
+      ) : null}
 
-            <SummaryCards cards={summaryCards} />
+      <HeroBand
+        tagline={`Manager Console · ${today}`}
+        title="Tenants"
+        description="Comprehensive tenant directory — monitor identity verifications, occupations, emergency contacts, and active tenancy agreements."
+        stats={heroStats}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin/add-new-tenant?returnTo=/dashboard/property-manager/tenants"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side shadow-sm transition-all hover:bg-white active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add tenant
+            </Link>
+          </div>
+        }
+      />
 
-            <DashboardGridItem title="Tenant Directory">
-                {rentedProperties.length === 0 ? (
-                    <EmptyState message="No tenants found. Tenants will appear here once properties are rented out." />
-                ) : (
-                    <div>
-                        <DashboardMobileCards
-                            items={rentedProperties.map((property, i) => ({
-                                key: property.id || property._id || i,
-                                title: property.title || property.name || "Untitled",
-                                fields: [
-                                    {
-                                        label: "Location",
-                                        value: property.location || property.state || "—",
-                                    },
-                                    {
-                                        label: "Type",
-                                        value: property.property_type || property.type || "—",
-                                    },
-                                    {
-                                        label: "Status",
-                                        value: (
-                                            <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-                                                Occupied
-                                            </span>
-                                        ),
-                                    },
-                                ],
-                            }))}
-                        />
-
-                        <div className="hidden overflow-x-auto lg:block">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="border-b border-primary-200">
-                                        <th className="py-3 px-4 text-sm font-semibold text-gray-600">
-                                            Property
-                                        </th>
-                                        <th className="py-3 px-4 text-sm font-semibold text-gray-600">
-                                            Location
-                                        </th>
-                                        <th className="py-3 px-4 text-sm font-semibold text-gray-600">
-                                            Type
-                                        </th>
-                                        <th className="py-3 px-4 text-sm font-semibold text-gray-600">
-                                            Status
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {rentedProperties.map((property, i) => (
-                                        <tr
-                                            key={property.id || property._id || i}
-                                            className="border-b border-primary-100 hover:bg-gray-50"
-                                        >
-                                            <td className="py-3 px-4 text-sm font-medium">
-                                                {property.title || property.name || "Untitled"}
-                                            </td>
-                                            <td className="py-3 px-4 text-sm text-gray-600">
-                                                {property.location || property.state || "—"}
-                                            </td>
-                                            <td className="py-3 px-4 text-sm text-gray-600 capitalize">
-                                                {property.property_type || property.type || "—"}
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-                                                    Occupied
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-            </DashboardGridItem>
-        </div>
-    );
+      <DashboardGridItem title={`Tenant Directory (${totalTenants})`}>
+        <TenantsManager
+          tenants={tenantsList}
+          basePath="/dashboard/property-manager/tenants"
+        />
+      </DashboardGridItem>
+    </div>
+  );
 }

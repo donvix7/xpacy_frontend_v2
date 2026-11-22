@@ -1890,55 +1890,91 @@ export async function addProperty(propertyData) {
     const cookieStore = await cookies();
     const tokenVal = cookieStore.get("token")?.value;
 
-    const cookieOrgId = cookieStore.get("organizationId")?.value || "";
+    const cookieOrgId =
+      cookieStore.get("organizationId")?.value ||
+      cookieStore.get("organization_id")?.value ||
+      "";
     const resolvedOrgId = String(propertyData?.organizationId || cookieOrgId || "").trim();
 
-    // Normalize owners to an array of objects
+    if (!resolvedOrgId) {
+      return {
+        success: false,
+        message: "Organization ID is required. Please select an organization.",
+        error: "Organization ID is required.",
+        status: 400,
+      };
+    }
+
+    // CreatePropertyDto expects owners: [string] (array of owner IDs)
     const ownersPayload = Array.isArray(propertyData?.owners)
       ? propertyData.owners
-          .map((o, index) => {
-            if (typeof o === "string") {
-              const id = o.trim();
-              return id ? { id, role: index === 0 ? "PRIMARY" : "CO_OWNER" } : null;
-            }
+          .map((o) => {
+            if (typeof o === "string") return o.trim();
             if (o && typeof o === "object") {
-              const id = String(o.id || o._id || o.ownerId || o.userId || "").trim();
-              if (!id) return null;
-              return {
-                id,
-                role: o.role || (index === 0 ? "PRIMARY" : "CO_OWNER"),
-                ...(o.first_name || o.firstname || o.firstName
-                  ? { first_name: o.first_name || o.firstname || o.firstName }
-                  : {}),
-                ...(o.last_name || o.lastname || o.lastName
-                  ? { last_name: o.last_name || o.lastname || o.lastName }
-                  : {}),
-                ...(o.email ? { email: o.email } : {}),
-              };
+              return String(o.id || o._id || o.ownerId || o.userId || "").trim();
             }
-            return null;
+            return "";
           })
           .filter(Boolean)
       : typeof propertyData?.owners === "string" && propertyData.owners.trim()
-      ? [{ id: propertyData.owners.trim(), role: "PRIMARY" }]
+      ? [propertyData.owners.trim()]
       : [];
+
+    const description = String(propertyData?.description || "").trim();
+    const postalCode = String(propertyData?.postalCode || "").trim();
+    const hasLat =
+      propertyData?.latitude !== undefined &&
+      propertyData?.latitude !== null &&
+      propertyData?.latitude !== "" &&
+      Number.isFinite(Number(propertyData.latitude));
+    const hasLng =
+      propertyData?.longitude !== undefined &&
+      propertyData?.longitude !== null &&
+      propertyData?.longitude !== "" &&
+      Number.isFinite(Number(propertyData.longitude));
+
+    if (hasLat) {
+      const lat = Number(propertyData.latitude);
+      if (lat < -90 || lat > 90) {
+        return {
+          success: false,
+          message: "Latitude must be between -90 and 90.",
+          error: "Latitude must be between -90 and 90.",
+          status: 400,
+        };
+      }
+    }
+    if (hasLng) {
+      const lng = Number(propertyData.longitude);
+      if (lng < -180 || lng > 180) {
+        return {
+          success: false,
+          message: "Longitude must be between -180 and 180.",
+          error: "Longitude must be between -180 and 180.",
+          status: 400,
+        };
+      }
+    }
+    const yearBuilt = Number(propertyData?.yearBuilt);
+    const totalFloors = Number(propertyData?.totalFloors);
+    const totalUnits = Number(propertyData?.totalUnits);
 
     const payload = {
       name: String(propertyData?.name || "").trim(),
-      description: String(propertyData?.description || "").trim(),
       propertyType: propertyData?.propertyType || "RESIDENTIAL",
       address: String(propertyData?.address || "").trim(),
       city: String(propertyData?.city || "").trim(),
       state: String(propertyData?.state || "").trim(),
       country: String(propertyData?.country || "Nigeria").trim(),
-      postalCode: String(propertyData?.postalCode || "").trim(),
-      latitude: Number(propertyData?.latitude) || 0,
-      longitude: Number(propertyData?.longitude) || 0,
-      yearBuilt: Number(propertyData?.yearBuilt) || 0,
-      totalFloors: Number(propertyData?.totalFloors) || 0,
-      totalUnits: Number(propertyData?.totalUnits) || 0,
-      owners: ownersPayload,
-      ...(resolvedOrgId ? { organizationId: resolvedOrgId } : {}),
+      organizationId: resolvedOrgId,
+      ...(description ? { description } : {}),
+      ...(postalCode ? { postalCode } : {}),
+      ...(hasLat ? { latitude: Number(propertyData.latitude) } : {}),
+      ...(hasLng ? { longitude: Number(propertyData.longitude) } : {}),
+      ...(Number.isFinite(yearBuilt) && yearBuilt > 0 ? { yearBuilt } : {}),
+      ...(Number.isFinite(totalFloors) && totalFloors > 0 ? { totalFloors } : {}),
+      ...(Number.isFinite(totalUnits) && totalUnits > 0 ? { totalUnits } : {}),
+      ...(ownersPayload.length > 0 ? { owners: ownersPayload } : {}),
     };
     console.log("addProperty payload:", payload);
 
@@ -1962,9 +1998,21 @@ export async function addProperty(propertyData) {
     
 
     if (!response.ok) {
-      const errorMessage = Array.isArray(resData?.message)
-        ? resData.message.join(", ")
-        : resData?.message || resData?.error || `Failed to create property (${response.status})`;
+      const detailedErrors = Array.isArray(resData?.errors)
+        ? resData.errors
+            .map((e) =>
+              typeof e === "string"
+                ? e
+                : [e?.field || e?.property, e?.message].filter(Boolean).join(": ")
+            )
+            .filter(Boolean)
+            .join(", ")
+        : "";
+      const errorMessage =
+        detailedErrors ||
+        (Array.isArray(resData?.message)
+          ? resData.message.join(", ")
+          : resData?.message || resData?.error || `Failed to create property (${response.status})`);
       return {
         success: false,
         message: errorMessage,
@@ -1974,7 +2022,6 @@ export async function addProperty(propertyData) {
     }
 
 
-    revalidatePath("/dashboard/admin/properties");
     revalidatePath("/dashboard/property-owner/properties");
     revalidatePath("/dashboard/property-manager/properties");
 
@@ -2164,59 +2211,152 @@ export async function terminateLease(id,organizationId){
 export async function createTenant(data){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/tenants
-`,{
-  method: "POST",
+  const response = await safeFetch(`https://services.xpacy.com/api/v1/tenants`, {
+    method: "POST",
     headers: {
       "Authorization": `Bearer ${token?.value}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(data)
   });
-  const json = await response.json();
-  return json; 
+  let json = null;
+  try {
+    json = await response.json();
+  } catch {
+    json = null;
+  }
+  if (response.ok) {
+    revalidatePath("/dashboard/property-owner/tenants");
+    revalidatePath("/dashboard/property-manager/tenants");
+  }
+  return json ?? { success: response.ok, message: response.ok ? "Tenant created." : "Failed to create tenant." };
 } 
 
-export async function updateTenant(id,data){
-  
+export async function updateTenant(id, data){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   const payload = {
-  "firstName": data.firstName,
-  "lastName": data.lastName,
-  "email": data.email,
-  "phone": data.phoneNumber,
-  "dateOfBirth": data.dateOfBirth,
-  "identification": data.identification,
-  "emergencyContact": data.emergencyContact,
-  "occupation": data.occupation,
-  "employmentInformation": data.employmentInformation
-}
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/tenants/${id}
+    firstName: data.firstName,
+    lastName: data.lastName,
+    email: data.email,
+    phone: data.phone || data.phoneNumber || "",
+    dateOfBirth: data.dateOfBirth || null,
+    identification: data.identification,
+    emergencyContact: data.emergencyContact,
+    occupation: data.occupation,
+    employmentInformation: data.employmentInformation,
+    ...(data.status ? { status: data.status } : {}),
+  };
 
-`,{
-  method: "PATCH",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(data)
-  });
-  return response.json(); 
+  try {
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/tenants/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token?.value}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    console.log(response);
+
+    let json = null;
+    try {
+      json = await response.json();
+    } catch {
+      json = null;
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message:
+          json?.message ||
+          json?.errors?.[0]?.message ||
+          `Failed to update tenant (${response.status}).`,
+        data: json,
+      };
+    }
+
+    revalidatePath("/dashboard/property-owner/tenants");
+    revalidatePath(`/dashboard/property-owner/tenants/${id}`);
+    revalidatePath("/dashboard/property-manager/tenants");
+    revalidatePath(`/dashboard/property-manager/tenants/${id}`);
+
+    if (json && typeof json === "object" && "success" in json) {
+      return json;
+    }
+    return { success: true, data: json?.data ?? json };
+  } catch (err) {
+    return {
+      success: false,
+      message: err?.message || "Network error while updating tenant.",
+    };
+  }
 } 
 
-export async function linkTenant(id){
+export async function linkTenant(id, data = null){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/tenants/${id}/link-user`,
-  {
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
+
+  const hasBody =
+    data &&
+    typeof data === "object" &&
+    Object.values(data).some((v) => v !== undefined && v !== null && v !== "");
+
+  try {
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/tenants/${encodeURIComponent(id)}/link-user`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token?.value}`,
+          "Content-Type": "application/json",
+        },
+        ...(hasBody ? { body: JSON.stringify(data) } : {}),
+      }
+    );
+
+    let json = null;
+    try {
+      json = await response.json();
+    } catch {
+      json = null;
     }
-  });
-  return response.json(); 
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message:
+          json?.message ||
+          json?.errors?.[0]?.message ||
+          `Failed to link tenant to user (${response.status}).`,
+        data: json,
+      };
+    }
+
+    revalidatePath("/dashboard/property-owner/tenants");
+    revalidatePath(`/dashboard/property-owner/tenants/${id}`);
+    revalidatePath("/dashboard/property-manager/tenants");
+    revalidatePath(`/dashboard/property-manager/tenants/${id}`);
+
+    if (json && typeof json === "object" && "success" in json) {
+      return json;
+    }
+    return {
+      success: true,
+      message: json?.message || "Tenant linked to user account successfully.",
+      data: json?.data ?? json,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err?.message || "Network error while linking tenant to user.",
+    };
+  }
 }
 
 /////////////////////////////////////*TENANTS*/////////////////////////////////////////////////
@@ -2310,137 +2450,451 @@ export async function commentOnMaintenanceRequest(id,data,propertyId){
 /////////////////////////////////////*UNITS*/////////////////////////////////////////////////
 
 
-export async function createUnit(data,propertyId){
-  
-  const payload = {
-  "unitNumber": data.unitNumber,
-  "buildingId": data.buildingId,
-  "floor": Number(data.floor),
-  "unitType": data.unitType,
-  "bedrooms": Number(data.bedrooms),
-  "bathrooms": Number(data.bathrooms),
-  "squareMeters": Number(data.squareMeters),
-  "furnished": data.furnished,
-  "monthlyRent": Number(data.monthlyRent),
-  "salePrice": Number(data.salePrice),
-  "shortletPrice": Number(data.shortletPrice),
-  "securityDeposit": Number(data.securityDeposit),
-  "description": data.description
-}
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/units
-`,{
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
-}
-
-export async function updateUnit(id,data){
-  
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const payload = {
-  "buildingId": data.buildingId,
-  "floor": Number(data.floor),
-  "unitType": data.unitType,
-  "bedrooms": Number(data.bedrooms),
-  "bathrooms": Number(data.bathrooms),
-  "squareMeters": Number(data.squareMeters),
-  "furnished": data.furnished,
-  "status": data.status,
-  "monthlyRent": Number(data.monthlyRent),
-  "salePrice": Number(data.salePrice),
-  "shortletPrice": Number(data.shortletPrice),
-  "securityDeposit": Number(data.securityDeposit),
-  "description": data.description
-}
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/units/${id}`,
-  {
-  method: "PATCH",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
-} 
-
-export async function deleteUnit(id){
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`${SERVICES_URL}/units/${id}`,
-  {
-  method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
+export async function createUnit(data, propertyId) {
+  try {
+    if (!propertyId) {
+      return {
+        success: false,
+        message: "Property ID is required to create a unit.",
+      };
     }
-  });
-  return response.json(); 
+
+    const numOrUndef = (v) =>
+      v !== undefined && v !== null && v !== "" && Number.isFinite(Number(v))
+        ? Number(v)
+        : undefined;
+
+    const floor = numOrUndef(data?.floor);
+    const bedrooms = numOrUndef(data?.bedrooms);
+    const bathrooms = numOrUndef(data?.bathrooms);
+    const squareMeters = numOrUndef(data?.squareMeters);
+    const monthlyRent = numOrUndef(data?.monthlyRent);
+    const salePrice = numOrUndef(data?.salePrice);
+    const shortletPrice = numOrUndef(data?.shortletPrice);
+    const securityDeposit = numOrUndef(data?.securityDeposit);
+    const buildingId = String(data?.buildingId || "").trim();
+    const description = String(data?.description || "").trim();
+
+    const payload = {
+      unitNumber: String(data?.unitNumber || "").trim(),
+      unitType: data?.unitType || "APARTMENT",
+      furnished: Boolean(data?.furnished),
+      ...(buildingId ? { buildingId } : {}),
+      ...(floor !== undefined ? { floor } : {}),
+      ...(bedrooms !== undefined ? { bedrooms } : {}),
+      ...(bathrooms !== undefined ? { bathrooms } : {}),
+      ...(squareMeters !== undefined ? { squareMeters } : {}),
+      ...(monthlyRent !== undefined ? { monthlyRent } : {}),
+      ...(salePrice !== undefined ? { salePrice } : {}),
+      ...(shortletPrice !== undefined ? { shortletPrice } : {}),
+      ...(securityDeposit !== undefined ? { securityDeposit } : {}),
+      ...(description ? { description } : {}),
+    };
+
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(propertyId)}/units`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      const detailedErrors = Array.isArray(resData?.errors)
+        ? resData.errors
+            .map((e) =>
+              typeof e === "string"
+                ? e
+                : [e?.field || e?.property, e?.message].filter(Boolean).join(": ")
+            )
+            .filter(Boolean)
+            .join(", ")
+        : "";
+      const errorMessage =
+        detailedErrors ||
+        (Array.isArray(resData?.message)
+          ? resData.message.join(", ")
+          : resData?.message ||
+            resData?.error ||
+            `Failed to create unit (${response.status}).`);
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+    revalidatePath(`/dashboard/property-owner/properties/${propertyId}/units`);
+    if (buildingId) {
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/buildings/${buildingId}`
+      );
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Unit created successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to create unit.",
+    };
+  }
+}
+
+export async function updateUnit(id, data, propertyId = null) {
+  try {
+    const numOrUndef = (v) =>
+      v !== undefined && v !== null && v !== "" && Number.isFinite(Number(v))
+        ? Number(v)
+        : undefined;
+
+    const floor = numOrUndef(data?.floor);
+    const bedrooms = numOrUndef(data?.bedrooms);
+    const bathrooms = numOrUndef(data?.bathrooms);
+    const squareMeters = numOrUndef(data?.squareMeters);
+    const monthlyRent = numOrUndef(data?.monthlyRent);
+    const salePrice = numOrUndef(data?.salePrice);
+    const shortletPrice = numOrUndef(data?.shortletPrice);
+    const securityDeposit = numOrUndef(data?.securityDeposit);
+    const buildingId = String(data?.buildingId || "").trim();
+
+    const payload = {
+      ...(data?.unitNumber ? { unitNumber: String(data.unitNumber).trim() } : {}),
+      ...(buildingId ? { buildingId } : {}),
+      ...(floor !== undefined ? { floor } : {}),
+      ...(data?.unitType ? { unitType: data.unitType } : {}),
+      ...(bedrooms !== undefined ? { bedrooms } : {}),
+      ...(bathrooms !== undefined ? { bathrooms } : {}),
+      ...(squareMeters !== undefined ? { squareMeters } : {}),
+      ...(data?.furnished !== undefined ? { furnished: Boolean(data.furnished) } : {}),
+      ...(data?.status ? { status: data.status } : {}),
+      ...(monthlyRent !== undefined ? { monthlyRent } : {}),
+      ...(salePrice !== undefined ? { salePrice } : {}),
+      ...(shortletPrice !== undefined ? { shortletPrice } : {}),
+      ...(securityDeposit !== undefined ? { securityDeposit } : {}),
+      ...(data?.description !== undefined
+        ? { description: String(data.description).trim() }
+        : {}),
+    };
+
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/units/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to update unit (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/units`);
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/units/${id}`
+      );
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Unit updated successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to update unit.",
+    };
+  }
+}
+
+export async function deleteUnit(id, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/units/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({})
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to delete unit (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/units`);
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Unit deleted successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to delete unit.",
+    };
+  }
 } 
 
 /////////////////////////////////////*BUILDING*/////////////////////////////////////////////////
 
-export async function createBuilding(data,propertyId){
-  
-  const payload = {
-  "name": data.name,
-  "description": data.description, 
-  "totalFloors": Number(data.totalFloors)
-}
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/buildings`,{
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
-} 
-
-export async function updateBuilding(id,data){
-  
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const payload = {
-  "name": data.name,
-  "description": data.description,
-  "totalFloors": Number(data.totalFloors)
-}
-  const response = await safeFetch(`${SERVICES_URL}/buildings/${id}`,
-  {
-  method: "PATCH",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
-} 
-
-export async function deleteBuilding(id){
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/buildings/${id}`,
-  {
-  method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
+export async function createBuilding(data, propertyId) {
+  try {
+    if (!propertyId) {
+      return {
+        success: false,
+        message: "Property ID is required to create a building.",
+      };
     }
-  });
-  return response.json(); 
+
+    const totalFloors = Number(data?.totalFloors);
+    const payload = {
+      name: String(data?.name || "").trim(),
+      ...(data?.description ? { description: String(data.description).trim() } : {}),
+      ...(Number.isFinite(totalFloors) && totalFloors > 0 ? { totalFloors } : {}),
+    };
+
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(propertyId)}/buildings`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to create building (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+    revalidatePath(`/dashboard/property-owner/properties/${propertyId}/buildings`);
+    revalidatePath(`/dashboard/property-manager/properties/${propertyId}`);
+    revalidatePath(`/dashboard/admin/properties/${propertyId}`);
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Building created successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to create building.",
+    };
+  }
+} 
+
+export async function updateBuilding(id, data, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const totalFloors = Number(data?.totalFloors);
+    const payload = {
+      ...(data?.name ? { name: String(data.name).trim() } : {}),
+      ...(data?.description !== undefined
+        ? { description: String(data.description).trim() }
+        : {}),
+      ...(Number.isFinite(totalFloors) && totalFloors >= 0 ? { totalFloors } : {}),
+    };
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/buildings/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to update building (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/buildings`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/buildings/${id}`);
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Building updated successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to update building.",
+    };
+  }
+}
+
+export async function deleteBuilding(id, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/buildings/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({})
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to delete building (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/buildings`);
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Building deleted successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to delete building.",
+    };
+  }
 } 
 
 /////////////////////////////////////*PROPERTYOWNERS*/////////////////////////////////////////////////
@@ -2649,106 +3103,371 @@ export async function createNewProperty(data, token){
   return addProperty(data, token);
 }
 
-export async function updateProperty(id,data){
-  const payload = {
-  "name": data.name,
-  "description": data.description,
-  "propertyType": data.propertyType,
-  "address": data.address,
-  "city": data.city,
-  "state": data.state,
-  "country": data.country,
-  "postalCode": data.postalCode,
-  "latitude": data.latitude,
-  "longitude": data.longitude,
-  "status": data.status,
-  "yearBuilt": data.yearBuilt,
-  "totalFloors": data.totalFloors,
-  "totalUnits": data.totalUnits
+export async function updateProperty(id, data) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    const hasLat =
+      data?.latitude !== undefined &&
+      data?.latitude !== null &&
+      data?.latitude !== "" &&
+      Number.isFinite(Number(data.latitude));
+    const hasLng =
+      data?.longitude !== undefined &&
+      data?.longitude !== null &&
+      data?.longitude !== "" &&
+      Number.isFinite(Number(data.longitude));
+
+    if (hasLat) {
+      const lat = Number(data.latitude);
+      if (lat < -90 || lat > 90) {
+        return {
+          success: false,
+          message: "Latitude must be between -90 and 90.",
+          error: "Latitude must be between -90 and 90.",
+          status: 400,
+        };
+      }
+    }
+    if (hasLng) {
+      const lng = Number(data.longitude);
+      if (lng < -180 || lng > 180) {
+        return {
+          success: false,
+          message: "Longitude must be between -180 and 180.",
+          error: "Longitude must be between -180 and 180.",
+          status: 400,
+        };
+      }
+    }
+
+    const description = String(data?.description || "").trim();
+    const postalCode = String(data?.postalCode || "").trim();
+    const yearBuilt = Number(data?.yearBuilt);
+    const totalFloors = Number(data?.totalFloors);
+    const totalUnits = Number(data?.totalUnits);
+
+    const payload = {
+      ...(data?.name ? { name: String(data.name).trim() } : {}),
+      ...(description ? { description } : {}),
+      ...(data?.propertyType ? { propertyType: data.propertyType } : {}),
+      ...(data?.address ? { address: String(data.address).trim() } : {}),
+      ...(data?.city ? { city: String(data.city).trim() } : {}),
+      ...(data?.state ? { state: String(data.state).trim() } : {}),
+      ...(data?.country ? { country: String(data.country).trim() } : {}),
+      ...(postalCode ? { postalCode } : {}),
+      ...(hasLat ? { latitude: Number(data.latitude) } : {}),
+      ...(hasLng ? { longitude: Number(data.longitude) } : {}),
+      ...(data?.status ? { status: data.status } : {}),
+      ...(Number.isFinite(yearBuilt) && yearBuilt > 0 ? { yearBuilt } : {}),
+      ...(Number.isFinite(totalFloors) && totalFloors > 0 ? { totalFloors } : {}),
+      ...(Number.isFinite(totalUnits) && totalUnits > 0 ? { totalUnits } : {}),
+    };
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      const detailedErrors = Array.isArray(resData?.errors)
+        ? resData.errors
+            .map((e) =>
+              typeof e === "string"
+                ? e
+                : [e?.field || e?.property, e?.message].filter(Boolean).join(": ")
+            )
+            .filter(Boolean)
+            .join(", ")
+        : "";
+      const errorMessage =
+        detailedErrors ||
+        (Array.isArray(resData?.message)
+          ? resData.message.join(", ")
+          : resData?.message || resData?.error || `Failed to update property (${response.status})`);
+      return {
+        success: false,
+        message: errorMessage,
+        error: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath("/dashboard/admin/properties");
+    revalidatePath(`/dashboard/admin/properties/${id}`);
+    revalidatePath("/dashboard/property-owner/properties");
+    revalidatePath(`/dashboard/property-owner/properties/${id}`);
+    revalidatePath("/dashboard/property-manager/properties");
+    revalidatePath(`/dashboard/property-manager/properties/${id}`);
+
+    return {
+      success: true,
+      data: resData?.data || resData,
+      message: resData?.message || "Property updated successfully!",
+    };
+  } catch (error) {
+    console.warn("updateProperty error:", error);
+    return {
+      success: false,
+      message: error?.message || "Failed to update property. Please try again.",
+    };
+  }
 }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}`,
-  {
-  method: "PATCH",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
+export async function archiveProperty(id) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({})
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message:
+          resData?.message ||
+          resData?.error ||
+          `Failed to delete property (${response.status}).`,
+        status: response.status,
+      };
+    }
+
+    revalidatePath("/dashboard/admin/properties");
+    revalidatePath("/dashboard/property-owner/properties");
+    revalidatePath("/dashboard/property-manager/properties");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Property deleted successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to delete property.",
+    };
+  }
 }
 
-export async function archiveProperty(id){
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}`,
-  {
-  method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-  });
-  return response.json(); 
+export async function addManagerTOProperty(id, data) {
+  try {
+    const payload = {
+      userId: String(data?.userId || "").trim(),
+      role: data?.role || "FACILITY_MANAGER",
+    };
+
+    if (!payload.userId) {
+      return {
+        success: false,
+        message: "Please select or enter a user to assign as manager.",
+      };
+    }
+
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(id)}/managers`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+    console.log(response);
+    console.log(resData)
+
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message:
+          resData?.message ||
+          resData?.error ||
+          `Failed to add manager (${response.status}).`,
+        status: response.status,
+      };
+    }
+
+    revalidatePath(`/dashboard/admin/properties/${id}`);
+    revalidatePath(`/dashboard/property-owner/properties/${id}`);
+    revalidatePath(`/dashboard/property-manager/properties/${id}`);
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Manager added to property!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to add manager to property.",
+    };
+  }
 }
 
-export async function addManagerTOProperty(id, data){
-  const payload = {
-  "userId": data.userId,
-  "role": data.role
+export async function deleteManagerFromProperty(id, managerId) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(id)}/managers/${encodeURIComponent(managerId)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({})
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message:
+          resData?.message ||
+          resData?.error ||
+          `Failed to remove manager (${response.status}).`,
+        status: response.status,
+      };
+    }
+
+    revalidatePath(`/dashboard/admin/properties/${id}`);
+    revalidatePath(`/dashboard/property-owner/properties/${id}`);
+    revalidatePath(`/dashboard/property-manager/properties/${id}`);
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Manager removed from property!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to remove manager.",
+    };
+  }
 }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}/managers`,
-  {
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
-}
+export async function assignOwnerToProperty(id, data) {
+  try {
+    const ownerProfileId = String(data?.ownerProfileId || "").trim();
+    const ownershipPercentage = Number(data?.ownershipPercentage);
 
-export async function deleteManagerFromProperty(id, managerId){
+    if (!ownerProfileId) {
+      return {
+        success: false,
+        message: "Please select an owner to assign.",
+      };
+    }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}/managers/${managerId}`,
-  {
-  method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-  });
-  return response.json(); 
-}
+    const payload = {
+      ownerProfileId,
+      ...(Number.isFinite(ownershipPercentage) && ownershipPercentage > 0
+        ? { ownershipPercentage }
+        : { ownershipPercentage: 100 }),
+    };
 
-export async function assignOwnerToProperty(id, data){
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(id)}/owners`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
 
-  const payload = {
-  "ownerProfileId": data.ownerProfileId,
-  "ownershipPercentage": data.ownershipPercentage
-}
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${id}/owners
-`,
-  {
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-  });
-  return response.json(); 
+    if (!response.ok) {
+      return {
+        success: false,
+        message:
+          resData?.message ||
+          resData?.error ||
+          `Failed to assign owner (${response.status}).`,
+        status: response.status,
+      };
+    }
+
+    revalidatePath(`/dashboard/admin/properties/${id}`);
+    revalidatePath(`/dashboard/property-owner/properties/${id}`);
+    revalidatePath(`/dashboard/property-manager/properties/${id}`);
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Owner assigned to property!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to assign owner to property.",
+    };
+  }
 }
 
 
@@ -3097,4 +3816,464 @@ export async function refundSubscriptionPayment(id, payload) {
   });
   console.log(response)
   return response.json(); 
+}
+
+/////////////////////////////////////*LISTINGS*/////////////////////////////////////////////////
+
+export async function createListing(data, propertyId) {
+  try {
+    if (!propertyId) {
+      return {
+        success: false,
+        message: "Property ID is required to create a listing.",
+      };
+    }
+
+    const numOrUndef = (v) =>
+      v !== undefined && v !== null && v !== "" && Number.isFinite(Number(v))
+        ? Number(v)
+        : undefined;
+
+    const price = numOrUndef(data?.price);
+    const deposit = numOrUndef(data?.deposit);
+    const unitId = String(data?.unitId || "").trim();
+    if (!unitId) {
+      return {
+        success: false,
+        message: "Please select a unit for this listing.",
+        status: 400,
+      };
+    }
+    const description = String(data?.description || "").trim();
+    const location = String(data?.location || "").trim();
+
+    const payload = {
+      ...(unitId ? { unitId } : {}),
+      title: String(data?.title || "").trim(),
+      ...(description ? { description } : {}),
+      listingType: data?.listingType || "RENT",
+      price: price ?? 0,
+      currency: data?.currency || "NGN",
+      deposit: deposit ?? 0,
+      availability:
+        data?.availability && typeof data.availability === "object" && !Array.isArray(data.availability)
+          ? data.availability
+          : {},
+      amenities:
+        data?.amenities && typeof data.amenities === "object" && !Array.isArray(data.amenities)
+          ? data.amenities
+          : {},
+      ...(location ? { location } : {}),
+    };
+    console.log("createListing payload:", payload);
+
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(propertyId)}/listings`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+    console.log("createListing response:", resData);
+
+    if (!response.ok) {
+      const detailedErrors = Array.isArray(resData?.errors)
+        ? resData.errors
+            .map((e) =>
+              typeof e === "string"
+                ? e
+                : [e?.field || e?.property, e?.message].filter(Boolean).join(": ")
+            )
+            .filter(Boolean)
+            .join(", ")
+        : "";
+      const errorMessage =
+        detailedErrors ||
+        (Array.isArray(resData?.message)
+          ? resData.message.join(", ")
+          : resData?.message ||
+            resData?.error ||
+            `Failed to create listing (${response.status}).`);
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+    revalidatePath(`/dashboard/property-owner/properties/${propertyId}/listings`);
+    revalidatePath("/listings");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Listing created successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to create listing.",
+    };
+  }
+}
+
+export async function updateListing(id, data, propertyId = null) {
+  try {
+    const numOrUndef = (v) =>
+      v !== undefined && v !== null && v !== "" && Number.isFinite(Number(v))
+        ? Number(v)
+        : undefined;
+
+    const price = numOrUndef(data?.price);
+    const deposit = numOrUndef(data?.deposit);
+    const location = String(data?.location || "").trim();
+    const description =
+      data?.description !== undefined ? String(data.description).trim() : "";
+
+    const payload = {
+      ...(data?.title ? { title: String(data.title).trim() } : {}),
+      ...(description ? { description } : {}),
+      ...(data?.listingType ? { listingType: data.listingType } : {}),
+      ...(price !== undefined ? { price } : {}),
+      ...(data?.currency ? { currency: data.currency } : {}),
+      ...(deposit !== undefined ? { deposit } : {}),
+      ...(data?.availability &&
+      typeof data.availability === "object" &&
+      !Array.isArray(data.availability)
+        ? { availability: data.availability }
+        : {}),
+      ...(data?.amenities &&
+      typeof data.amenities === "object" &&
+      !Array.isArray(data.amenities)
+        ? { amenities: data.amenities }
+        : {}),
+      ...(location ? { location } : {}),
+    };
+    console.log("updateListing payload:", payload);
+
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/listings/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+    console.log("updateListing response:", resData);
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to update listing (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/listings`);
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/listings/${id}`
+      );
+    }
+    revalidatePath("/listings");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Listing updated successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to update listing.",
+    };
+  }
+}
+
+export async function deleteListing(id, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/listings/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({})
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+    console.timeLog()
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to delete listing (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/listings`);
+    }
+    revalidatePath("/listings");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Listing deleted successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to delete listing.",
+    };
+  }
+}
+
+async function runListingLifecycleAction(id, action, fallbackStatus, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const headers = {
+      Authorization: `Bearer ${tokenVal}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+
+    let response = await safeFetch(
+      `https://services.xpacy.com/api/v1/listings/${encodeURIComponent(id)}/${action}`,
+      { method: "POST", headers,body: JSON.stringify({}) }
+    );
+
+    if (response.status === 404 || response.status === 405) {
+      response = await safeFetch(
+        `https://services.xpacy.com/api/v1/listings/${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ status: fallbackStatus }),
+        },
+      );
+    }
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to ${action} listing (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/listings`);
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/listings/${id}`
+      );
+    }
+    revalidatePath("/listings");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || `Listing ${fallbackStatus.toLowerCase()} successfully!`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || `Failed to ${action} listing.`,
+    };
+  }
+}
+
+export async function publishListing(id, propertyId = null) {
+  return runListingLifecycleAction(id, "publish", "PUBLISHED", propertyId);
+}
+
+export async function pauseListing(id, propertyId = null) {
+  return runListingLifecycleAction(id, "pause", "PAUSED", propertyId);
+}
+
+export async function archiveListing(id, propertyId = null) {
+  return runListingLifecycleAction(id, "archive", "ARCHIVED", propertyId);
+}
+
+/////////////////////////////////////*BOOKINGS (V1)*/////////////////////////////////////////////////
+
+export async function createPropertyBooking(bookingData, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to create a booking.",
+        status: 401,
+      };
+    }
+
+    const unitId = String(bookingData?.unitId || "").trim();
+    const listingId = String(bookingData?.listingId || "").trim();
+
+    if (!unitId || !listingId) {
+      return {
+        success: false,
+        message: !unitId
+          ? "Unit ID is required to create a booking."
+          : "Listing ID is required to create a booking.",
+        status: 400,
+      };
+    }
+
+    const adults = Math.max(1, Number(bookingData?.numberOfAdults ?? 1) || 1);
+    const children = Math.max(0, Number(bookingData?.numberOfChildren ?? 0) || 0);
+    const totalGuests =
+      bookingData?.numberOfGuests !== undefined &&
+      bookingData?.numberOfGuests !== "" &&
+      bookingData?.numberOfGuests !== null
+        ? Number(bookingData.numberOfGuests)
+        : adults + children;
+
+    const payload = {
+      unitId,
+      listingId,
+      checkIn: bookingData?.checkIn,
+      checkOut: bookingData?.checkOut,
+      numberOfGuests: totalGuests,
+      numberOfAdults: adults,
+      numberOfChildren: children,
+      ...(bookingData?.specialRequests?.trim()
+        ? { specialRequests: bookingData.specialRequests.trim() }
+        : {}),
+    };
+
+    const headers = {
+      Authorization: `Bearer ${tokenVal}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+
+    let response = await safeFetch("https://services.xpacy.com/api/v1/bookings", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if ((response.status === 404 || response.status === 405) && propertyId) {
+      response = await safeFetch(
+        `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(propertyId)}/bookings`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        }
+      );
+    }
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+    if (!response.ok) {
+      console.error("createPropertyBooking failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to create booking (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath("/dashboard/user/bookings");
+    revalidatePath("/dashboard/property-owner/bookings");
+    revalidatePath("/dashboard/property-manager/bookings");
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Booking created successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to create booking.",
+    };
+  }
 }

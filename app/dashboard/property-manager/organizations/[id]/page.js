@@ -23,6 +23,7 @@ import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
 import DataTable from "@/app/_components/DataTable";
 import StatusChips from "@/app/_components/StatusChips";
+import CopyButton from "@/app/_components/CopyButton";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
@@ -68,18 +69,44 @@ const memberName = (member) => {
 
 function buildDetailRows(org) {
     const status = statusOf(org);
+    const websiteHref = org.website
+        ? org.website.startsWith("http")
+            ? org.website
+            : `https://${org.website}`
+        : null;
+
     return [
         { label: "Organization Name", value: org.name, icon: Building2 },
-        { label: "Slug", value: org.slug, icon: Link2 },
-        { label: "Email", value: org.email, icon: Mail },
-        { label: "Phone", value: org.phone, icon: Phone },
+        { label: "Slug", value: org.slug, icon: Link2, copyValue: org.slug, mono: true },
+        {
+            label: "Email",
+            value: org.email,
+            icon: Mail,
+            href: org.email ? `mailto:${org.email}` : null,
+            copyValue: org.email,
+        },
+        {
+            label: "Phone",
+            value: org.phone,
+            icon: Phone,
+            href: org.phone ? `tel:${org.phone}` : null,
+            copyValue: org.phone,
+            mono: true,
+        },
         { label: "Address", value: org.address, icon: Home },
         { label: "City", value: org.city, icon: MapPin },
         { label: "State / Province", value: org.state || org.province, icon: MapPin },
         { label: "Country", value: org.country, icon: Flag },
         { label: "Timezone", value: org.timezone, icon: Clock },
-        { label: "Currency", value: org.currency, icon: DollarSign },
-        { label: "Website", value: org.website, icon: Globe },
+        { label: "Currency", value: org.currency, icon: DollarSign, mono: true },
+        {
+            label: "Website",
+            value: org.website,
+            icon: Globe,
+            href: websiteHref,
+            external: true,
+            copyValue: org.website,
+        },
         {
             label: "Status",
             value:
@@ -97,6 +124,62 @@ function buildDetailRows(org) {
             value !== undefined && value !== null && value !== "" && value !== "—",
     );
 }
+
+const keyValueColumns = [
+    {
+        heading: "Field",
+        render: (row) => {
+            const Icon = row.icon;
+            return (
+                <div className="flex items-center gap-2.5">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-50 dark:bg-primary-950/40">
+                        <Icon className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                    </div>
+                    <span className="text-xs font-semibold uppercase tracking-[0.08em] text-mute">
+                        {row.label}
+                    </span>
+                </div>
+            );
+        },
+    },
+    {
+        heading: "Details",
+        render: (row) => (
+            <div
+                className={`flex flex-wrap items-center gap-2 text-[13.5px] font-medium text-ink ${
+                    row.mono ? "font-mono" : ""
+                }`}
+            >
+                {row.href ? (
+                    <a
+                        href={row.href}
+                        target={row.external ? "_blank" : undefined}
+                        rel={row.external ? "noopener noreferrer" : undefined}
+                        className="transition-colors hover:text-primary hover:underline"
+                    >
+                        {row.value}
+                    </a>
+                ) : (
+                    <span>{row.value}</span>
+                )}
+            </div>
+        ),
+    },
+    {
+        heading: "",
+        align: "right",
+        render: (row) =>
+            row.copyValue ? (
+                <div className="flex justify-end">
+                    <CopyButton
+                        value={row.copyValue}
+                        label={row.label}
+                        iconSize={13}
+                    />
+                </div>
+            ) : null,
+    },
+];
 
 // ---------- Page ----------
 
@@ -117,7 +200,7 @@ export default async function PropertyManagerOrganizationDetailPage({ params }) 
                 </Link>
 
                 <EmptyState
-                    icon={Building2}
+                    icon={<Building2 className="h-10 w-10 text-primary" aria-hidden="true" />}
                     title="Invalid organization id"
                     message="The organization id in the URL is missing or malformed."
                 />
@@ -159,7 +242,7 @@ export default async function PropertyManagerOrganizationDetailPage({ params }) 
                 </Link>
 
                 <EmptyState
-                    icon={Building2}
+                    icon={<Building2 className="h-10 w-10 text-primary" aria-hidden="true" />}
                     title="Organization not found"
                     message={`No organization was found for id "${orgId}". This organization may have been removed or you do not have permission to view it.`}
                 />
@@ -303,36 +386,20 @@ export default async function PropertyManagerOrganizationDetailPage({ params }) 
 
             {/* ---------- Organization information ---------- */}
             <DashboardGridItem title="Organization information">
-                <div className="grid grid-cols-1 gap-3 container sm:grid-cols-2">
-                    {details.map(({ label, value, icon: Icon }) => (
-                        <div
-                            key={label}
-                            className="rounded-xl border border-gray-100 bg-white p-3 dark:border-line dark:bg-card"
-                        >
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-50">
-                                    <Icon
-                                        className="h-3.5 w-3.5 text-primary"
-                                        aria-hidden="true"
-                                    />
-                                </div>
-                                <dt className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-gray-500 dark:text-mute">
-                                    {label}
-                                </dt>
-                            </div>
-                            <dd className="mt-2 break-words text-[13px] capitalize text-ink">
-                                {value}
-                            </dd>
-                        </div>
-                    ))}
-                </div>
+                <DataTable
+                    data={details}
+                    columns={keyValueColumns}
+                    showPagination={false}
+                    className="p-0 border-none shadow-none"
+                    rowKey={(row) => row.label}
+                />
             </DashboardGridItem>
 
             {/* ---------- Properties ---------- */}
             <DashboardGridItem title="Properties">
                 {propertiesList.length === 0 ? (
                     <EmptyState
-                        icon={Building2}
+                        icon={<Building2 className="h-10 w-10 text-primary" aria-hidden="true" />}
                         title="No properties"
                         message={`No properties found for ${organization.name || "this organization"}.`}
                     />
@@ -404,7 +471,7 @@ export default async function PropertyManagerOrganizationDetailPage({ params }) 
             <DashboardGridItem title="Organization members">
                 {memberList.length === 0 ? (
                     <EmptyState
-                        icon={Users}
+                        icon={<Users className="h-10 w-10 text-primary" aria-hidden="true" />}
                         title="No members"
                         message={`No members found for ${organization.name || "this organization"}.`}
                     />

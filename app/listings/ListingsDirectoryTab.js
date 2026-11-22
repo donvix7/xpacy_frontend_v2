@@ -27,12 +27,28 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
     const categoryName = kind.includes("SHORT") ? "Shortlet" : kind === "SALE" || kind === "BUY" ? "For Sale" : "For Rent";
     const name = property.property_name || property.name || property.title || listing.title || "Property listing";
     const address = [property.address, property.city || listing.location?.city, property.state || listing.location?.state].filter(Boolean).join(", ");
+    const listingId = listing.id || listing._id;
     const slug = property.property_slug || property.slug;
     const route = categoryName === "Shortlet" ? "shortlet" : categoryName === "For Sale" ? "buy" : "rent";
-    const href = slug ? `/${route}/${slug}?organizationId=${encodeURIComponent(organizationId || "")}` : `/listings?organizationId=${encodeURIComponent(organizationId || "")}`;
+    const orgQuery = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
+    const href = listingId
+      ? `/listings/${encodeURIComponent(listingId)}${orgQuery}`
+      : slug
+        ? `/${route}/${slug}${orgQuery}`
+        : `/listings${orgQuery}`;
+    const formatAvailabilityText = (avail) => {
+      if (avail == null || avail === "") return "Not specified";
+      if (typeof avail === "string") return avail;
+      if (typeof avail === "object" && !Array.isArray(avail)) {
+        const entries = Object.entries(avail).filter(([, v]) => v != null && v !== "");
+        if (!entries.length) return "Not specified";
+        return entries.map(([k, v]) => `${k}: ${v}`).join(", ");
+      }
+      return "Not specified";
+    };
     return {
       ...listing,
-      key: listing.id || listing._id || `${listing.propertyId}-${index}`,
+      key: listingId || `${listing.propertyId}-${index}`,
       property,
       name,
       address,
@@ -42,7 +58,7 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
       price: listing.price ?? property.property_price ?? property.price,
       unitName: listing.unit?.unitNumber || listing.unit?.unitType || "Not specified",
       resolvedUnitType: listing.unit?.unitType || property.property_type || property.propertyType || property.type || "Not specified",
-      availabilityText: listing.availability == null || listing.availability === "" ? "Not specified" : String(listing.availability),
+      availabilityText: formatAvailabilityText(listing.availability),
     };
   }), [listings, organizationId]);
 

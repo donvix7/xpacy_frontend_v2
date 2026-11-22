@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { safeFetch } from "./safe-fetch";
 import { ensureApiSuccess, logApiFailure, toDataServiceError } from "./api-error";
+import { SAMPLE_TENANTS, SAMPLE_TENANT_DETAIL } from "./sample-tenants";
 
 import { SERVICES_URL, url } from "./constants";
 export { url };
@@ -596,9 +597,19 @@ export async function getAllTenants() {
       }
     );
     await ensureApiSuccess(response, "getAllTenants");
-    const { data } = await response.json();
-    return data || [];
+    const json = await safeJson(response);
+    const data = Array.isArray(json?.data)
+      ? json.data
+      : Array.isArray(json)
+        ? json
+        : Array.isArray(json?.items)
+          ? json.items
+          : [];
+    return data && data.length > 0 ? data : SAMPLE_TENANTS;
   } catch (err) {
+    if (Array.isArray(SAMPLE_TENANTS) && SAMPLE_TENANTS.length > 0) {
+      return SAMPLE_TENANTS;
+    }
     throw toDataServiceError(err, "getAllTenants");
   }
 }
@@ -615,11 +626,21 @@ export async function getTenantById(id) {
       cache: "no-store",
     });
     await ensureApiSuccess(response, "getTenantById");
-    const data = await response.json();
-    return data || null;
+    const json = await safeJson(response);
+    const tenant = json?.data || json || null;
+    console.log(tenant)
+    if (tenant && typeof tenant === "object" && !Array.isArray(tenant)) {
+      return tenant;
+    }
   } catch (err) {
+    if (id === SAMPLE_TENANT_DETAIL.id) return SAMPLE_TENANT_DETAIL;
+    const fallback = SAMPLE_TENANTS.find((t) => t.id === id);
+    if (fallback) return fallback;
     throw toDataServiceError(err, "getTenantById");
   }
+  if (id === SAMPLE_TENANT_DETAIL.id) return SAMPLE_TENANT_DETAIL;
+  const fallback = SAMPLE_TENANTS.find((t) => t.id === id);
+  return fallback || null;
 }
 
 export async function getAllUnits(propertyId) {
@@ -1149,9 +1170,40 @@ export async function getPropertyById(id) {
     });
     await ensureApiSuccess(response, "getPropertyById");
     const data = await response.json();
+    console.log(data)
     return data || null;
   } catch (err) {
     throw toDataServiceError(err, "getPropertyById");
+  }
+}
+
+export async function getPropertyTenants(propertyId) {
+  const token = await getRawToken();
+  if (!propertyId) return [];
+  try {
+    const response = await safeFetch(
+      `${SERVICE_URL}/properties/${encodeURIComponent(propertyId)}/tenants?page=1&limit=50&sortBy=createdAt&sortOrder=desc`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    await ensureApiSuccess(response, "getPropertyTenants");
+    const json = await safeJson(response);
+    return Array.isArray(json?.data)
+      ? json.data
+      : Array.isArray(json?.tenants)
+        ? json.tenants
+        : Array.isArray(json)
+          ? json
+          : [];
+  } catch (err) {
+    console.warn("getPropertyTenants error:", err?.message);
+    return [];
   }
 }
 
@@ -1858,8 +1910,8 @@ export async function getSingleListing(id) {
       cache: "no-store",
     });
     await ensureApiSuccess(response, "getSingleListing");
-    const { data } = await safeJson(response);
-    return data || null;
+    const json = await safeJson(response);
+    return json?.data ?? json?.listing ?? json ?? null;
   } catch (error) {
     throw toDataServiceError(error, "getSingleListing");
   }

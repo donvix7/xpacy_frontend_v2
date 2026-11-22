@@ -44,10 +44,10 @@ export default async function Page({ params }) {
   const stats = {
     totalTenants: tenantsList.length,
     processedKyc: tenantsList.filter(
-      (u) => u.kyc_status === "processing",
+      (u) => (u.kyc_status || "").toLowerCase() === "processing",
     ).length,
-    activeTenants: tenantsList.filter((u) => u.status === "active").length,
-    inactiveTenants: tenantsList.filter((u) => u.status === "inactive").length,
+    activeTenants: tenantsList.filter((u) => (u.status || "").toLowerCase() === "active").length,
+    inactiveTenants: tenantsList.filter((u) => (u.status || "").toLowerCase() === "inactive").length,
     unverifiedTenants: tenantsList.filter((u) => !u.email_verified_at).length,
   };
 
