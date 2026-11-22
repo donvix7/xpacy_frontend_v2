@@ -63,9 +63,12 @@ function formatFileSize(bytes) {
 export default function DocumentDetailsView({
     document,
     basePath = "/dashboard/property-owner",
+    propertyId: propertyIdProp = null,
     dataErrorMessages = [],
 }) {
-    const documentsHref = `${basePath}/documents`;
+    const documentsHref = propertyIdProp
+        ? `${basePath}/properties/${encodeURIComponent(propertyIdProp)}/documents`
+        : `${basePath}/documents`;
 
     if (!document || typeof document !== "object") {
         return (

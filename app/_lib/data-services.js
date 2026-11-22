@@ -813,10 +813,85 @@ export async function getMaintenanceById(id) {
 }
 
 export async function getAllExpenses(organisationId) {
+  const cookieStore = await cookies();
   const token = await getRawToken();
+  if (!token) return [];
+
+  const rawOrgId =
+    organisationId ||
+    cookieStore.get("organizationId")?.value ||
+    cookieStore.get("organization_id")?.value ||
+    "";
+  const resolvedOrgId =
+    typeof rawOrgId === "string" &&
+    rawOrgId.trim() &&
+    rawOrgId !== "undefined" &&
+    rawOrgId !== "null"
+      ? rawOrgId.trim()
+      : "";
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
+  const candidates = [];
+  if (resolvedOrgId) {
+    candidates.push(
+      `${SERVICE_URL}/expenses?organizationId=${encodeURIComponent(resolvedOrgId)}&page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      `${SERVICE_URL}/expenses?organizationId=${encodeURIComponent(resolvedOrgId)}`
+    );
+  }
+  candidates.push(`${SERVICE_URL}/expenses`);
+
+  try {
+    let response = null;
+    let lastUrl = candidates[0];
+
+    for (const url of candidates) {
+      lastUrl = url;
+      response = await safeFetch(url, {
+        method: "GET",
+        headers,
+        cache: "no-store",
+      });
+      if (response.ok) break;
+      if (response.status !== 400) break;
+    }
+
+    if (!response.ok) {
+      let errBody = null;
+      try {
+        errBody = await response.clone().json();
+      } catch {
+        errBody = await response.clone().text().catch(() => null);
+      }
+      console.log("getAllExpenses error body:", {
+        url: lastUrl,
+        status: response.status,
+        resolvedOrgId,
+        body: errBody,
+      });
+    }
+
+    await ensureApiSuccess(response, "getAllExpenses");
+    const json = await response.json();
+    return (
+      [json, json?.data, json?.expenses, json?.data?.expenses].find(
+        Array.isArray
+      ) || []
+    );
+  } catch (err) {
+    throw toDataServiceError(err, "getAllExpenses");
+  }
+}
+
+export async function getExpenseById(id) {
+  const token = await getRawToken();
+  if (!token || !id) return null;
   try {
     const response = await safeFetch(
-      `${SERVICE_URL}/expenses?organizationId=${organisationId}&page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      `${SERVICE_URL}/expenses/${encodeURIComponent(id)}`,
       {
         method: "GET",
         headers: {
@@ -826,39 +901,30 @@ export async function getAllExpenses(organisationId) {
         cache: "no-store",
       }
     );
-    await ensureApiSuccess(response, "getAllExpenses");
-    const { data } = await response.json();
-    return data || [];
-  } catch (err) {
-    throw toDataServiceError(err, "getAllExpenses");
-  }
-}
-
-export async function getExpenseById(id) {
-  const token = await getRawToken();
-  try {
-    const response = await safeFetch(`${SERVICE_URL}/expenses/${id}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
     await ensureApiSuccess(response, "getExpenseById");
-    const { data } = await response.json();
-    return data || null;
+    const json = await response.json();
+    return json?.data?.expense || json?.data || json?.expense || json || null;
   } catch (err) {
     throw toDataServiceError(err, "getExpenseById");
   }
 }
 
-export async function getAllDocuments() {
+export async function getAllDocuments(options = {}) {
   const token = await getRawToken();
   if (!token) return [];
+  const params = new URLSearchParams({
+    page: "1",
+    limit: "50",
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
+  if (options?.propertyId) params.set("propertyId", String(options.propertyId));
+  if (options?.organizationId) {
+    params.set("organizationId", String(options.organizationId));
+  }
   try {
     const response = await safeFetch(
-      `${SERVICE_URL}/documents?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      `https://services.xpacy.com/api/v1/documents?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
       {
         method: "GET",
         headers: {
@@ -870,8 +936,21 @@ export async function getAllDocuments() {
     );
     await ensureApiSuccess(response, "getAllDocuments");
     const payload = await response.json();
-    return [payload, payload?.data, payload?.documents, payload?.data?.documents]
-      .find(Array.isArray) || [];
+    console.log(payload)
+    const list =
+      [payload, payload?.data, payload?.documents, payload?.data?.documents].find(
+        Array.isArray
+      ) || [];
+    if (options?.propertyId) {
+      const targetId = String(options.propertyId);
+      const filtered = list.filter(
+        (d) =>
+          String(d?.propertyId || d?.property?.id || d?.property?._id || "") ===
+          targetId
+      );
+      return filtered;
+    }
+    return list;
   } catch (error) {
     throw toDataServiceError(error, "getAllDocuments");
   }

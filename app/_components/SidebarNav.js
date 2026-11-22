@@ -214,6 +214,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             link: "/dashboard/property-owner/wallet",
             icon: <FaWallet />
         },
+            {
+            text: " Expense",
+            link: "/dashboard/property-owner/expenses",
+            icon: <FaWallet />
+        },
         {
             text: "Bookings",
             link: "/dashboard/property-owner/bookings",
@@ -224,11 +229,7 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             link: "/dashboard/property-owner/rents",
             icon: <GiTakeMyMoney className="w-5 h-5" />,
         },
-           {
-            text: "Documents",
-            link: "/dashboard/property-owner/documents",
-            icon: <BsStack className="w-5 h-5" />,
-        },
+       
         {
             text: "Security",
             link: "/dashboard/property-owner/security",

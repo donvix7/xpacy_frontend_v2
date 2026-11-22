@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
     ArrowUpRight,
+    ChevronLeft,
     ExternalLink,
     FileText,
     Plus,
@@ -43,11 +44,20 @@ function formatFileSize(bytes) {
 export default function DocumentsListView({
     documents = [],
     basePath = "/dashboard/property-owner",
+    propertyId = null,
+    propertyName = null,
     dataErrorMessages = [],
 }) {
     const list = Array.isArray(documents) ? documents : [];
-    const documentsHref = `${basePath}/documents`;
-    const addHref = `/admin/add-new-document?returnTo=${encodeURIComponent(documentsHref)}`;
+    const documentsHref = propertyId
+        ? `${basePath}/properties/${encodeURIComponent(propertyId)}/documents`
+        : `${basePath}/documents`;
+    const propertyHref = propertyId
+        ? `${basePath}/properties/${encodeURIComponent(propertyId)}`
+        : null;
+    const addHref = propertyId
+        ? `/admin/add-new-document?propertyId=${encodeURIComponent(propertyId)}&returnTo=${encodeURIComponent(documentsHref)}`
+        : `/admin/add-new-document?returnTo=${encodeURIComponent(documentsHref)}`;
 
     const leaseCount = list.filter((d) =>
         ["LEASE", "LEASE_AGREEMENT", "CONTRACT", "DEED"].includes(
@@ -74,10 +84,24 @@ export default function DocumentsListView({
                 <DataErrorNotice messages={dataErrorMessages} />
             ) : null}
 
+            {propertyHref && (
+                <Link
+                    href={propertyHref}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
+                >
+                    <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                    Back to {propertyName || "property"}
+                </Link>
+            )}
+
             <HeroBand
                 tagline={`Documents vault · ${today}`}
-                title="Documents"
-                description="Manage leases, deeds, inspection reports, receipts, and organization records in one place."
+                title={propertyName ? `${propertyName} — Documents` : "Documents"}
+                description={
+                    propertyName
+                        ? `Manage leases, deeds, inspection reports, and records linked to ${propertyName}.`
+                        : "Manage leases, deeds, inspection reports, receipts, and organization records in one place."
+                }
                 stats={[
                     { label: "Total Documents", value: list.length, hint: "All records" },
                     { label: "Leases & Deeds", value: leaseCount, hint: "Legal & contracts" },

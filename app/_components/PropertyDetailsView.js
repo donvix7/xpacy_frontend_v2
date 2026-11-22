@@ -23,6 +23,7 @@ import {
     Pencil,
     UserRound,
     Wrench,
+    Files,
 } from "lucide-react";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
@@ -491,11 +492,11 @@ export default function PropertyDetailsView({
                             </Link>
                         )}
                         <Link
-                            href={`${basePath}/properties`}
+                            href={`${basePath}/properties/${encodeURIComponent(property.id)}/documents`}
                             className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
                         >
-                            <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
-                            All Properties
+                            <Files className="h-3.5 w-3.5" aria-hidden="true" />
+                            All Documents
                         </Link>
 
                         <DeletePropertyButton

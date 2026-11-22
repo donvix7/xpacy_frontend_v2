@@ -14,13 +14,11 @@ import { createDocument } from "@/app/_lib/action";
 const DOCUMENT_TYPES = [
     { value: "PROPERTY_DOCUMENT", label: "Property Document" },
     { value: "LEASE_AGREEMENT", label: "Lease Agreement" },
-    { value: "DEED", label: "Property Deed / Title" },
-    { value: "INSURANCE", label: "Insurance Policy" },
     { value: "INSPECTION_REPORT", label: "Inspection Report" },
-    { value: "INVOICE", label: "Invoice" },
-    { value: "RECEIPT", label: "Payment Receipt" },
-    { value: "ID_DOCUMENT", label: "Identification Document" },
-    { value: "CONTRACT", label: "Contract" },
+    { value: "MAINTENANCE_DOCUMENT", label: "Maintenance Document" },
+    { value: "COMPLIANCE_DOCUMENT", label: "Compliance Document" },
+    { value: "RECEIPT", label: "Receipt" },
+    { value: "IDENTITY_DOCUMENT", label: "Identity Document" },
     { value: "OTHER", label: "Other" },
 ];
 

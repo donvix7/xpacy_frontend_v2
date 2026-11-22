@@ -1872,9 +1872,26 @@ export async function createDocument(data) {
         ? Number(data.fileSize)
         : 0;
 
+    const ALLOWED_DOCUMENT_TYPES = [
+      "PROPERTY_DOCUMENT",
+      "LEASE_AGREEMENT",
+      "INSPECTION_REPORT",
+      "MAINTENANCE_DOCUMENT",
+      "COMPLIANCE_DOCUMENT",
+      "RECEIPT",
+      "IDENTITY_DOCUMENT",
+      "OTHER",
+    ];
+    const normalizedType = String(data?.type || "PROPERTY_DOCUMENT")
+      .trim()
+      .toUpperCase();
+    const docType = ALLOWED_DOCUMENT_TYPES.includes(normalizedType)
+      ? normalizedType
+      : "PROPERTY_DOCUMENT";
+
     const payload = {
       name: String(data?.name || "").trim(),
-      type: String(data?.type || "PROPERTY_DOCUMENT").trim(),
+      type: docType,
       url: String(data?.url || "").trim(),
       ...(data?.propertyId?.trim()
         ? { propertyId: data.propertyId.trim() }
@@ -1924,6 +1941,14 @@ export async function createDocument(data) {
 
     revalidatePath("/dashboard/property-owner/documents");
     revalidatePath("/dashboard/property-manager/documents");
+    if (payload.propertyId) {
+      revalidatePath(
+        `/dashboard/property-owner/properties/${payload.propertyId}/documents`
+      );
+      revalidatePath(
+        `/dashboard/property-manager/properties/${payload.propertyId}/documents`
+      );
+    }
 
     return {
       success: true,
@@ -1938,7 +1963,7 @@ export async function createDocument(data) {
   }
 }
 
-export async function deleteDocument(id) {
+export async function deleteDocument(id, propertyId = null) {
   try {
     const cookieStore = await cookies();
     const tokenVal = cookieStore.get("token")?.value;
@@ -1990,6 +2015,14 @@ export async function deleteDocument(id) {
 
     revalidatePath("/dashboard/property-owner/documents");
     revalidatePath("/dashboard/property-manager/documents");
+    if (propertyId) {
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/documents`
+      );
+      revalidatePath(
+        `/dashboard/property-manager/properties/${propertyId}/documents`
+      );
+    }
 
     return {
       success: true,
@@ -2259,62 +2292,212 @@ export async function addOwner(payload, propertyId = null) {
 
 /////////////////////////////////////*EXPENSES*/////////////////////////////////////////////////
 
-export async function createExpense(data, organizationId){
+export async function createExpense(data, organizationId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
 
-  const payload ={
-  "propertyId": data.propertyId,
-  "buildingId": data.buildingId,
-  "unitId": data.unitId,
-  "category": data.category,
-  "vendor": data.vendor,
-  "amount": data.amount,
-  "currency": data.currency,
-  "date": data.date,
-  "description": data.description,
-  "receipt": data.receipt
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to create an expense.",
+        status: 401,
+      };
+    }
+
+    const cookieOrgId =
+      cookieStore.get("organizationId")?.value ||
+      cookieStore.get("organization_id")?.value ||
+      "";
+    const resolvedOrgId = String(
+      organizationId || data?.organizationId || cookieOrgId || ""
+    ).trim();
+
+    const ALLOWED_EXPENSE_CATEGORIES = [
+      "REPAIRS",
+      "ELECTRICITY",
+      "WATER",
+      "SECURITY",
+      "CLEANING",
+      "STAFF",
+      "MAINTENANCE",
+      "UTILITIES",
+      "PROPERTY_TAX",
+      "INSURANCE",
+      "OTHER",
+    ];
+
+    const propertyId = String(data?.propertyId || "").trim();
+    if (!propertyId) {
+      return {
+        success: false,
+        message: "Please select a property for this expense.",
+        status: 400,
+      };
+    }
+
+    const normalizedCategory = String(data?.category || "OTHER")
+      .trim()
+      .toUpperCase();
+    const category = ALLOWED_EXPENSE_CATEGORIES.includes(normalizedCategory)
+      ? normalizedCategory
+      : "OTHER";
+
+    const payload = {
+      propertyId,
+      ...(data?.buildingId?.trim()
+        ? { buildingId: data.buildingId.trim() }
+        : {}),
+      ...(data?.unitId?.trim() ? { unitId: data.unitId.trim() } : {}),
+      category,
+      ...(data?.vendor?.trim() ? { vendor: data.vendor.trim() } : {}),
+      amount: Number(data?.amount ?? 0),
+      currency: String(data?.currency || "NGN").trim().toUpperCase(),
+      date: data?.date || new Date().toISOString(),
+      ...(data?.description?.trim()
+        ? { description: data.description.trim() }
+        : {}),
+      ...(data?.receipt?.trim() ? { receipt: data.receipt.trim() } : {}),
+    };
+
+    const query = resolvedOrgId
+      ? `?organizationId=${encodeURIComponent(resolvedOrgId)}`
+      : "";
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/expenses${query}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("createExpense failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to create expense (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath("/dashboard/property-owner/expenses");
+    revalidatePath("/dashboard/property-manager/expenses");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData?.expense ?? resData,
+      message: resData?.message || "Expense recorded successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to create expense.",
+    };
+  }
 }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
+export async function updateExpense(id, data, organizationId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
 
-const response = await safeFetch(`https://services.xpacy.com/api/v1/expenses?organizationId=${organizationId}
-`,{
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to update this expense.",
+        status: 401,
+      };
+    }
 
-}
+    const payload = {
+      ...(data?.category ? { category: String(data.category).trim() } : {}),
+      ...(data?.vendor?.trim() ? { vendor: data.vendor.trim() } : {}),
+      ...(data?.amount !== undefined && data?.amount !== "" && data?.amount !== null
+        ? { amount: Number(data.amount) }
+        : {}),
+      ...(data?.date ? { date: data.date } : {}),
+      ...(data?.description?.trim()
+        ? { description: data.description.trim() }
+        : {}),
+      ...(data?.receipt?.trim() ? { receipt: data.receipt.trim() } : {}),
+    };
 
-export async function updateExpense(id, data, organizationId){
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/expenses/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
 
-  const payload = {
-  "category": data.category,
-  "vendor": data.vendor,
-  "amount": data.amount,
-  "date": data.date,
-  "description": data.description,
-  "receipt": data.receipt
-}
-  
-  const cookieStore = await cookies();
-  const token = await getRawToken()
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
 
-const response = await safeFetch(`https://services.xpacy.com/api/v1/expenses/${id}
-`,{
-  method: "PATCH",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
+    if (!response.ok) {
+      console.error("updateExpense failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to update expense (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
 
+    revalidatePath("/dashboard/property-owner/expenses");
+    revalidatePath(`/dashboard/property-owner/expenses/${id}`);
+    revalidatePath("/dashboard/property-manager/expenses");
+    revalidatePath(`/dashboard/property-manager/expenses/${id}`);
+
+    return {
+      success: true,
+      data: resData?.data ?? resData?.expense ?? resData,
+      message: resData?.message || "Expense updated successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to update expense.",
+    };
+  }
 }
 
 
