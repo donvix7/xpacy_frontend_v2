@@ -318,15 +318,15 @@ export default function CreateNewPropertyForm({
             : "Property created successfully!")
       );
 
+      const normalizedRole = String(userRole || "").toLowerCase().replace(/[_-\s]+/g, "");
+
       if (isEditMode) {
         router.refresh();
         const redirectPath =
           returnTo ||
-          (userRole === "propertyowner"
-            ? `/dashboard/property-owner/properties/${propertyId}`
-            : userRole === "propertymanager"
-              ? `/dashboard/property-manager/properties/${propertyId}`
-              : `/dashboard/admin/properties/${propertyId}`);
+          (normalizedRole === "propertymanager" || normalizedRole === "manager"
+            ? `/dashboard/property-manager/properties/${propertyId}`
+            : `/dashboard/property-owner/properties/${propertyId}`);
         setTimeout(() => {
           router.push(redirectPath);
         }, 600);
@@ -337,14 +337,12 @@ export default function CreateNewPropertyForm({
       setSelectedOwners(defaultOwnerId ? [defaultOwnerId] : []);
       setActiveStep(1);
 
-      // Redirect to properties view after brief delay so user can see toast
+      // Redirect to owner properties dashboard after brief delay so user can see toast
       const redirectPath =
         returnTo ||
-        (userRole === "propertyowner"
-          ? "/dashboard/property-owner/properties"
-          : userRole === "propertymanager"
-            ? "/dashboard/property-manager/properties"
-            : "/dashboard/admin/properties");
+        (normalizedRole === "propertymanager" || normalizedRole === "manager"
+          ? "/dashboard/property-manager/properties"
+          : "/dashboard/property-owner/properties");
 
       setTimeout(() => {
         router.push(redirectPath);

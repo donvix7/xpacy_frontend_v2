@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { FileText, CalendarDays, Wallet, ChevronLeft } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import DataTable from "@/app/_components/DataTable";
 import EmptyState from "@/app/_components/EmptyState";
-import SummaryCards from "@/app/_components/SummaryCards";
+import HeroBand from "@/app/_components/HeroBand";
 import StatusChips from "@/app/_components/StatusChips";
 import { getLeaseById } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
@@ -58,12 +57,13 @@ const startDate = (lease) => valueFrom(lease, ["startDate", "start_date", "lease
 const endDate = (lease) => valueFrom(lease, ["endDate", "end_date", "leaseEndDate"], "");
 const rentAmount = (lease) => valueFrom(lease, ["rentAmount", "rent_amount", "monthlyRent", "amount"], null);
 
-export default async function UserLeasesPage({ params }) {
-    const { id } = await params;
+export default async function PropertyLeasesPage({ params }) {
+    const resolved = await params;
+    const propertyId = resolved?.propertyId || resolved?.id;
+    const baseHref = `/dashboard/property-owner/properties/${propertyId}`;
 
-    const results = await Promise.allSettled([getLeaseById(id)]);
+    const results = await Promise.allSettled([getLeaseById(propertyId)]);
     const dataErrorMessages = getSettledErrorMessages(results);
-
     const leases = results[0].status === "fulfilled" ? results[0].value : [];
     const list = Array.isArray(leases) ? leases : leases && typeof leases === "object" ? [leases] : [];
 
@@ -79,30 +79,37 @@ export default async function UserLeasesPage({ params }) {
         ["expired", "terminated", "cancelled", "canceled"].includes(normalizedStatus(lease))
     ).length;
 
-    const summaryCards = [
-        { label: "All leases", value: list.length, color: "bg-primary-100", icon: <FileText className="h-5 w-5 text-primary-700" /> },
-        { label: "Active", value: activeCount, color: "bg-green-100", icon: <CalendarDays className="h-5 w-5 text-green-700" /> },
-        { label: "Pending", value: pendingCount, color: "bg-amber-100", icon: <Wallet className="h-5 w-5 text-amber-700" /> },
-        { label: "Ended", value: endedCount, color: "bg-gray-100", icon: <FileText className="h-5 w-5 text-gray-600" /> },
+    const today = new Date().toLocaleDateString("en-NG", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    });
+
+    const heroStats = [
+        { label: "All Leases", value: list.length, hint: "For this property" },
+        { label: "Active", value: activeCount, hint: "Currently in force" },
+        { label: "Pending", value: pendingCount, hint: "Awaiting activation" },
+        { label: "Ended", value: endedCount, hint: "Expired or terminated" },
     ];
 
     const renderRow = (lease, index) => {
         const leaseId = lease.id || lease._id;
-        const detailsHref = `/dashboard/user/my-properties/${id}/leases/${leaseId}`;
+        const detailsHref = `${baseHref}/leases/${leaseId}`;
 
         return (
-            <tr key={leaseId || index} className="border-b border-gray-100 text-sm hover:bg-gray-50/60 transition-colors last:border-0 font-mono">
+            <tr key={leaseId || index} className="border-b border-line text-sm hover:bg-soft/60 transition-colors last:border-0 font-mono">
                 <td className="p-4 font-semibold text-primary">
                     <Link href={detailsHref} className="hover:underline">
                         {leaseTitle(lease, index)}
                     </Link>
                 </td>
-                <td className="p-4 text-gray-700">{unitDisplay(lease)}</td>
-                <td className="p-4 text-gray-700">{tenantName(lease)}</td>
-                <td className="p-4 text-gray-600">
+                <td className="p-4 text-ink font-sans">{unitDisplay(lease)}</td>
+                <td className="p-4 text-ink font-sans">{tenantName(lease)}</td>
+                <td className="p-4 text-mute">
                     {formatDate(startDate(lease))} – {formatDate(endDate(lease))}
                 </td>
-                <td className="p-4 text-center font-bold text-gray-900">
+                <td className="p-4 text-center font-bold text-ink">
                     {rentAmount(lease) === null ? "—" : formatCurrency(rentAmount(lease))}
                 </td>
                 <td className="p-4 text-center">
@@ -113,7 +120,7 @@ export default async function UserLeasesPage({ params }) {
                 <td className="p-4 text-right">
                     <Link
                         href={detailsHref}
-                        className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-100 transition-colors"
+                        className="inline-flex items-center gap-1 rounded-md bg-primary-50 dark:bg-primary-950/40 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-100 transition-colors"
                     >
                         View details
                     </Link>
@@ -124,49 +131,46 @@ export default async function UserLeasesPage({ params }) {
 
     const renderMobileCard = (lease, index) => {
         const leaseId = lease.id || lease._id;
-        const detailsHref = `/dashboard/user/my-properties/${id}/leases/${leaseId}`;
+        const detailsHref = `${baseHref}/leases/${leaseId}`;
 
         return (
-            <article
-                key={leaseId || index}
-                className="rounded-xl border border-primary-100 bg-white p-4 shadow-sm"
-            >
+            <article key={leaseId || index} className="rounded-xl border border-line bg-card p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                        <Link href={detailsHref} className="break-words text-sm font-bold text-primary hover:underline">
+                        <Link href={detailsHref} className="font-mono text-sm font-semibold text-primary hover:underline block truncate">
                             {leaseTitle(lease, index)}
                         </Link>
-                        <p className="mt-1 text-xs text-gray-500">{unitDisplay(lease)}</p>
+                        <p className="mt-0.5 text-xs text-mute">{unitDisplay(lease)}</p>
                     </div>
                     <StatusChips status={statusOf(lease)} />
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 text-sm">
+                <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-3 text-sm">
                     <div>
-                        <dt className="text-xs text-gray-500">Tenant</dt>
-                        <dd className="mt-1 font-medium text-gray-800">{tenantName(lease)}</dd>
+                        <dt className="text-xs text-mute">Tenant</dt>
+                        <dd className="mt-1 font-medium text-ink">{tenantName(lease)}</dd>
                     </div>
                     <div>
-                        <dt className="text-xs text-gray-500">Rent</dt>
-                        <dd className="mt-1 font-bold text-gray-900 font-mono">
+                        <dt className="text-xs text-mute">Rent</dt>
+                        <dd className="mt-1 font-bold text-ink font-mono">
                             {rentAmount(lease) === null ? "—" : formatCurrency(rentAmount(lease))}
                         </dd>
                     </div>
                     <div className="col-span-2">
-                        <dt className="text-xs text-gray-500">Lease term</dt>
-                        <dd className="mt-1 text-gray-800">
+                        <dt className="text-xs text-mute">Lease term</dt>
+                        <dd className="mt-1 text-ink">
                             {formatDate(startDate(lease))} – {formatDate(endDate(lease))}
                         </dd>
                     </div>
                     {valueFrom(lease, ["billingCycle", "billing_cycle"], "") && (
                         <div className="col-span-2">
-                            <dt className="text-xs text-gray-500">Billing cycle</dt>
-                            <dd className="mt-1 capitalize text-gray-800">
+                            <dt className="text-xs text-mute">Billing cycle</dt>
+                            <dd className="mt-1 capitalize text-ink">
                                 {String(valueFrom(lease, ["billingCycle", "billing_cycle"])).toLowerCase()}
                             </dd>
                         </div>
                     )}
                 </dl>
-                <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                <div className="mt-4 pt-3 border-t border-line flex justify-end">
                     <Link
                         href={detailsHref}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
@@ -179,28 +183,39 @@ export default async function UserLeasesPage({ params }) {
     };
 
     return (
-        <div className="space-y-6 p-2 sm:p-4">
+        <div className="space-y-8 p-2 sm:p-4">
             {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
-            <div>
-                <Link
-                    href={`/dashboard/user/my-properties/${id}`}
-                    className="mb-2 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Back to property
-                </Link>
-                <p className="text-[28px] font-bold text-primary lg:text-4xl">Lease Agreements</p>
-                <p className="mt-1 text-sm text-gray-500">
-                    View and manage lease agreements associated with this property.
-                </p>
-            </div>
-            <SummaryCards cards={summaryCards} title="Lease summary" />
-            <DashboardGridItem title="Lease agreements">
+
+            <Link
+                href={baseHref}
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
+            >
+                <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                Back to property
+            </Link>
+
+            <HeroBand
+                tagline={`Leases console · ${today}`}
+                title="Lease Agreements"
+                description="View and manage lease agreements associated with this property — active tenancies, terms, and rent schedules in one place."
+                stats={heroStats}
+                actions={
+                    <Link
+                        href={`/admin/add-new-lease?propertyId=${encodeURIComponent(propertyId)}`}
+                        className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+                    >
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        New lease
+                    </Link>
+                }
+            />
+
+            <DashboardGridItem title={`Lease agreements (${list.length})`}>
                 {list.length === 0 ? (
                     <EmptyState
                         message="No leases found for this property."
-                        cta="Back to property"
-                        link={`/dashboard/user/my-properties/${id}`}
+                        cta="New lease"
+                        link={`/admin/add-new-lease?propertyId=${encodeURIComponent(propertyId)}`}
                     />
                 ) : (
                     <DataTable

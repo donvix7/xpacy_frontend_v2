@@ -8,6 +8,7 @@ import {
   getManagedProperties,
   getMyRentedProperties,
   getPropertyOwnerInvoices,
+  getOwnerDashboard,
 } from "@/app/_lib/data-services";
 import PropertiesOverviewWrapper from "@/app/_components/PropertiesOverviewWrapper";
 import ServicesOverviewWrapper from "@/app/_components/ServicesOverviewWrapper";
@@ -15,6 +16,11 @@ import PaymentsOverviewWrapper from "@/app/_components/PaymentsOverviewWrapper";
 import NotificationsSummary from "@/app/_components/NotificationsSummary";
 import PropertiesTableList from "@/app/_components/PropertiesTableList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import {
+  DashboardSummaryOverview,
+  UnitsOccupancySummary,
+  normalizeDashboardStats,
+} from "@/app/_components/DashboardPortfolioSummary";
 import ShareOrganizationListings from "@/app/_components/ShareOrganizationListings";
 import { isValidOrganizationId } from "@/app/_lib/public-navigation";
 import Link from "next/link";
@@ -33,10 +39,9 @@ export default async function Page() {
     getMyProperties(),
     getManagedProperties(),
     getMyRentedProperties(),
-    getPropertyOwnerServices(token),
     getPropertyOwnerBookings(token),
     getUserNotifications(token),
-    getPropertyOwnerInvoices(token),
+    getOwnerDashboard(organizationId),
   ]);
   const dataErrorMessages = getSettledErrorMessages(results);
 
@@ -53,10 +58,9 @@ export default async function Page() {
   const ownedProperties = unwrap(results[1]);
   const managedProperties = unwrap(results[2]);
   const rentedProperties = unwrap(results[3]);
-  const services = results[4].status === "fulfilled" ? results[4].value : [];
-  const bookings = results[5].status === "fulfilled" ? results[5].value : [];
-  const notifications = results[6].status === "fulfilled" ? results[6].value : [];
-  const invoices = results[7].status === "fulfilled" ? results[7].value : [];
+  const bookings = results[4].status === "fulfilled" ? results[4].value : [];
+  const notifications = results[5].status === "fulfilled" ? results[5].value : [];
+  const dashboardStats = results[6].status === "fulfilled" ? results[6].value : null;
 
   const counts = {
     owned: ownedProperties.length,
@@ -77,9 +81,7 @@ export default async function Page() {
     return true;
   });
 
-  const myServices = Array.isArray(services) ? services : [];
   const myBookings = Array.isArray(bookings) ? bookings : [];
-  const myInvoices = Array.isArray(invoices) ? invoices : [];
 
   const occupiedCount = properties.filter((p) =>
     ["occupied", "rented", "shortlet"].includes(
@@ -89,25 +91,7 @@ export default async function Page() {
   const occupancyRate =
     properties.length > 0 ? Math.round((occupiedCount / properties.length) * 100) : 0;
 
-  const paidInvoices = myInvoices.filter(
-    (inv) => (inv.status || "").toLowerCase() === "paid",
-  );
-  const pendingInvoices = myInvoices.filter(
-    (inv) => (inv.status || "").toLowerCase() === "pending",
-  );
-  const collected = paidInvoices.reduce(
-    (sum, inv) => sum + (parseFloat(inv.amount) || 0),
-    0,
-  );
-  const outstanding = pendingInvoices.reduce(
-    (sum, inv) => sum + (parseFloat(inv.amount) || 0),
-    0,
-  );
-
   const today = new Date().toISOString().split("T")[0];
-  const todayRevenue = myInvoices
-    .filter((inv) => (inv.created_at || "").startsWith(today))
-    .reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
 
   const firstName =
     profile?.first_name ||
@@ -116,27 +100,38 @@ export default async function Page() {
     profile?.full_name ||
     "Owner";
 
-  // ---- Hero stats ----------------------------------------------------------
+  // ---- Hero stats (from getOwnerDashboard) --------------------------------
+  const stats = normalizeDashboardStats(dashboardStats, {
+    totalProperties: totalPropertiesCount,
+    occupiedUnits: occupiedCount,
+    occupancyRate,
+  });
+
   const heroStats = [
     {
       label: "Properties",
-      value: totalPropertiesCount,
-      hint: `${counts.owned} owned · ${counts.managed} managed · ${counts.rented} rented`,
+      value: stats.totalProperties,
+      hint: `${counts.owned} owned · ${counts.managed} managed`,
     },
     {
-      label: "Occupancy",
-      value: `${occupancyRate}%`,
-      hint: `${occupiedCount} of ${properties.length} occupied`,
+      label: "Total Units",
+      value: stats.totalUnits,
+      hint: `${stats.occupiedUnits} occupied · ${stats.vacantUnits} vacant`,
     },
     {
-      label: "Today's Revenue",
-      value: `$${todayRevenue.toLocaleString()}`,
-      hint: "Collected today",
+      label: "Occupied Units",
+      value: stats.occupiedUnits,
+      hint: "Currently leased",
     },
     {
-      label: "Monthly Revenue",
-      value: `$${collected.toLocaleString()}`,
-      hint: "Paid invoices",
+      label: "Vacant Units",
+      value: stats.vacantUnits,
+      hint: "Ready for occupancy",
+    },
+    {
+      label: "Occupancy Rate",
+      value: `${stats.occupancyRate}%`,
+      hint: `${stats.occupiedUnits} of ${stats.totalUnits} units`,
     },
   ];
 
@@ -166,24 +161,10 @@ export default async function Page() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/dashboard/property-owner/properties"
-                className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-              >
-                View properties
-              </Link>
-              <Link
-                href="/dashboard/property-owner/properties/new"
-                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Add property
-              </Link>
-            </div>
+            
           </div>
 
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {heroStats.map((stat) => (
               <div
                 key={stat.label}
@@ -204,6 +185,15 @@ export default async function Page() {
             ))}
           </dl>
 
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+              <Link
+                href="/dashboard/property-owner/properties"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+              >
+                View properties
+              </Link>
+            </div>
+
          
         </div>
       </section>
@@ -213,30 +203,16 @@ export default async function Page() {
         <ShareOrganizationListings organizationId={organizationId} />
       )}
 
+
+      <UnitsOccupancySummary
+        stats={stats}
+        propertiesHref="/dashboard/property-owner/properties"
+      />
+
       <div className="flex flex-col gap-8">
-        <DashboardGridItem
-          title="Recent Properties"
-          viewAllLink="/dashboard/property-owner/properties"
-        >
-          <PropertiesOverviewWrapper properties={properties} showFilters={false} />
-        </DashboardGridItem>
+       
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <DashboardGridItem
-            title="Recent Services"
-            viewAllLink="/dashboard/property-owner/services"
-          >
-            <ServicesOverviewWrapper services={myServices} showFilters={false} />
-          </DashboardGridItem>
-
-          <DashboardGridItem
-            title="Recent Bookings"
-            viewAllLink="/dashboard/property-owner/bookings"
-          >
-            <PaymentsOverviewWrapper bookings={myBookings} showFilters={false} />
-          </DashboardGridItem>
-        </div>
-
+       
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <DashboardGridItem
             title="Notifications"

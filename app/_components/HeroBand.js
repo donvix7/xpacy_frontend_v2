@@ -2,6 +2,7 @@ export default function HeroBand({
   tagline,
   title,
   description,
+  badge,
   actions,
   stats = [],
   children,
@@ -29,9 +30,9 @@ export default function HeroBand({
             )}
           </div>
 
-          {actions && (
+          {badge && (
             <div className="flex flex-wrap items-center gap-2">
-              {actions}
+              {badge}
             </div>
           )}
         </div>
@@ -60,6 +61,12 @@ export default function HeroBand({
         )}
 
         {children}
+
+        {actions && (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+            {actions}
+          </div>
+        )}
       </div>
     </section>
   );

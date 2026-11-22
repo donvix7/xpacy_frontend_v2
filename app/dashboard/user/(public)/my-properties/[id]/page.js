@@ -177,17 +177,19 @@ export default async function Page({ params }) {
             ) : null}
 
             {/* ---------- Hero summary ---------- */}
-            <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
-                <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
-                    <div className="flex flex-wrap items-start justify-between gap-5">
-                        <div className="min-w-0">
-                            <Link
+            <Link
                                 href="/dashboard/properties"
-                                className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute transition-colors hover:text-white"
+                                className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
                             >
                                 <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                                 Back to properties
                             </Link>
+
+            <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+                <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
+                        <div className="min-w-0">
+                            
                             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
                                 Property console · {today}
                             </p>

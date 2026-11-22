@@ -95,17 +95,19 @@ export default async function Page({ params }) {
     <div className="space-y-6 p-2 sm:p-4">
       {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
       {/* ---------- Hero summary ---------- */}
-      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
-        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div className="min-w-0">
-              <Link
+      <Link
                 href={`/dashboard/user/my-properties/${propertyId}`}
-                className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute transition-colors hover:text-white"
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 Back to property
               </Link>
+
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0">
+              
               <h1 className="mt-1 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
                 Tenants
               </h1>
@@ -114,15 +116,7 @@ export default async function Page({ params }) {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/admin/add-new-tenant"
-                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Add tenant
-              </Link>
-            </div>
+            
           </div>
 
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -145,6 +139,16 @@ export default async function Page({ params }) {
               </div>
             ))}
           </dl>
+
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+              <Link
+                href="/admin/add-new-tenant"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add tenant
+              </Link>
+            </div>
 
          
         </div>

@@ -13,20 +13,23 @@ export default async function EditBookingPage({ params }) {
 
     if (!booking) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-12">
-                <BackBtn />
-                <p className="text-2xl font-bold mt-4 text-gray-800">Booking Not Found</p>
-                <p className="text-gray-500 mt-2 text-center max-w-md">The booking you are trying to edit does not exist.</p>
+            <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
+                <AdminHeader title="Edit Booking" backHref="/dashboard/admin/bookings" />
+                <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-12 sm:px-6 flex flex-col items-center justify-center text-center gap-2">
+                    <h1 className="text-2xl font-bold text-ink">Booking Not Found</h1>
+                    <p className="font-mono text-sm text-mute max-w-md">
+                        The booking you are trying to edit does not exist.
+                    </p>
+                </main>
             </div>
         );
     }
 
     return (
         <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
-            {/* Header Navigation */}
             <AdminHeader title="Edit Booking" backHref={`/admin/booking-details/${bookingId}`} />
 
-            <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 sm:px-6 md:px-8">
+            <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 sm:px-6 sm:py-10 flex flex-col gap-6">
                 <EditBookingForm booking={booking} />
             </main>
         </div>

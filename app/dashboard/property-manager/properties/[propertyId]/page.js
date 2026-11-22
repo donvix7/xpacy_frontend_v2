@@ -8,6 +8,7 @@ import {
     getOrganizationMembers,
     getPropertyTenants,
     getPropertyOwner,
+    getAllMaintenanceRequest,
 } from "@/app/_lib/data-services";
 import { SAMPLE_PROPERTY_DETAIL } from "@/app/_lib/sample-properties";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
@@ -52,7 +53,7 @@ export default async function Page({ params }) {
         return (
             <div className="space-y-6 p-2 sm:p-4">
                 <Link
-                    href="/dashboard/property-manager/properties"
+                    href="/dashboard/property-owner/properties"
                     className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
                 >
                     <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
@@ -75,6 +76,7 @@ export default async function Page({ params }) {
         getAllUnits(propId).catch(() => []),
         getPropertyTenants(propId).catch(() => []),
         getPropertyOwner().catch(() => []),
+        getAllMaintenanceRequest(propId).catch(() => []),
     ]);
     const dataErrorMessages = getSettledErrorMessages(results.slice(0, 2));
 
@@ -107,6 +109,14 @@ export default async function Page({ params }) {
           ? ownersRes.data
           : [];
 
+    const maintenanceRes =
+        results[4].status === "fulfilled" ? results[4].value : [];
+    const maintenanceList = Array.isArray(maintenanceRes)
+        ? maintenanceRes
+        : Array.isArray(maintenanceRes?.data)
+          ? maintenanceRes.data
+          : [];
+
     if (!rawProperty || typeof rawProperty !== "object" || Array.isArray(rawProperty)) {
         return (
             <div className="space-y-6 p-2 sm:p-4">
@@ -114,7 +124,7 @@ export default async function Page({ params }) {
                     <DataErrorNotice messages={dataErrorMessages} />
                 ) : null}
                 <Link
-                    href="/dashboard/property-manager/properties"
+                    href="/dashboard/property-owner/properties"
                     className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
                 >
                     <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
@@ -152,10 +162,11 @@ export default async function Page({ params }) {
             rawProperty={rawProperty}
             units={unitsList}
             tenants={tenantsList}
+            maintenanceRequests={maintenanceList}
             availableOwners={availableOwners}
             availableMembers={availableMembers}
             organizationName={organizationName}
-            basePath="/dashboard/property-manager"
+            basePath="/dashboard/property-owner"
             dataErrorMessages={dataErrorMessages}
         />
     );

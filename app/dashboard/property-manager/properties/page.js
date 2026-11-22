@@ -1,113 +1,178 @@
-import { cookies } from "next/headers";
-import Link from "next/link";
 import PropertiesTableList from "@/app/_components/PropertiesTableList";
-import PropertiesOverviewWrapper from "@/app/_components/PropertiesOverviewWrapper";
-import { getPropertyOwnerBookings, getProperties, getUserProfile, getPropertyOwnerServices, getPropertyOwnerProperties } from "@/app/_lib/data-services";
-import PropertiesSummary from "@/app/_components/PropertiesSummary";
-import { MdAdd } from "react-icons/md";
-import SearchInput from "@/app/_components/SearchInput";
-import ExportButton from "@/app/_components/ExportButton";
-import DateFilter from "@/app/_components/DateFilter";
-import { checkDateInRange } from "@/app/_lib/utils";
+import {
+  getManagedProperties,
+  getMyProperties,
+  getMyRentedProperties,
+} from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import { Suspense } from "react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
-export default async function Page({searchParams}) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    const params = await searchParams;
-    const filterRange = params?.range;
+function isArchivedProperty(property) {
+  const status = String(
+    property?.status || property?.property_status || ""
+  ).toUpperCase();
+  return (
+    status === "ARCHIVED" ||
+    status === "DELETED" ||
+    Boolean(property?.archivedAt || property?.deletedAt)
+  );
+}
 
-    // Fetch data - explicitly query full unpaginated list
-    const results = await Promise.allSettled([
-        getPropertyOwnerProperties(token, { limit: 10000 }),
-        getPropertyOwnerBookings(token),
-        getPropertyOwnerServices(token)
-    ]);
-    const dataErrorMessages = getSettledErrorMessages(results);
+function isActiveProperty(property) {
+  if (isArchivedProperty(property)) return false;
+  const status = String(
+    property?.status || property?.property_status || "ACTIVE"
+  ).toUpperCase();
+  return status === "ACTIVE";
+}
 
-    const propertiesData = results[0].status === "fulfilled" ? results[0].value : [[], {}];
-    const [allPropertiesForSummary] = propertiesData;
-    const bookings = results[1].status === "fulfilled" ? results[1].value : [];
-    const services = results[2].status === "fulfilled" ? results[2].value : [];
+export default async function Page() {
+  const results = await Promise.allSettled([
+    getMyProperties(),
+    getManagedProperties(),
+    getMyRentedProperties(),
+  ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
 
-    let propertiesList = allPropertiesForSummary || [];
+  const unwrap = (result) =>
+    result.status === "fulfilled" && Array.isArray(result.value)
+      ? result.value
+      : [];
 
-    // Filter by Date Range
-    if (filterRange && filterRange !== 'all_time') {
-        propertiesList = propertiesList.filter(p => {
-            const dateStr = p.createdAt || p.created_at || p.date_added; 
-            return checkDateInRange(dateStr, filterRange);
-        });
+  const ownedProperties = unwrap(results[0]);
+  const managedProperties = unwrap(results[1]);
+  const rentedProperties = unwrap(results[2]);
+
+  const activeOwnedProperties = ownedProperties.filter(isActiveProperty);
+  const activeManagedProperties = managedProperties.filter(isActiveProperty);
+  const activeRentedProperties = rentedProperties.filter(isActiveProperty);
+
+  // Deduplicate archived properties across owned, managed, and rented
+  const seenArchivedIds = new Set();
+  const archivedProperties = [
+    ...ownedProperties,
+    ...managedProperties,
+    ...rentedProperties,
+  ].filter((property) => {
+    if (!isArchivedProperty(property)) return false;
+    const key = property?.id || property?._id;
+    if (key) {
+      if (seenArchivedIds.has(key)) return false;
+      seenArchivedIds.add(key);
     }
+    return true;
+  });
 
-    // Local Filtering exactly matching frontend query params
-    if (params.status) {
-        propertiesList = propertiesList.filter(p => p.property_status?.toLowerCase() === params.status.toLowerCase());
-    }
-    if (params.type) {
-        propertiesList = propertiesList.filter(p => p.property_type?.toLowerCase() === params.type.toLowerCase());
-    }
-    if (params.minPrice) {
-        propertiesList = propertiesList.filter(p => Number(p.property_price) >= Number(params.minPrice));
-    }
-    if (params.maxPrice) {
-        propertiesList = propertiesList.filter(p => Number(p.property_price) <= Number(params.maxPrice));
-    }
-    if (params.location) {
-        const query = params.location.toLowerCase();
-        propertiesList = propertiesList.filter(p => 
-            p.city?.toLowerCase().includes(query) || 
-            p.state?.toLowerCase().includes(query) || 
-            p.property_name?.toLowerCase().includes(query)
-        );
-    }
+  // ---- Hero stats ----------------------------------------------------------
+  const heroStats = [
+    {
+      label: "Owned",
+      value: activeOwnedProperties.length,
+      hint: "Active properties you own",
+    },
+    {
+      label: "Managed",
+      value: activeManagedProperties.length,
+      hint: "Active under management",
+    },
+    {
+      label: "Rented",
+      value: activeRentedProperties.length,
+      hint: "Currently rented",
+    },
+    {
+      label: "Archived",
+      value: archivedProperties.length,
+      hint: "Archived across all lists",
+    },
+  ];
 
-    // Manual Pagination
-    const page = Number(params.page) || 1;
-    const limit = 10;
-    const totalItems = propertiesList.length;
-    const totalPages = Math.ceil(totalItems / limit) || 1;
-    const paginatedProperties = propertiesList.slice((page - 1) * limit, page * limit);
-    
-    // Pagination data from API (if available) or manual
-    const pagination = {
-        page,
-        limit,
-        totalPages,
-        total: totalItems
-    };
+  const today = new Date().toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
-    return (
-        <div className="space-y-6 p-4">
-            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
-            <div className="flex justify-between items-center gap-2">
-                <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Properties</p>
-                <div className="flex gap-2">
+  return (
+    <div className="space-y-6 p-2">
+      {dataErrorMessages.length > 0 ? (
+        <DataErrorNotice messages={dataErrorMessages} />
+      ) : null}
 
-                <Suspense fallback={<div className="h-10 w-32" />}><DateFilter /></Suspense>
-                <ExportButton 
-                    data={services} 
-                    filename="property_summary" 
-                    options={[
-                        { id: "all", label: "All data" },
-                        { id: "summary", label: "Summary" },
-                        { id: "overview", label: "properties overview" }
-                    ]}
-                />
-                </div>
-
+      {/* ---------- Hero summary ---------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                Property console · {today}
+              </p>
+              <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                My Properties
+              </h1>
+              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
+                Everything you own, manage and rent — with active properties up
+                front and archived records neatly separated below.
+              </p>
             </div>
-            <DashboardGridItem title={"Properties Overview"}>
-            <PropertiesSummary properties={allPropertiesForSummary || []} />
-            </DashboardGridItem>
-           <DashboardGridItem title={"All Properties"}>
 
-            <PropertiesTableList properties={paginatedProperties} />
-           </DashboardGridItem>
             
+          </div>
+
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+              >
+                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
+                  {typeof stat.value === "number"
+                    ? stat.value.toLocaleString()
+                    : stat.value}
+                </dd>
+                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                  {stat.hint}
+                </p>
+              </div>
+            ))}
+          </dl>
+
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+              <Link
+                href="/dashboard/property-owner/properties/new"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add property
+              </Link>
+            </div>
         </div>
-    );
-};
+      </section>
+
+      {/* ---------- Active Properties Sections ---------- */}
+      <DashboardGridItem title={`My Properties List (${activeOwnedProperties.length})`}>
+        <PropertiesTableList properties={activeOwnedProperties} />
+      </DashboardGridItem>
+
+      <DashboardGridItem title={`Managed Properties List (${activeManagedProperties.length})`}>
+        <PropertiesTableList properties={activeManagedProperties} />
+      </DashboardGridItem>
+
+      <DashboardGridItem title={`Rented Properties List (${activeRentedProperties.length})`}>
+        <PropertiesTableList properties={activeRentedProperties} />
+      </DashboardGridItem>
+
+      {/* ---------- Archived Properties Section ---------- */}
+      <DashboardGridItem title={`Archived Properties (${archivedProperties.length})`}>
+        <PropertiesTableList properties={archivedProperties} />
+      </DashboardGridItem>
+    </div>
+  );
+}

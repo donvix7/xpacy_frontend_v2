@@ -176,14 +176,16 @@ export default function UnitForm({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <FormInput label="Unit Number *" id="unitNumber">
                                 <input
-                                    disabled={isReadOnly}
+                                    disabled={isReadOnly || isEditMode}
                                     {...register("unitNumber", {
-                                        required: "Unit number is required",
+                                        required: isEditMode
+                                            ? false
+                                            : "Unit number is required",
                                     })}
                                     type="text"
                                     id="unitNumber"
                                     placeholder="e.g. 101 or Flat 2B"
-                                    className={inputClass(errors.unitNumber)}
+                                    className={`${inputClass(errors.unitNumber)} disabled:opacity-60`}
                                 />
                                 {errors.unitNumber && (
                                     <span className="-mt-2 text-xs text-error">

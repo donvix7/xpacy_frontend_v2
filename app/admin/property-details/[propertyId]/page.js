@@ -27,17 +27,27 @@ export default async function Page({ params }) {
     }
 
     return (
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col min-h-screen bg-canvas text-ink">
             <AdminHeader title="Property Details" backHref="/dashboard/admin/properties" />
-            <main className="flex-1 max-w-5xl mx-auto w-full py-8 px-4 sm:px-6 flex min-w-0 flex-col items-center justify-center">
-                <ViewPropertyForm
-                    allOwners={null}
-                    allCities={allCities}
-                    token={token}
-                    propertyOwnerInfo={propertyOwner}
-                    disableSearch={true}
-                    propertyObj={property}
-                />
+            <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 sm:px-6 sm:py-10 flex min-w-0 flex-col gap-6">
+                <header className="flex flex-col items-center justify-center text-center gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold font-sans text-ink">
+                        Property Details
+                    </h1>
+                    <p className="font-mono text-sm text-mute">
+                        Overview of property specifications, owner info, and bookings.
+                    </p>
+                </header>
+                <div className="p-6 sm:p-8 rounded-2xl border border-line bg-card shadow-sm">
+                    <ViewPropertyForm
+                        allOwners={null}
+                        allCities={allCities}
+                        token={token}
+                        propertyOwnerInfo={propertyOwner}
+                        disableSearch={true}
+                        propertyObj={property}
+                    />
+                </div>
             </main>
         </div>
     );

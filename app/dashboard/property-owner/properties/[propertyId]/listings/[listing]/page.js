@@ -377,9 +377,9 @@ export default async function ViewListingDetailsPage({ params }) {
                 description={[`${listingType} listing`, unitNumber !== "—" ? unitNumber : null, propertyName]
                     .filter(Boolean)
                     .join(" · ")}
+                badge={<StatusChips status={status} />}
                 actions={
-                    <div className="flex flex-wrap items-center gap-2">
-                        <StatusChips status={status} />
+                    <>
                         <ListingStatusControls
                             listingId={listing.id || listingId}
                             propertyId={id}
@@ -393,8 +393,7 @@ export default async function ViewListingDetailsPage({ params }) {
                             <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                             Edit listing
                         </Link>
-                        
-                    </div>
+                    </>
                 }
                 stats={[
                     { label: "Price", value: price, hint: currency },

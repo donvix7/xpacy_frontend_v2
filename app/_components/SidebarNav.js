@@ -10,11 +10,11 @@ import { RiUserSettingsLine } from "react-icons/ri";
 import { LuBell, LuLayoutDashboard, LuMessageCircleQuestion, LuMessageSquare, LuWrench } from "react-icons/lu";
 import { IoCalendarOutline } from "react-icons/io5";
 import { RiHome2Line, RiSearchLine, RiSettings3Line, RiPulseLine } from "react-icons/ri";
-import { Archive, Calendar1, MessageSquare, Settings, User, User2 } from "lucide-react";
+import { Archive, Calendar1, File, MessageSquare, Settings, User, User2 } from "lucide-react";
 import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaWallet, FaWrench } from "react-icons/fa6";
 import { TbBuilding, TbBuildingCommunity, TbFileText, TbHelp, TbReportAnalytics, TbSettings, TbUsers } from "react-icons/tb";
 import { HiOutlineClipboardList } from "react-icons/hi";
-import { BsTools } from "react-icons/bs";
+import { BsStack, BsTools } from "react-icons/bs";
 import { GiPayMoney, GiTakeMyMoney } from "react-icons/gi";
 import { MdInventory2, MdOutlineReport } from "react-icons/md";
 
@@ -223,6 +223,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             text: "Rents",
             link: "/dashboard/property-owner/rents",
             icon: <GiTakeMyMoney className="w-5 h-5" />,
+        },
+           {
+            text: "Documents",
+            link: "/dashboard/property-owner/documents",
+            icon: <BsStack className="w-5 h-5" />,
         },
         {
             text: "Security",

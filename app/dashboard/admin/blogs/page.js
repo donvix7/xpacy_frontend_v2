@@ -59,15 +59,7 @@ export default async function Page({ searchParams: searchParamsPromise }) {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/dashboard/admin/blogs/create"
-                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Create New Blog
-              </Link>
-            </div>
+            
           </div>
 
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -90,6 +82,16 @@ export default async function Page({ searchParams: searchParamsPromise }) {
               </div>
             ))}
           </dl>
+
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+              <Link
+                href="/dashboard/admin/blogs/create"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Create New Blog
+              </Link>
+            </div>
         </div>
       </section>
 

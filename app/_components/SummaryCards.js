@@ -4,7 +4,11 @@ export default function SummaryCards({ cards = [], title = "Key metrics" }) {
     if (cards.length === 0) return null;
 
     const gridCols =
-        cards.length <= 4 ? "lg:grid-cols-4" : cards.length === 6 ? "lg:grid-cols-3" : "lg:grid-cols-5";
+        cards.length <= 4 || cards.length === 8
+            ? "lg:grid-cols-4"
+            : cards.length === 6
+              ? "lg:grid-cols-3"
+              : "lg:grid-cols-5";
 
     return (
         <section className="flex flex-col gap-4">

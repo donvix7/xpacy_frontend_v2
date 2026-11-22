@@ -364,25 +364,7 @@ export default async function WalletPage() {
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Link
-                                href="/dashboard/user/wallet/withdraw"
-                                className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-                            >
-                                <ArrowUpRight
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                />
-                                Withdraw
-                            </Link>
-                            <Link
-                                href="/dashboard/user/wallet/fund"
-                                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-                            >
-                                <Plus className="h-4 w-4" aria-hidden="true" />
-                                Fund wallet
-                            </Link>
-                        </div>
+                        
                     </div>
 
                     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -403,6 +385,26 @@ export default async function WalletPage() {
                             </div>
                         ))}
                     </dl>
+
+                      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+                            <Link
+                                href="/dashboard/user/wallet/withdraw"
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                            >
+                                <ArrowUpRight
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                />
+                                Withdraw
+                            </Link>
+                            <Link
+                                href="/dashboard/user/wallet/fund"
+                                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+                            >
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                Fund wallet
+                            </Link>
+                        </div>
                 </div>
             </section>
 

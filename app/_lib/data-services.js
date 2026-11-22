@@ -805,8 +805,8 @@ export async function getMaintenanceById(id) {
       cache: "no-store",
     });
     await ensureApiSuccess(response, "getMaintenanceById");
-    const { data } = await response.json();
-    return data || null;
+    const json = await response.json();
+    return json?.data ?? json?.maintenance ?? json ?? null;
   } catch (err) {
     throw toDataServiceError(err, "getMaintenanceById");
   }
@@ -1103,6 +1103,7 @@ export async function getUserById(id) {
     });
     await ensureApiSuccess(response, "getUserById");
     const data = await response.json();
+    console.log(data)
     return data || null;
   } catch (err) {
     throw toDataServiceError(err, "getUserById");
@@ -2214,5 +2215,113 @@ export async function getSubscriptionPaymentById(id) {
     return data || [];
   } catch (error) {
     throw toDataServiceError(error, "getSubscriptionPaymentById");
+  }
+}
+
+
+export async function getManagerDashboard(orgId) {
+  const cookieStore = await cookies();
+  const raw = await getRawToken();
+  if (!raw) return null;
+
+  const resolvedOrgId =
+    orgId ||
+    cookieStore.get("organizationId")?.value ||
+    cookieStore.get("organization_id")?.value ||
+    "";
+  const query = resolvedOrgId
+    ? `?organizationId=${encodeURIComponent(resolvedOrgId)}`
+    : "";
+
+  try {
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/dashboard/manager${query}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${raw}`,
+          "Content-type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    await ensureApiSuccess(response, "getDashboard");
+    const json = await safeJson(response);
+    console.log("manager dashboard",json)
+
+    return json?.data ?? json ?? null;
+  } catch (error) {
+    throw toDataServiceError(error, "getDashboard");
+  }
+}
+
+export async function getOwnerDashboard(orgId) {
+  const cookieStore = await cookies();
+  const raw = await getRawToken();
+  if (!raw) return null;
+
+  const resolvedOrgId =
+    orgId ||
+    cookieStore.get("organizationId")?.value ||
+    cookieStore.get("organization_id")?.value ||
+    "";
+  const query = resolvedOrgId
+    ? `?organizationId=${encodeURIComponent(resolvedOrgId)}`
+    : "";
+
+  try {
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/dashboard/owner`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${raw}`,
+          "Content-type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    await ensureApiSuccess(response, "getDashboard");
+    const json = await safeJson(response);
+    console.log("owner dashboard",json)
+    return json?.data ?? json ?? null;
+  } catch (error) {
+    throw toDataServiceError(error, "getDashboard");
+  }
+}
+
+export async function getTenantDashboard(orgId) {
+  const cookieStore = await cookies();
+  const raw = await getRawToken();
+  if (!raw) return null;
+
+  const resolvedOrgId =
+    orgId ||
+    cookieStore.get("organizationId")?.value ||
+    cookieStore.get("organization_id")?.value ||
+    "";
+  const query = resolvedOrgId
+    ? `?organizationId=${encodeURIComponent(resolvedOrgId)}`
+    : "";
+
+  try {
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/dashboard/tenant`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${raw}`,
+          "Content-type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    await ensureApiSuccess(response, "getDashboard");
+    const json = await safeJson(response);
+    console.log("tenant dashboard",json)
+
+    return json?.data ?? json ?? null;
+  } catch (error) {
+    throw toDataServiceError(error, "getDashboard");
   }
 }

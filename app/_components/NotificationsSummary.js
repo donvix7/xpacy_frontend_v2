@@ -37,28 +37,7 @@ export default function NotificationsSummary({
 
     return (
         <div className="@container flex flex-col">
-            {/* ---------- Header ---------- */}
-            {showHeading && (
-                <header className="flex items-center justify-between gap-3 border-b border-gray-100 pb-3">
-                    <div className="flex items-baseline gap-2.5">
-                        <h3 className="text-[13px] font-semibold tracking-[-0.1px] text-ink">
-                            Notifications
-                        </h3>
-                        {unreadCount > 0 && (
-                            <span className="text-[11px] font-medium tabular-nums text-gray-400">
-                                {unreadCount} unread
-                            </span>
-                        )}
-                    </div>
-                    <Link
-                        href="/dashboard/notifications"
-                        className="group inline-flex items-center gap-0.5 text-[11.5px] font-medium text-gray-500 transition-colors hover:text-ink"
-                    >
-                        Open inbox
-                        <ArrowUpRight className="h-3 w-3 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                    </Link>
-                </header>
-            )}
+            
 
             {/* ---------- Empty state ---------- */}
             {recent.length === 0 ? (

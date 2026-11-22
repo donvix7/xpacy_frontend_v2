@@ -54,7 +54,7 @@ export default async function SidebarHeader({ role = "user", isOrganizationAdmin
                         {canShareListings && (
                             <ShareOrganizationListings organizationId={activeOrganizationId} inHeader />
                         )}
-                        {activeOrganizationAdmin && <Link href="/admin/add-new-property" className="xp-btn xp-btn-fill px-3 py-2 text-sm lg:px-5 lg:py-3 lg:text-[15px]">Add Property</Link>}
+                        {activeOrganizationAdmin && <Link href="/admin/add-new-manager" className="xp-btn xp-btn-fill px-3 py-2 text-sm lg:px-5 lg:py-3 lg:text-[15px]">Add Manager</Link>}
                         <div className="hidden h-10 w-px bg-line lg:block"></div>
                     </>
                 )}

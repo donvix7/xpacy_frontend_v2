@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import InvoiceNav from "@/app/_components/InvoiceNav";
 import CopyButton from "@/app/_components/CopyButton";
+import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import KeyValueDataTable from "@/app/_components/KeyValueDataTable";
 import RefundPaymentModal from "@/app/_components/RefundPaymentModal"; // ← NEW
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 import { getSubscriptionPaymentById } from "@/app/_lib/data-services";
@@ -230,15 +232,9 @@ export default async function Page({ params }) {
             ) : (
                 <div className="flex flex-col gap-6">
                     {/* ---------- Hero header ---------- */}
-                    <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
-                        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-
-                        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
-                            <div className="flex flex-wrap items-start justify-between gap-5">
-                                <div className="min-w-0">
-                                    <Link
+                    <Link
                                         href="/dashboard/admin/payments"
-                                        className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute transition-colors hover:text-white"
+                                        className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
                                     >
                                         <ChevronLeft
                                             className="h-3.5 w-3.5"
@@ -246,6 +242,14 @@ export default async function Page({ params }) {
                                         />
                                         Back to payments
                                     </Link>
+
+                    <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+                        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+
+                        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+                            <div className="flex flex-wrap items-start justify-between gap-5">
+                                <div className="min-w-0">
+                                    
                                     <h1 className="mt-2 font-sans text-[24px] font-semibold leading-tight text-white sm:text-[28px]">
                                         {formatCurrency(
                                             payment.amount,
@@ -332,190 +336,182 @@ export default async function Page({ params }) {
                     </section>
 
                     {/* ---------- Payment details ---------- */}
-                    <SectionTable
-                        title="Payment details"
-                        icon={
-                            <CreditCard
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                            />
-                        }
-                    >
-                        <Row
-                            icon={<Hash className="h-3.5 w-3.5" />}
-                            label="Payment ID"
-                            value={payment.id}
-                            mono
-                            copyable
+                    <DashboardGridItem title="Payment Details">
+                        <KeyValueDataTable
+                            rows={[
+                                {
+                                    icon: Hash,
+                                    label: "Payment ID",
+                                    value: payment.id,
+                                    mono: true,
+                                    action: payment.id ? (
+                                        <CopyButton value={String(payment.id)} />
+                                    ) : null,
+                                },
+                                {
+                                    icon: Link2,
+                                    label: "Reference",
+                                    value: payment.reference,
+                                    mono: true,
+                                    action: payment.reference ? (
+                                        <CopyButton value={String(payment.reference)} />
+                                    ) : null,
+                                },
+                                {
+                                    icon: Link2,
+                                    label: "Transaction Ref",
+                                    value: payment.transactionRef,
+                                    mono: true,
+                                    action: payment.transactionRef ? (
+                                        <CopyButton value={String(payment.transactionRef)} />
+                                    ) : null,
+                                },
+                                {
+                                    icon: Landmark,
+                                    label: "Channel",
+                                    value: payment.channel ? (
+                                        <span className="capitalize">
+                                            {payment.channel}
+                                        </span>
+                                    ) : null,
+                                },
+                                {
+                                    icon: Wallet,
+                                    label: "Amount",
+                                    value: formatCurrency(
+                                        payment.amount,
+                                        payment.currency
+                                    ),
+                                    mono: true,
+                                },
+                                {
+                                    icon: Hash,
+                                    label: "Currency",
+                                    value: payment.currency,
+                                    mono: true,
+                                },
+                            ]}
                         />
-                        <Row
-                            icon={<Link2 className="h-3.5 w-3.5" />}
-                            label="Reference"
-                            value={payment.reference}
-                            mono
-                            copyable
-                        />
-                        <Row
-                            icon={<Link2 className="h-3.5 w-3.5" />}
-                            label="Transaction ref"
-                            value={payment.transactionRef}
-                            mono
-                            copyable
-                        />
-                        <Row
-                            icon={<Landmark className="h-3.5 w-3.5" />}
-                            label="Channel"
-                            value={
-                                <span className="capitalize">
-                                    {payment.channel ?? "—"}
-                                </span>
-                            }
-                        />
-                        <Row
-                            icon={<Wallet className="h-3.5 w-3.5" />}
-                            label="Amount"
-                            value={formatCurrency(
-                                payment.amount,
-                                payment.currency
-                            )}
-                            mono
-                        />
-                        <Row
-                            icon={<Hash className="h-3.5 w-3.5" />}
-                            label="Currency"
-                            value={payment.currency}
-                        />
-                    </SectionTable>
+                    </DashboardGridItem>
 
                     {/* ---------- Timeline & status ---------- */}
-                    <SectionTable
-                        title="Timeline & status"
-                        icon={
-                            <CalendarDays
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                            />
-                        }
-                    >
-                        <Row
-                            icon={<Clock className="h-3.5 w-3.5" />}
-                            label="Initiated"
-                            value={formatDateTime(payment.createdAt)}
+                    <DashboardGridItem title="Timeline & Status">
+                        <KeyValueDataTable
+                            rows={[
+                                {
+                                    icon: Clock,
+                                    label: "Initiated",
+                                    value: formatDateTime(payment.createdAt),
+                                },
+                                {
+                                    icon: CheckCircle2,
+                                    label: "Paid",
+                                    value: payment.paidAt
+                                        ? formatDateTime(payment.paidAt)
+                                        : "Not paid",
+                                },
+                                {
+                                    icon: Clock,
+                                    label: "Last Updated",
+                                    value: formatDateTime(payment.updatedAt),
+                                },
+                                {
+                                    icon: StatusIcon,
+                                    label: "Status",
+                                    value: (
+                                        <span
+                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wider ring-1 ${statusMeta.pill}`}
+                                        >
+                                            <span className="h-1 w-1 rounded-full bg-current" />
+                                            {status}
+                                        </span>
+                                    ),
+                                },
+                                payment.notes
+                                    ? {
+                                          icon: Hash,
+                                          label: "Notes",
+                                          value: payment.notes,
+                                      }
+                                    : null,
+                            ]}
                         />
-                        <Row
-                            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-                            label="Paid"
-                            value={
-                                payment.paidAt
-                                    ? formatDateTime(payment.paidAt)
-                                    : "Not paid"
-                            }
-                        />
-                        <Row
-                            icon={<Clock className="h-3.5 w-3.5" />}
-                            label="Last updated"
-                            value={formatDateTime(payment.updatedAt)}
-                        />
-                        <Row
-                            icon={<StatusIcon className="h-3.5 w-3.5" />}
-                            label="Status"
-                            value={
-                                <span
-                                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wider ring-1 ${statusMeta.pill}`}
-                                >
-                                    <span className="h-1 w-1 rounded-full bg-current" />
-                                    {status}
-                                </span>
-                            }
-                        />
-                        {payment.notes && (
-                            <Row
-                                icon={<Hash className="h-3.5 w-3.5" />}
-                                label="Notes"
-                                value={payment.notes}
-                            />
-                        )}
-                    </SectionTable>
+                    </DashboardGridItem>
 
                     {/* ---------- Subscription ---------- */}
-                    <SectionTable
-                        title="Subscription"
-                        icon={
-                            <Layers
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                            />
-                        }
-                    >
-                        <Row
-                            icon={<Hash className="h-3.5 w-3.5" />}
-                            label="Subscription ID"
-                            value={subscription?.id}
-                            mono
-                            copyable
+                    <DashboardGridItem title="Subscription">
+                        <KeyValueDataTable
+                            rows={[
+                                {
+                                    icon: Hash,
+                                    label: "Subscription ID",
+                                    value: subscription?.id,
+                                    mono: true,
+                                    action: subscription?.id ? (
+                                        <CopyButton value={String(subscription.id)} />
+                                    ) : null,
+                                },
+                                {
+                                    icon: CreditCard,
+                                    label: "Plan",
+                                    value: plan?.name,
+                                },
+                                {
+                                    icon: Hash,
+                                    label: "Plan Type",
+                                    value: plan?.planType,
+                                },
+                                {
+                                    icon: Clock,
+                                    label: "Interval",
+                                    value: subscription?.interval,
+                                },
+                                {
+                                    icon: CalendarDays,
+                                    label: "Renews On",
+                                    value: subscription?.endDate
+                                        ? formatDateTime(subscription.endDate)
+                                        : null,
+                                },
+                            ]}
+                            emptyMessage="No subscription details linked."
                         />
-                        <Row
-                            icon={<CreditCard className="h-3.5 w-3.5" />}
-                            label="Plan"
-                            value={plan?.name}
-                        />
-                        <Row
-                            icon={<Hash className="h-3.5 w-3.5" />}
-                            label="Plan type"
-                            value={plan?.planType}
-                        />
-                        <Row
-                            icon={<Clock className="h-3.5 w-3.5" />}
-                            label="Interval"
-                            value={subscription?.interval}
-                        />
-                        <Row
-                            icon={<CalendarDays className="h-3.5 w-3.5" />}
-                            label="Renews on"
-                            value={
-                                subscription?.endDate
-                                    ? formatDateTime(subscription.endDate)
-                                    : "—"
-                            }
-                        />
-                    </SectionTable>
+                    </DashboardGridItem>
 
                     {/* ---------- Initiated by ---------- */}
-                    <SectionTable
-                        title="Initiated by"
-                        icon={<User className="h-4 w-4" aria-hidden="true" />}
-                    >
-                        {payer ? (
-                            <>
-                                <Row
-                                    icon={<User className="h-3.5 w-3.5" />}
-                                    label="Name"
-                                    value={payerName}
-                                />
-                                <Row
-                                    icon={<Hash className="h-3.5 w-3.5" />}
-                                    label="Email"
-                                    value={payer.email}
-                                />
-                                <Row
-                                    icon={<User className="h-3.5 w-3.5" />}
-                                    label="User ID"
-                                    value={payer.id}
-                                    mono
-                                    copyable
-                                />
-                            </>
-                        ) : (
-                            <tr>
-                                <td
-                                    colSpan={3}
-                                    className="px-5 py-6 text-center text-[12px] text-mute sm:px-6"
-                                >
-                                    Payer information unavailable.
-                                </td>
-                            </tr>
-                        )}
-                    </SectionTable>
+                    <DashboardGridItem title="Initiated By">
+                        <KeyValueDataTable
+                            rows={
+                                payer
+                                    ? [
+                                          {
+                                              icon: User,
+                                              label: "Name",
+                                              value: payerName,
+                                          },
+                                          {
+                                              icon: Hash,
+                                              label: "Email",
+                                              value: payer.email,
+                                          },
+                                          {
+                                              icon: User,
+                                              label: "User ID",
+                                              value: payer.id,
+                                              mono: true,
+                                              href: payer.id
+                                                  ? `/dashboard/admin/users/${encodeURIComponent(payer.id)}`
+                                                  : null,
+                                              action: payer.id ? (
+                                                  <CopyButton value={String(payer.id)} />
+                                              ) : null,
+                                          },
+                                      ]
+                                    : []
+                            }
+                            emptyMessage="Payer information unavailable."
+                        />
+                    </DashboardGridItem>
                 </div>
             )}
         </div>

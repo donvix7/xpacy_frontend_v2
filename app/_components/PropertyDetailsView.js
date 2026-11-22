@@ -22,6 +22,7 @@ import {
     ArrowUpRight,
     Pencil,
     UserRound,
+    Wrench,
 } from "lucide-react";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
@@ -327,6 +328,7 @@ export default function PropertyDetailsView({
     rawProperty,
     units = [],
     tenants = [],
+    maintenanceRequests = [],
     availableOwners = [],
     availableMembers = [],
     organizationName = null,
@@ -337,6 +339,9 @@ export default function PropertyDetailsView({
     const details = buildDetailRows(property, basePath, organizationName);
     const unitsList = Array.isArray(units) ? units : [];
     const tenantsList = Array.isArray(tenants) ? tenants : [];
+    const maintenanceList = Array.isArray(maintenanceRequests)
+        ? maintenanceRequests
+        : [];
 
     const peopleList = [
         ...property.managers.map((m) => ({
@@ -469,6 +474,13 @@ export default function PropertyDetailsView({
                             <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                             Edit property
                         </Link>
+                        <Link
+                            href={`/admin/add-new-maintenance?propertyId=${encodeURIComponent(property.id)}&returnTo=${encodeURIComponent(`${basePath}/properties/${property.id}`)}`}
+                            className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                        >
+                            <Wrench className="h-3.5 w-3.5" aria-hidden="true" />
+                            Maintenance request
+                        </Link>
                         {property.organizationId && (
                             <Link
                                 href={`${basePath}/organizations/${property.organizationId}`}
@@ -485,7 +497,7 @@ export default function PropertyDetailsView({
                             <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
                             All Properties
                         </Link>
-                      
+
                         <DeletePropertyButton
                             propertyId={property.id}
                             propertyName={property.name}
@@ -746,6 +758,128 @@ export default function PropertyDetailsView({
                                     return tId ? (
                                         <Link
                                             href={`${basePath}/tenants/${tId}`}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-semibold text-ink transition-colors hover:border-primary hover:text-primary"
+                                        >
+                                            View
+                                            <ArrowUpRight className="h-3.5 w-3.5" />
+                                        </Link>
+                                    ) : null;
+                                },
+                            },
+                        ]}
+                    />
+                )}
+            </DashboardGridItem>
+
+            {/* ---------- Maintenance Requests (DataTable) ---------- */}
+            <DashboardGridItem title={`Maintenance Requests (${maintenanceList.length})`}>
+                <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+                    <Link
+                        href={`/admin/add-new-maintenance?propertyId=${encodeURIComponent(property.id)}&returnTo=${encodeURIComponent(`${basePath}/properties/${property.id}`)}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-primary/90"
+                    >
+                        <Plus className="h-3.5 w-3.5" />
+                        New maintenance request
+                    </Link>
+                </div>
+                {maintenanceList.length === 0 ? (
+                    <EmptyState
+                        icon={<Wrench className="h-10 w-10 text-primary" aria-hidden="true" />}
+                        title="No maintenance requests"
+                        message={`No maintenance requests have been logged for ${property.name} yet.`}
+                    />
+                ) : (
+                    <DataTable
+                        data={maintenanceList}
+                        showPagination={maintenanceList.length > 10}
+                        className="p-0 border-none shadow-none"
+                        rowKey={(req, index) => req.id ?? req._id ?? index}
+                        columns={[
+                            {
+                                heading: "Request",
+                                render: (req) => {
+                                    const reqId = req.id || req._id;
+                                    const unitLabel = req.unit?.unitNumber
+                                        ? `Unit ${req.unit.unitNumber}`
+                                        : req.unit?.name || null;
+                                    return (
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-soft text-primary">
+                                                <Wrench className="h-4 w-4" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                {reqId ? (
+                                                    <Link
+                                                        href={`${basePath}/properties/${encodeURIComponent(property.id)}/maintenance/${encodeURIComponent(reqId)}`}
+                                                        className="font-semibold text-ink hover:text-primary hover:underline block truncate"
+                                                    >
+                                                        {req.title || "Maintenance Request"}
+                                                    </Link>
+                                                ) : (
+                                                    <p className="font-semibold text-ink truncate">
+                                                        {req.title || "Maintenance Request"}
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-mute truncate">
+                                                    {unitLabel || req.description || "Entire property"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                },
+                            },
+                            {
+                                heading: "Category",
+                                className: "text-xs text-ink",
+                                render: (req) => titleCase(req.category),
+                            },
+                            {
+                                heading: "Priority",
+                                center: true,
+                                render: (req) => {
+                                    const p = String(req.priority || "MEDIUM").toUpperCase();
+                                    const pillClass =
+                                        p === "URGENT" || p === "HIGH"
+                                            ? "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+                                            : p === "MEDIUM"
+                                              ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                                              : "bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300";
+                                    return (
+                                        <div className="flex justify-center">
+                                            <span
+                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${pillClass}`}
+                                            >
+                                                {titleCase(p)}
+                                            </span>
+                                        </div>
+                                    );
+                                },
+                            },
+                            {
+                                heading: "Date",
+                                className: "font-mono text-xs text-mute",
+                                render: (req) =>
+                                    formatDate(req.scheduledAt || req.createdAt),
+                            },
+                            {
+                                heading: "Status",
+                                center: true,
+                                render: (req) => (
+                                    <div className="flex justify-center">
+                                        <StatusChips
+                                            status={(req.status || "open").toLowerCase()}
+                                        />
+                                    </div>
+                                ),
+                            },
+                            {
+                                heading: "",
+                                align: "right",
+                                render: (req) => {
+                                    const reqId = req.id || req._id;
+                                    return reqId ? (
+                                        <Link
+                                            href={`${basePath}/properties/${encodeURIComponent(property.id)}/maintenance/${encodeURIComponent(reqId)}`}
                                             className="inline-flex items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-semibold text-ink transition-colors hover:border-primary hover:text-primary"
                                         >
                                             View

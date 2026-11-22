@@ -1843,43 +1843,165 @@ export async function getUserProfileAction() {
 
 /////////////////////////////////////*DOCUMENTS*/////////////////////////////////////////////////
 
-export async function createDocument(data){
-  const payload = {
-  "name": data.name,
-  "type": data.type,
-  "url": data.url,
-  "propertyId": data.propertyId,
-  "organizationId": data.organizationId,
-  "fileSize": data.fileSize,
-  "mimeType": data.mimeType
-}
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/documents
-`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
-}
+export async function createDocument(data) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
 
-
-export async function deleteDocument(id){
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/documents/${id}
-`, {
-    method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to create a document.",
+        status: 401,
+      };
     }
-  });
-  return response.json(); 
+
+    const cookieOrgId =
+      cookieStore.get("organizationId")?.value ||
+      cookieStore.get("organization_id")?.value ||
+      "";
+    const resolvedOrgId = String(
+      data?.organizationId || cookieOrgId || ""
+    ).trim();
+
+    const fileSize =
+      data?.fileSize !== undefined &&
+      data?.fileSize !== null &&
+      data?.fileSize !== "" &&
+      Number.isFinite(Number(data.fileSize))
+        ? Number(data.fileSize)
+        : 0;
+
+    const payload = {
+      name: String(data?.name || "").trim(),
+      type: String(data?.type || "PROPERTY_DOCUMENT").trim(),
+      url: String(data?.url || "").trim(),
+      ...(data?.propertyId?.trim()
+        ? { propertyId: data.propertyId.trim() }
+        : {}),
+      ...(resolvedOrgId ? { organizationId: resolvedOrgId } : {}),
+      fileSize,
+      ...(data?.mimeType?.trim() ? { mimeType: data.mimeType.trim() } : {}),
+    };
+
+    const response = await safeFetch(
+      "https://services.xpacy.com/api/v1/documents",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("createDocument failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to create document (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath("/dashboard/property-owner/documents");
+    revalidatePath("/dashboard/property-manager/documents");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData?.document ?? resData,
+      message: resData?.message || "Document added successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to create document.",
+    };
+  }
+}
+
+export async function deleteDocument(id) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to delete this document.",
+        status: 401,
+      };
+    }
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/documents/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({}),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("deleteDocument failed:", {
+        status: response.status,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to delete document (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath("/dashboard/property-owner/documents");
+    revalidatePath("/dashboard/property-manager/documents");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Document deleted successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to delete document.",
+    };
+  }
 }
 
 /////////////////////////////////////*PROPERTIES*/////////////////////////////////////////////////
@@ -2039,19 +2161,100 @@ export async function addProperty(propertyData) {
   }
 }
 
-export async function addOwner(payload){
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/owners
-`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
+export async function addOwner(payload, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to create an owner profile.",
+        status: 401,
+      };
+    }
+
+    const cookieOrgId =
+      cookieStore.get("organizationId")?.value ||
+      cookieStore.get("organization_id")?.value ||
+      "";
+    const resolvedOrgId = String(
+      payload?.organizationId || cookieOrgId || ""
+    ).trim();
+
+    if (!resolvedOrgId) {
+      return {
+        success: false,
+        message: "Organization ID is required to create an owner profile.",
+        status: 400,
+      };
+    }
+
+    const body = {
+      organizationId: resolvedOrgId,
+      firstName: String(payload?.firstName || "").trim(),
+      lastName: String(payload?.lastName || "").trim(),
+      email: String(payload?.email || "").trim(),
+      ...(payload?.phone?.trim() ? { phone: payload.phone.trim() } : {}),
+      ...(payload?.address?.trim() ? { address: payload.address.trim() } : {}),
+      ...(payload?.companyName?.trim()
+        ? { companyName: payload.companyName.trim() }
+        : {}),
+      ...(payload?.notes?.trim() ? { notes: payload.notes.trim() } : {}),
+    };
+
+    const response = await safeFetch("https://services.xpacy.com/api/v1/owners", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenVal}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("addOwner failed:", {
+        status: response.status,
+        body,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to create owner profile (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath("/dashboard/admin/users");
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-manager/properties/${propertyId}`);
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData?.owner ?? resData,
+      message: resData?.message || "Owner profile created successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to create owner profile.",
+    };
+  }
 }
 
 /////////////////////////////////////*EXPENSES*/////////////////////////////////////////////////
@@ -2152,13 +2355,19 @@ export async function createLease(data, organizationId = null, propertyId = null
       };
     }
 
+    const ALLOWED_BILLING_CYCLES = ["MONTHLY", "QUARTERLY", "YEARLY", "CUSTOM"];
+    const normalizedCycle = String(data?.billingCycle || "MONTHLY").toUpperCase();
+    const billingCycle = ALLOWED_BILLING_CYCLES.includes(normalizedCycle)
+      ? normalizedCycle
+      : "MONTHLY";
+
     const payload = {
       tenantProfileId,
       unitId,
       startDate: data.startDate,
       endDate: data.endDate,
       rentAmount: Number(data.rentAmount),
-      billingCycle: data.billingCycle || "MONTHLY",
+      billingCycle,
       securityDeposit:
         data.securityDeposit !== "" && data.securityDeposit != null
           ? Number(data.securityDeposit)
@@ -2172,7 +2381,7 @@ export async function createLease(data, organizationId = null, propertyId = null
       : "";
 
     const response = await safeFetch(
-      `https://services.xpacy.com/api/v1/leases${query}`,
+      `https://services.xpacy.com/api/v1/properties/${propertyId}/leases`,
       {
         method: "POST",
         headers: {
@@ -2190,6 +2399,7 @@ export async function createLease(data, organizationId = null, propertyId = null
     } catch {
       resData = { message: response.statusText };
     }
+    console.log(response)
 
     if (!response.ok) {
       console.error("createLease failed:", {
@@ -2461,21 +2671,51 @@ export async function createTenant(data){
   return json ?? { success: response.ok, message: response.ok ? "Tenant created." : "Failed to create tenant." };
 } 
 
+function pruneEmptyFields(obj) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return obj;
+  const cleaned = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined || value === null || value === "") continue;
+    if (typeof value === "object" && !Array.isArray(value)) {
+      const nested = pruneEmptyFields(value);
+      if (nested && Object.keys(nested).length > 0) {
+        cleaned[key] = nested;
+      }
+    } else {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
+
 export async function updateTenant(id, data){
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
-  const payload = {
+
+  const identification = pruneEmptyFields(data.identification);
+  const emergencyContact = pruneEmptyFields(data.emergencyContact);
+  const employmentInformation = pruneEmptyFields(data.employmentInformation);
+
+  const payload = pruneEmptyFields({
     firstName: data.firstName,
     lastName: data.lastName,
     email: data.email,
-    phone: data.phone || data.phoneNumber || "",
-    dateOfBirth: data.dateOfBirth || null,
-    identification: data.identification,
-    emergencyContact: data.emergencyContact,
+    phone: data.phone || data.phoneNumber,
+    dateOfBirth: data.dateOfBirth,
+    identification:
+      identification && Object.keys(identification).length > 0
+        ? identification
+        : undefined,
+    emergencyContact:
+      emergencyContact && Object.keys(emergencyContact).length > 0
+        ? emergencyContact
+        : undefined,
     occupation: data.occupation,
-    employmentInformation: data.employmentInformation,
-    ...(data.status ? { status: data.status } : {}),
-  };
+    employmentInformation:
+      employmentInformation && Object.keys(employmentInformation).length > 0
+        ? employmentInformation
+        : undefined,
+  });
 
   try {
     const response = await safeFetch(
@@ -2484,13 +2724,12 @@ export async function updateTenant(id, data){
         method: "PATCH",
         headers: {
           "Authorization": `Bearer ${token?.value}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify(payload)
       }
     );
-
-    console.log(response);
 
     let json = null;
     try {
@@ -2500,12 +2739,19 @@ export async function updateTenant(id, data){
     }
 
     if (!response.ok) {
+      console.error("updateTenant failed:", {
+        status: response.status,
+        payload,
+        json,
+      });
+      const errorMessage = Array.isArray(json?.message)
+        ? json.message.join(", ")
+        : json?.message ||
+          json?.errors?.[0]?.message ||
+          `Failed to update tenant (${response.status}).`;
       return {
         success: false,
-        message:
-          json?.message ||
-          json?.errors?.[0]?.message ||
-          `Failed to update tenant (${response.status}).`,
+        message: errorMessage,
         data: json,
       };
     }
@@ -2588,92 +2834,405 @@ export async function linkTenant(id, data = null){
   }
 }
 
-/////////////////////////////////////*TENANTS*/////////////////////////////////////////////////
+/////////////////////////////////////*MAINTENANCE*/////////////////////////////////////////////////
 
+export async function createMaintenanceRequest(data, propertyId) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
 
-export async function createMaintenanceRequest(data, propertyId){
-  
-  const payload = {
-  "title": data.title,
-  "description": data.description,
-  "unitId": data.unitId,
-  "buildingId": data.buildingId,
-  "priority": data.priority,
-  "category": data.category,
-  "estimatedCost": data.estimatedCost,
-  "scheduledAt": data.scheduledAt
-}
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/properties/${propertyId}/maintenance
-`,{
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to create a maintenance request.",
+        status: 401,
+      };
+    }
+
+    if (!propertyId) {
+      return {
+        success: false,
+        message: "Property ID is required to create a maintenance request.",
+        status: 400,
+      };
+    }
+
+    const estimatedCost =
+      data?.estimatedCost !== undefined &&
+      data?.estimatedCost !== null &&
+      data?.estimatedCost !== "" &&
+      Number.isFinite(Number(data.estimatedCost))
+        ? Number(data.estimatedCost)
+        : undefined;
+
+    const payload = {
+      title: String(data?.title || "").trim(),
+      ...(data?.description?.trim()
+        ? { description: data.description.trim() }
+        : {}),
+      ...(data?.unitId?.trim() ? { unitId: data.unitId.trim() } : {}),
+      ...(data?.buildingId?.trim()
+        ? { buildingId: data.buildingId.trim() }
+        : {}),
+      ...(data?.priority ? { priority: String(data.priority).toUpperCase() } : {}),
+      ...(data?.category ? { category: String(data.category).trim() } : {}),
+      ...(estimatedCost !== undefined ? { estimatedCost } : {}),
+      ...(data?.scheduledAt ? { scheduledAt: data.scheduledAt } : {}),
+    };
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(propertyId)}/maintenance`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("createMaintenanceRequest failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to create maintenance request (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+    revalidatePath(`/dashboard/property-manager/properties/${propertyId}`);
+    revalidatePath("/dashboard/admin/maintenance");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Maintenance request created successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to create maintenance request.",
+    };
+  }
 }
 
-export async function updateMaintenanceRequest(data,id,propertyId){
-  
-  const payload = {
-  "title": data.title,
-  "description": data.description,
-  "priority": data.priority,
-  "status": data.status,
-  "assignedTo": data.assignedTo,
-  "estimatedCost": data.estimatedCost,
-  "actualCost": data.actualCost,
-  "scheduledAt": data.scheduledAt,
-  "completedAt": data.completedAt
-}
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/maintenance/${id}
-`,{
-  method: "PATCH",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
+export async function updateMaintenanceRequest(data, id, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to update this maintenance request.",
+        status: 401,
+      };
+    }
+
+    const numOrUndef = (v) =>
+      v !== undefined && v !== null && v !== "" && Number.isFinite(Number(v))
+        ? Number(v)
+        : undefined;
+
+    const estimatedCost = numOrUndef(data?.estimatedCost);
+    const actualCost = numOrUndef(data?.actualCost);
+
+    const ALLOWED_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+    const ALLOWED_STATUSES = [
+      "OPEN",
+      "ASSIGNED",
+      "IN_PROGRESS",
+      "ON_HOLD",
+      "RESOLVED",
+      "CLOSED",
+      "CANCELLED",
+    ];
+
+    const normalizedPriority = data?.priority
+      ? String(data.priority).toUpperCase()
+      : undefined;
+    const normalizedStatus = data?.status
+      ? String(data.status).toUpperCase()
+      : undefined;
+
+    const payload = {
+      ...(data?.title?.trim() ? { title: data.title.trim() } : {}),
+      ...(data?.description?.trim()
+        ? { description: data.description.trim() }
+        : {}),
+      ...(normalizedPriority && ALLOWED_PRIORITIES.includes(normalizedPriority)
+        ? { priority: normalizedPriority }
+        : {}),
+      ...(normalizedStatus && ALLOWED_STATUSES.includes(normalizedStatus)
+        ? { status: normalizedStatus }
+        : {}),
+      ...(data?.assignedTo?.trim()
+        ? { assignedTo: data.assignedTo.trim() }
+        : {}),
+      ...(estimatedCost !== undefined ? { estimatedCost } : {}),
+      ...(actualCost !== undefined ? { actualCost } : {}),
+      ...(data?.scheduledAt ? { scheduledAt: data.scheduledAt } : {}),
+      ...(data?.completedAt ? { completedAt: data.completedAt } : {}),
+    };
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/maintenance/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("updateMaintenanceRequest failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to update maintenance request (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/maintenance/${id}`
+      );
+      revalidatePath(`/dashboard/property-manager/properties/${propertyId}`);
+      revalidatePath(
+        `/dashboard/property-manager/properties/${propertyId}/maintenance/${id}`
+      );
+    }
+    revalidatePath(`/dashboard/admin/maintenance/${id}`);
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Maintenance request updated successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to update maintenance request.",
+    };
+  }
 }
 
-export async function assignStaffToMaintenance(id,data,propertyId){
-  
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/maintenance/${id}/assign
-`,{
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(data)
-  });
-  return response.json(); 
+export async function assignStaffToMaintenance(id, data, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to assign staff.",
+        status: 401,
+      };
+    }
+
+    const assignedTo = String(
+      data?.assignedTo || data?.staffId || data?.userId || ""
+    ).trim();
+
+    if (!assignedTo) {
+      return {
+        success: false,
+        message: "Please select a staff member to assign.",
+        status: 400,
+      };
+    }
+
+    const payload = { assignedTo };
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/maintenance/${encodeURIComponent(id)}/assign`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("assignStaffToMaintenance failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to assign staff (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/maintenance/${id}`
+      );
+      revalidatePath(`/dashboard/property-manager/properties/${propertyId}`);
+      revalidatePath(
+        `/dashboard/property-manager/properties/${propertyId}/maintenance/${id}`
+      );
+    }
+    revalidatePath(`/dashboard/admin/maintenance/${id}`);
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Staff assigned successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to assign staff.",
+    };
+  }
 }
 
-export async function commentOnMaintenanceRequest(id,data,propertyId){
-  
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/maintenance/${id}/comments
-`,{
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(data)
-  });
-  return response.json(); 
+export async function commentOnMaintenanceRequest(id, data, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to add a comment.",
+        status: 401,
+      };
+    }
+
+    const content = String(
+      data?.content || data?.comment || data?.message || ""
+    ).trim();
+
+    if (!content) {
+      return {
+        success: false,
+        message: "Comment cannot be empty.",
+        status: 400,
+      };
+    }
+
+    const payload = { content };
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/maintenance/${encodeURIComponent(id)}/comments`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("commentOnMaintenanceRequest failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to add comment (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/maintenance/${id}`
+      );
+      revalidatePath(
+        `/dashboard/property-manager/properties/${propertyId}/maintenance/${id}`
+      );
+    }
+    revalidatePath(`/dashboard/admin/maintenance/${id}`);
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Comment added!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to add comment.",
+    };
+  }
 }
 
 /////////////////////////////////////*UNITS*/////////////////////////////////////////////////
@@ -2806,7 +3365,6 @@ export async function updateUnit(id, data, propertyId = null) {
     const buildingId = String(data?.buildingId || "").trim();
 
     const payload = {
-      ...(data?.unitNumber ? { unitNumber: String(data.unitNumber).trim() } : {}),
       ...(buildingId ? { buildingId } : {}),
       ...(floor !== undefined ? { floor } : {}),
       ...(data?.unitType ? { unitType: data.unitType } : {}),
@@ -2819,7 +3377,7 @@ export async function updateUnit(id, data, propertyId = null) {
       ...(salePrice !== undefined ? { salePrice } : {}),
       ...(shortletPrice !== undefined ? { shortletPrice } : {}),
       ...(securityDeposit !== undefined ? { securityDeposit } : {}),
-      ...(data?.description !== undefined
+      ...(data?.description?.trim()
         ? { description: String(data.description).trim() }
         : {}),
     };
@@ -2845,8 +3403,12 @@ export async function updateUnit(id, data, propertyId = null) {
     } catch {
       resData = { message: response.statusText };
     }
-
     if (!response.ok) {
+      console.error("updateUnit failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
       const errorMessage = Array.isArray(resData?.message)
         ? resData.message.join(", ")
         : resData?.message ||

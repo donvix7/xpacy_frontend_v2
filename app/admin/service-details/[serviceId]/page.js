@@ -17,12 +17,20 @@ export default async function Page({ params }) {
 
     return (
         <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
-            {/* Header Navigation */}
             <AdminHeader title="Service Details" backHref="/dashboard/admin/services" />
 
-            {/* Content Area */}
-            <main className="flex-1 max-w-4xl mx-auto w-full py-8 px-4 sm:px-6">
-                <ServiceRequestDetails service={service} />
+            <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 sm:px-6 sm:py-10 flex flex-col gap-6">
+                <header className="flex flex-col items-center justify-center text-center gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold font-sans text-ink">
+                        Service Request Details
+                    </h1>
+                    <p className="font-mono text-sm text-mute">
+                        Review service scope, schedule, and current status.
+                    </p>
+                </header>
+                <div className="p-6 sm:p-8 rounded-2xl border border-line bg-card shadow-sm">
+                    <ServiceRequestDetails service={service} />
+                </div>
             </main>
         </div>
     );

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { UserPlus } from "lucide-react";
 import MobileDashboardHeader from "@/app/_components/MobileDashboardHeader";
 import ProfileForm from "@/app/_components/ProfileForm";
 import ProfilePhoto from "@/app/_components/ProfilePhoto";
@@ -111,6 +113,7 @@ export default async function Page() {
                 Manage your profile, password and account preferences — keep everything up to date.
               </p>
             </div>
+            
           </div>
 
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -131,6 +134,18 @@ export default async function Page() {
               </div>
             ))}
           </dl>
+
+                {organizationId && (
+              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+                <Link
+                  href={`/admin/add-new-owner?organizationId=${encodeURIComponent(organizationId)}${organization?.name ? `&organizationName=${encodeURIComponent(organization.name)}` : ""}&returnTo=${encodeURIComponent("/dashboard/user/profile-settings")}`}
+                  className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+                >
+                  <UserPlus className="h-4 w-4" aria-hidden="true" />
+                  Create owner profile
+                </Link>
+              </div>
+            )}
         </div>
       </section>
 

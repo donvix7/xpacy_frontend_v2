@@ -13,9 +13,8 @@ import { createLease, updateLease } from "@/app/_lib/action";
 const BILLING_CYCLES = [
     { value: "MONTHLY", label: "Monthly" },
     { value: "QUARTERLY", label: "Quarterly" },
-    { value: "BIANNUALLY", label: "Bi-Annually" },
-    { value: "ANNUALLY", label: "Annually" },
-    { value: "WEEKLY", label: "Weekly" },
+    { value: "YEARLY", label: "Yearly" },
+    { value: "CUSTOM", label: "Custom" },
 ];
 
 const LEASE_STATUSES = [
@@ -124,7 +123,7 @@ export default function LeaseForm({
             renewalDate: toDateInputValue(effectiveData?.renewalDate),
             rentAmount: effectiveData?.rentAmount ?? "",
             billingCycle: (
-                effectiveData?.billingCycle || "ANNUALLY"
+                effectiveData?.billingCycle || "MONTHLY"
             ).toUpperCase(),
             securityDeposit: effectiveData?.securityDeposit ?? 0,
             status: (effectiveData?.status || "DRAFT").toUpperCase(),
@@ -157,7 +156,7 @@ export default function LeaseForm({
             startDate: startDateObj.toISOString(),
             endDate: endDateObj.toISOString(),
             rentAmount: data.rentAmount === "" ? 0 : Number(data.rentAmount),
-            billingCycle: data.billingCycle || "ANNUALLY",
+            billingCycle: data.billingCycle || "MONTHLY",
             securityDeposit:
                 data.securityDeposit === "" ? 0 : Number(data.securityDeposit),
             ...(data.renewalDate

@@ -18,10 +18,14 @@ export default async function ViewBookingPage({ params }) {
 
     if (!booking) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-12">
-                <BackBtn />
-                <p className="text-2xl font-bold mt-4 text-gray-800">Booking Not Found</p>
-                <p className="text-gray-500 mt-2 text-center max-w-md">The booking you are looking for does not exist or has been deleted.</p>
+            <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
+                <AdminHeader title="Booking Details" backHref="/dashboard/admin/bookings" />
+                <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-12 sm:px-6 flex flex-col items-center justify-center text-center gap-2">
+                    <h1 className="text-2xl font-bold text-ink">Booking Not Found</h1>
+                    <p className="font-mono text-sm text-mute max-w-md">
+                        The booking you are looking for does not exist or has been deleted.
+                    </p>
+                </main>
             </div>
         );
     }
@@ -31,11 +35,18 @@ export default async function ViewBookingPage({ params }) {
 
     return (
         <div className="flex-1 flex flex-col min-h-screen bg-canvas text-ink">
-            {/* Header Navigation */}
             <AdminHeader title="Booking Details" backHref="/dashboard/admin/bookings" />
 
-            <main className="flex-1 px-4 py-8 sm:px-6 md:px-8">
-                <div className="flex flex-col gap-8 w-full max-w-3xl mx-auto pb-12">
+            <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8 sm:px-6 sm:py-10 flex flex-col gap-6">
+                <header className="flex flex-col items-center justify-center text-center gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold font-sans text-ink">
+                        Booking Details
+                    </h1>
+                    <p className="font-mono text-sm text-mute">
+                        Review guest details, booking dates, and payment summary.
+                    </p>
+                </header>
+                <div className="flex flex-col gap-8 w-full pb-12">
                     {/* Content Area */}
                     <div className="p-6 sm:p-8 flex flex-col gap-10 bg-card border border-line rounded-2xl shadow-sm">
                         

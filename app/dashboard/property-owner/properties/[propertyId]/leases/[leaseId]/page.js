@@ -1,28 +1,35 @@
 import Link from "next/link";
 import {
-    ChevronLeft,
-    FileText,
+    ArrowUpRight,
+    BadgeCheck,
     Calendar,
-    Wallet,
-    Building2,
-    Home,
-    Users,
-    Clock,
-    Shield,
-    RefreshCw,
-    DoorOpen,
-    Mail,
-    Phone,
-    MapPin,
-    Hash,
     CalendarCheck,
+    ChevronLeft,
+    Clock,
+    DoorOpen,
+    FileText,
+    Hash,
+    Home,
+    Mail,
+    MapPin,
     Pencil,
+    Phone,
+    RefreshCw,
+    Shield,
+    Users,
+    Wallet,
 } from "lucide-react";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import DataTable from "@/app/_components/DataTable";
 import EmptyState from "@/app/_components/EmptyState";
 import HeroBand from "@/app/_components/HeroBand";
+import LeaseStatusControls from "@/app/_components/LeaseStatusControls";
 import StatusChips from "@/app/_components/StatusChips";
-import { getLeaseById, getSingleLease, getPropertyById } from "@/app/_lib/data-services";
+import {
+    getLeaseById,
+    getPropertyById,
+    getSingleLease,
+} from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
@@ -39,52 +46,61 @@ const formatDate = (value) => {
           });
 };
 
-function StatCard({ icon: Icon, label, value, subtext }) {
-    return (
-        <div className="flex items-center gap-3.5 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                <Icon className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {label}
-                </p>
-                <p className="mt-0.5 text-lg font-bold text-gray-900">{value}</p>
-                {subtext && (
-                    <p className="mt-0.5 text-xs text-gray-400 capitalize">{subtext}</p>
+const titleCase = (value) =>
+    value
+        ? String(value)
+              .replace(/_/g, " ")
+              .toLowerCase()
+              .replace(/\b\w/g, (c) => c.toUpperCase())
+        : "—";
+
+const keyValueColumns = [
+    {
+        heading: "Field",
+        render: (row) => {
+            const Icon = row.icon;
+            return (
+                <div className="flex items-center gap-2.5">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-50 dark:bg-primary-950/40">
+                        <Icon className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                    </div>
+                    <span className="text-xs font-semibold uppercase tracking-[0.08em] text-mute">
+                        {row.label}
+                    </span>
+                </div>
+            );
+        },
+    },
+    {
+        heading: "Details",
+        render: (row) => (
+            <div
+                className={`text-[13.5px] font-medium text-ink ${
+                    row.mono ? "font-mono" : ""
+                }`}
+            >
+                {row.href ? (
+                    <Link
+                        href={row.href}
+                        className="inline-flex items-center gap-1 transition-colors hover:text-primary hover:underline"
+                    >
+                        <span>{row.value}</span>
+                        <ArrowUpRight className="h-3.5 w-3.5 text-mute" />
+                    </Link>
+                ) : (
+                    <span>{row.value}</span>
                 )}
             </div>
-        </div>
-    );
-}
-
-function DetailRow({ icon: Icon, label, value }) {
-    if (!value || value === "—") return null;
-    return (
-        <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                <Icon className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {label}
-                </dt>
-                <dd className="mt-0.5 text-sm font-medium text-gray-800 break-words">
-                    {value}
-                </dd>
-            </div>
-        </div>
-    );
-}
+        ),
+    },
+];
 
 async function fetchLeaseData(propertyId, leaseId) {
-    // 1. Try fetching the specific lease directly by leaseId
     let lease = await getSingleLease(leaseId);
     if (lease && typeof lease === "object" && (lease.id || lease._id)) {
         return lease;
     }
 
-    // 2. Fallback: fetch leases for this property and locate the lease
     const propertyLeases = await getLeaseById(propertyId);
     if (Array.isArray(propertyLeases)) {
         return (
@@ -121,6 +137,7 @@ export default async function ViewLeaseDetailsPage({ params }) {
     const resolved = await params;
     const id = resolved?.propertyId || resolved?.id;
     const leaseId = resolved?.leaseId;
+    const baseHref = `/dashboard/property-owner/properties/${id}`;
 
     const results = await Promise.allSettled([
         fetchLeaseData(id, leaseId),
@@ -128,49 +145,57 @@ export default async function ViewLeaseDetailsPage({ params }) {
     ]);
     const dataErrorMessages = getSettledErrorMessages(results);
     const lease = results[0].status === "fulfilled" ? results[0].value : null;
-    const property = results[1].status === "fulfilled" ? results[1].value : null;
+    const rawProp = results[1].status === "fulfilled" ? results[1].value : null;
+    const property = rawProp?.data ?? rawProp?.property ?? rawProp ?? null;
 
     if (!lease || typeof lease !== "object") {
         return (
-            <div className="space-y-5 p-2 sm:p-4">
-                {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
+            <div className="space-y-6 p-2 sm:p-4">
+                {dataErrorMessages.length > 0 ? (
+                    <DataErrorNotice messages={dataErrorMessages} />
+                ) : null}
                 <Link
-                    href={`/dashboard/property-owner/properties/${id}/leases`}
-                    className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary"
+                    href={`${baseHref}/leases`}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
                 >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                     Back to leases
                 </Link>
-                <div className="rounded-xl border border-gray-100 bg-white p-10 text-center">
-                    <EmptyState
-                        icon={<FileText className="h-8 w-8 text-primary" />}
-                        title="Lease not found"
-                        message="This lease agreement may have expired, been removed, or the link is incorrect."
-                    />
-                </div>
+                <EmptyState
+                    icon={<FileText className="h-10 w-10 text-primary" aria-hidden="true" />}
+                    title="Lease not found"
+                    message="This lease agreement may have expired, been removed, or the link is incorrect."
+                />
             </div>
         );
     }
 
-    const leaseNumber = lease.leaseNumber || `Lease #${lease.id?.slice(0, 8) || "Agreement"}`;
+    const leaseNumber =
+        lease.leaseNumber || `Lease #${lease.id?.slice(0, 8) || "Agreement"}`;
     const status = lease.status || "active";
     const rent = lease.rentAmount != null ? formatCurrency(lease.rentAmount) : "—";
     const deposit =
-        lease.securityDeposit != null ? formatCurrency(lease.securityDeposit) : "—";
+        lease.securityDeposit != null
+            ? formatCurrency(lease.securityDeposit)
+            : "—";
     const billingCycle = lease.billingCycle
-        ? lease.billingCycle.replace(/_/g, " ").toLowerCase()
-        : "monthly";
+        ? titleCase(lease.billingCycle)
+        : "Monthly";
 
     // Tenant info
     const tp = lease.tenantProfile || lease.tenant || {};
     const tenantName =
-        [tp.firstName || tp.firstname, tp.lastName || tp.lastname].filter(Boolean).join(" ") ||
+        [tp.firstName || tp.firstname, tp.lastName || tp.lastname]
+            .filter(Boolean)
+            .join(" ") ||
         tp.name ||
-        "Tenant";
+        "—";
+    const tenantId = tp.id || tp._id || lease.tenantProfileId || null;
     const tenantEmail = tp.email || "—";
     const tenantPhone = tp.phone || "—";
 
     // Unit info
+    const unitId = lease.unit?.id || lease.unit?._id || lease.unitId || null;
     const unitNumber = lease.unit?.unitNumber
         ? `Unit ${lease.unit.unitNumber}`
         : lease.unit?.name || "—";
@@ -178,15 +203,98 @@ export default async function ViewLeaseDetailsPage({ params }) {
     // Property info
     const propertyName = property?.name || property?.property_name || "Property";
     const propertyAddress =
-        property?.address ||
-        [property?.city, property?.state].filter(Boolean).join(", ") ||
-        "—";
+        [property?.address, property?.city, property?.state]
+            .filter(Boolean)
+            .join(", ") || "—";
+
+    const filterValid = (rows) =>
+        rows.filter(
+            (row) =>
+                row &&
+                row.value !== undefined &&
+                row.value !== null &&
+                row.value !== "" &&
+                row.value !== "—"
+        );
+
+    const leaseDetailsRows = filterValid([
+        { label: "Lease Number", value: leaseNumber, icon: Hash, mono: true },
+        { label: "Status", value: titleCase(status), icon: BadgeCheck },
+        { label: "Rent Amount", value: rent, icon: Wallet, mono: true },
+        { label: "Security Deposit", value: deposit, icon: Shield, mono: true },
+        { label: "Billing Cycle", value: billingCycle, icon: Clock },
+        {
+            label: "Commencement Date",
+            value: formatDate(lease.startDate),
+            icon: Calendar,
+        },
+        {
+            label: "Expiration Date",
+            value: formatDate(lease.endDate),
+            icon: CalendarCheck,
+        },
+        {
+            label: "Renewal Date",
+            value: lease.renewalDate
+                ? formatDate(lease.renewalDate)
+                : "None scheduled",
+            icon: RefreshCw,
+        },
+        {
+            label: "Created",
+            value: formatDate(lease.createdAt),
+            icon: Calendar,
+        },
+        {
+            label: "Last Updated",
+            value: formatDate(lease.updatedAt),
+            icon: CalendarCheck,
+        },
+    ]);
+
+    const propertyUnitRows = filterValid([
+        {
+            label: "Property Name",
+            value: propertyName,
+            icon: Home,
+            href: baseHref,
+        },
+        {
+            label: "Unit",
+            value: unitNumber,
+            icon: DoorOpen,
+            href: unitId ? `${baseHref}/units/${encodeURIComponent(unitId)}` : null,
+        },
+        { label: "Address", value: propertyAddress, icon: MapPin },
+    ]);
+
+    const tenantDetailsRows = filterValid([
+        {
+            label: "Full Name",
+            value: tenantName,
+            icon: Users,
+            href: tenantId
+                ? `/dashboard/property-owner/tenants/${encodeURIComponent(tenantId)}`
+                : null,
+        },
+        { label: "Email Address", value: tenantEmail, icon: Mail },
+        { label: "Phone Number", value: tenantPhone, icon: Phone, mono: true },
+    ]);
+
+    const editHref = `/admin/add-new-lease?leaseId=${encodeURIComponent(
+        lease.id || lease._id || leaseId
+    )}&propertyId=${encodeURIComponent(id)}&returnTo=${encodeURIComponent(
+        `${baseHref}/leases/${lease.id || lease._id || leaseId}`
+    )}`;
 
     return (
-        <div className="space-y-6 p-2 sm:p-4">
-            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
+        <div className="space-y-8 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? (
+                <DataErrorNotice messages={dataErrorMessages} />
+            ) : null}
+
             <Link
-                href={`/dashboard/property-owner/properties/${id}/leases`}
+                href={`${baseHref}/leases`}
                 className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
             >
                 <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
@@ -196,144 +304,99 @@ export default async function ViewLeaseDetailsPage({ params }) {
             <HeroBand
                 tagline="Lease Agreement"
                 title={leaseNumber}
-                description={`Lease agreement for ${unitNumber} · ${propertyName}`}
+                description={`Lease agreement for ${unitNumber !== "—" ? unitNumber : "unit"} · ${propertyName}`}
+                badge={<StatusChips status={status} />}
                 actions={
-                    <div className="flex flex-wrap items-center gap-2">
-                        <StatusChips status={status} />
+                    <>
+                        <LeaseStatusControls
+                            leaseId={lease.id || lease._id || leaseId}
+                            propertyId={id}
+                            organizationId={
+                                lease.organizationId ||
+                                property?.organizationId ||
+                                property?.organization?.id ||
+                                null
+                            }
+                            leaseNumber={leaseNumber}
+                            currentStatus={status}
+                        />
                         <Link
-                            href={`/admin/add-new-lease?leaseId=${encodeURIComponent(lease.id || lease._id || leaseId)}&propertyId=${encodeURIComponent(id)}`}
+                            href={editHref}
                             className="inline-flex items-center gap-1.5 rounded-lg bg-white/95 px-3.5 py-2 text-xs font-semibold text-side transition-colors hover:bg-white"
                         >
                             <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                             Edit Lease
                         </Link>
-                    </div>
+                    </>
                 }
                 stats={[
-                    { label: "Rent Amount", value: rent, hint: `${billingCycle} cycle` },
-                    { label: "Security Deposit", value: deposit, hint: "Held deposit" },
-                    { label: "Start Date", value: formatDate(lease.startDate), hint: "Commencement" },
-                    { label: "End Date", value: formatDate(lease.endDate), hint: "Expiration" },
+                    {
+                        label: "Rent Amount",
+                        value: rent,
+                        hint: `${billingCycle.toLowerCase()} cycle`,
+                    },
+                    {
+                        label: "Security Deposit",
+                        value: deposit,
+                        hint: "Held deposit",
+                    },
+                    {
+                        label: "Start Date",
+                        value: formatDate(lease.startDate),
+                        hint: "Commencement",
+                    },
+                    {
+                        label: "End Date",
+                        value: formatDate(lease.endDate),
+                        hint: "Expiration",
+                    },
                 ]}
             />
 
-            {/* Details Grid */}
-            <div className="grid gap-6 lg:grid-cols-1">
-                {/* Property & Unit Information */}
+            {/* Lease Information */}
+            <DashboardGridItem title="Lease Information">
+                <DataTable
+                    data={leaseDetailsRows}
+                    columns={keyValueColumns}
+                    showPagination={false}
+                    className="p-0! border-none shadow-none"
+                    rowKey={(row) => row.label}
+                />
+            </DashboardGridItem>
+
+            {/* Property & Unit Information */}
+            {propertyUnitRows.length > 0 && (
                 <DashboardGridItem title="Property & Unit">
-                    <dl className="flex flex-col gap-4">
-                        <DetailRow
-                            icon={Home}
-                            label="Property Name"
-                            value={propertyName}
-                        />
-                        <DetailRow
-                            icon={DoorOpen}
-                            label="Unit"
-                            value={unitNumber}
-                        />
-                        <DetailRow
-                            icon={MapPin}
-                            label="Address"
-                            value={propertyAddress}
-                        />
-                        <DetailRow
-                            icon={Hash}
-                            label="Property ID"
-                            value={lease.propertyId}
-                        />
-                    </dl>
+                    <DataTable
+                        data={propertyUnitRows}
+                        columns={keyValueColumns}
+                        showPagination={false}
+                        className="p-0! border-none shadow-none"
+                        rowKey={(row) => row.label}
+                    />
                 </DashboardGridItem>
+            )}
 
-                {/* Tenant Information */}
+            {/* Tenant Information */}
+            {tenantDetailsRows.length > 0 && (
                 <DashboardGridItem title="Tenant Details">
-                    <dl className="flex flex-col gap-4">
-                        <DetailRow
-                            icon={Users}
-                            label="Full Name"
-                            value={tenantName}
-                        />
-                        <DetailRow
-                            icon={Mail}
-                            label="Email Address"
-                            value={tenantEmail}
-                        />
-                        <DetailRow
-                            icon={Phone}
-                            label="Phone Number"
-                            value={tenantPhone}
-                        />
-                        <DetailRow
-                            icon={Hash}
-                            label="Tenant Profile ID"
-                            value={lease.tenantProfileId}
-                        />
-                    </dl>
+                    <DataTable
+                        data={tenantDetailsRows}
+                        columns={keyValueColumns}
+                        showPagination={false}
+                        className="p-0! border-none shadow-none"
+                        rowKey={(row) => row.label}
+                    />
                 </DashboardGridItem>
-
-                {/* Lease Terms & Schedule */}
-                <DashboardGridItem title="Lease Terms & Schedule">
-                    <dl className="flex flex-col gap-4">
-                        <DetailRow
-                            icon={Hash}
-                            label="Lease Number"
-                            value={leaseNumber}
-                        />
-                        <DetailRow
-                            icon={Calendar}
-                            label="Commencement Date"
-                            value={formatDate(lease.startDate)}
-                        />
-                        <DetailRow
-                            icon={CalendarCheck}
-                            label="Expiration Date"
-                            value={formatDate(lease.endDate)}
-                        />
-                        <DetailRow
-                            icon={RefreshCw}
-                            label="Renewal Date"
-                            value={lease.renewalDate ? formatDate(lease.renewalDate) : "None scheduled"}
-                        />
-                        <DetailRow
-                            icon={Clock}
-                            label="Billing Cycle"
-                            value={billingCycle}
-                        />
-                    </dl>
-                </DashboardGridItem>
-
-                {/* Financial Details */}
-                <DashboardGridItem title="Financial Details">
-                    <dl className="flex flex-col gap-4">
-                        <DetailRow
-                            icon={Wallet}
-                            label="Rent Amount"
-                            value={rent}
-                        />
-                        <DetailRow
-                            icon={Shield}
-                            label="Security Deposit"
-                            value={deposit}
-                        />
-                        <DetailRow
-                            icon={Clock}
-                            label="Billing Frequency"
-                            value={billingCycle ? `Every ${billingCycle.replace("ly", "")}` : "Monthly"}
-                        />
-                        <DetailRow
-                            icon={Calendar}
-                            label="Agreement Created"
-                            value={formatDate(lease.createdAt)}
-                        />
-                    </dl>
-                </DashboardGridItem>
-            </div>
+            )}
 
             {/* Terms and Conditions */}
             {lease.terms && (
                 <DashboardGridItem title="Terms & Conditions">
-                    <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
-                        {lease.terms}
+                    <p className="text-sm leading-relaxed text-ink whitespace-pre-line">
+                        {typeof lease.terms === "string"
+                            ? lease.terms
+                            : JSON.stringify(lease.terms, null, 2)}
                     </p>
                 </DashboardGridItem>
             )}

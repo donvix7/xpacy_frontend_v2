@@ -1,22 +1,34 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { Plus, Wrench } from "lucide-react";
-import { getPropertyOwnerBookings, getPropertyOwnerServices, getPropertyOwnerProfile, getUserNotifications, getPropertyOwnerProperties, getPropertyOwnerInvoices } from "@/app/_lib/data-services";
+import {
+    getPropertyOwnerBookings,
+    getPropertyOwnerServices,
+    getPropertyOwnerProfile,
+    getUserNotifications,
+    getPropertyOwnerProperties,
+    getPropertyOwnerInvoices,
+    getManagerDashboard,
+} from "@/app/_lib/data-services";
 import PropertiesOverviewWrapper from "@/app/_components/PropertiesOverviewWrapper";
 import ServicesOverviewWrapper from "@/app/_components/ServicesOverviewWrapper";
 import PaymentsOverviewWrapper from "@/app/_components/PaymentsOverviewWrapper";
 import NotificationsSummary from "@/app/_components/NotificationsSummary";
 import PropertiesTableList from "@/app/_components/PropertiesTableList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import SummaryCards from "@/app/_components/SummaryCards";
-import { FaBuilding, FaFileContract, FaMoneyBillWave, FaWrench } from "react-icons/fa6";
-import { FiUsers } from "react-icons/fi";
+import {
+    DashboardSummaryOverview,
+    ListingsMaintenanceSummary,
+    UnitsOccupancySummary,
+    normalizeDashboardStats,
+} from "@/app/_components/DashboardPortfolioSummary";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
 export default async function Page() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
+    const organizationId = cookieStore.get("organizationId")?.value;
 
     const results = await Promise.allSettled([
         getPropertyOwnerProfile(token),
@@ -25,6 +37,7 @@ export default async function Page() {
         getPropertyOwnerBookings(token),
         getUserNotifications(token),
         getPropertyOwnerInvoices(token),
+        getManagerDashboard(organizationId),
     ]);
     const dataErrorMessages = getSettledErrorMessages(results);
 
@@ -34,6 +47,7 @@ export default async function Page() {
     const bookings = results[3].status === "fulfilled" ? results[3].value : [];
     const notifications = results[4].status === "fulfilled" ? results[4].value : [];
     const invoices = results[5].status === "fulfilled" ? results[5].value : [];
+    const dashboardStats = results[6].status === "fulfilled" ? results[6].value : null;
 
     const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
     const matchedProperties = allProperties.filter(p => p.property_owner_id === profile?.id);
@@ -67,59 +81,54 @@ export default async function Page() {
         year: "numeric",
     });
 
+    const stats = normalizeDashboardStats(dashboardStats, {
+        totalProperties: properties.length,
+        occupiedUnits: occupiedCount,
+        vacantUnits: vacancyCount,
+        activeBookings: activeLeases.length,
+        openMaintenance: pendingServices.length,
+    });
+
     const heroStats = [
         {
-            label: "Total Properties",
-            value: properties.length,
-            hint: `${occupiedCount} occupied · ${vacancyCount} vacant`,
+            label: "Properties",
+            value: stats.totalProperties,
+            hint: "Managed portfolio",
         },
         {
-            label: "Active Leases",
-            value: activeLeases.length,
-            hint: pendingLeases.length ? `${pendingLeases.length} pending approval` : "All confirmed",
+            label: "Total Units",
+            value: stats.totalUnits,
+            hint: `${stats.occupiedUnits} occupied · ${stats.vacantUnits} vacant`,
         },
         {
-            label: "Pending Services",
-            value: pendingServices.length,
-            hint: inProgressServices.length ? `${inProgressServices.length} in progress` : "Awaiting dispatch",
+            label: "Occupied Units",
+            value: stats.occupiedUnits,
+            hint: "Currently leased",
         },
         {
-            label: "Collected Revenue",
-            value: `$${totalCollected.toLocaleString()}`,
-            hint: "Paid invoices to date",
+            label: "Vacant Units",
+            value: stats.vacantUnits,
+            hint: "Ready for occupancy",
         },
-    ];
-
-    const summaryCards = [
-        { 
-            label: "Total Properties", 
-            value: properties.length, 
-            color: "bg-primary-100", 
-            icon: <FaBuilding className="w-5 h-5 text-primary-700" /> 
+        {
+            label: "Occupancy Rate",
+            value: `${stats.occupancyRate}%`,
+            hint: `${stats.occupiedUnits} of ${stats.totalUnits} units`,
         },
-        { 
-            label: "Occupied Units", 
-            value: occupiedCount, 
-            color: "bg-blue-100", 
-            icon: <FiUsers className="w-5 h-5 text-blue-700" /> 
+        {
+            label: "Total Listings",
+            value: stats.totalListings,
+            hint: "Across portfolio",
         },
-        { 
-            label: "Active Leases", 
-            value: activeLeases.length, 
-            color: "bg-amber-100", 
-            icon: <FaFileContract className="w-5 h-5 text-amber-700" /> 
+        {
+            label: "Active Bookings",
+            value: stats.activeBookings,
+            hint: "Ongoing & upcoming",
         },
-        { 
-            label: "Pending Services", 
-            value: pendingServices.length, 
-            color: "bg-secondary-100", 
-            icon: <FaWrench className="w-5 h-5 text-secondary-700" /> 
-        },
-        { 
-            label: "Collected", 
-            value: `$${totalCollected.toLocaleString()}`, 
-            color: "bg-green-100", 
-            icon: <FaMoneyBillWave className="w-5 h-5 text-green-700" /> 
+        {
+            label: "Open Maintenance",
+            value: stats.openMaintenance,
+            hint: "Pending resolution",
         },
     ];
 
@@ -142,22 +151,7 @@ export default async function Page() {
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Link
-                                href="/dashboard/property-manager/services"
-                                className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-                            >
-                                <Wrench className="h-4 w-4" aria-hidden="true" />
-                                Manage services
-                            </Link>
-                            <Link
-                                href="/property-manager/invite-staff"
-                                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-                            >
-                                <Plus className="h-4 w-4" aria-hidden="true" />
-                                Invite staff
-                            </Link>
-                        </div>
+                        
                     </div>
 
                     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -180,10 +174,48 @@ export default async function Page() {
                             </div>
                         ))}
                     </dl>
+
+                      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+                            <Link
+                                href="/dashboard/property-manager/services"
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                            >
+                                <Wrench className="h-4 w-4" aria-hidden="true" />
+                                Manage services
+                            </Link>
+                            <Link
+                                href="/property-manager/invite-staff"
+                                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+                            >
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                Invite staff
+                            </Link>
+                        </div>
                 </div>
             </section>
 
-            <SummaryCards cards={summaryCards} title="Overview" />
+            <DashboardSummaryOverview
+                stats={stats}
+                variant="manager"
+                title="Portfolio Overview"
+            />
+
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                <UnitsOccupancySummary
+                    stats={stats}
+                    propertiesHref="/dashboard/property-manager/properties"
+                />
+                <ListingsMaintenanceSummary
+                    stats={stats}
+                    listingsHref={
+                        organizationId
+                            ? `/listings?organizationId=${encodeURIComponent(organizationId)}`
+                            : "/listings"
+                    }
+                    bookingsHref="/dashboard/property-manager/bookings"
+                    servicesHref="/dashboard/property-manager/services"
+                />
+            </div>
 
             <div className="flex flex-col gap-8">
                 <DashboardGridItem title="Recent Properties" viewAllLink="/dashboard/property-manager/properties">

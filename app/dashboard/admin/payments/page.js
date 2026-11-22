@@ -66,18 +66,7 @@ export default async function Page() {
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Link
-                                href="/dashboard/admin/payments/webhooks"
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12px] font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-                            >
-                                <Webhook className="h-3.5 w-3.5" />
-                                Nomba webhooks
-                            </Link>
-
-                            {/* Record payment (NEW) */}
-                            <RecordPaymentModal />
-                        </div>
+                        
                     </div>
 
                     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -100,6 +89,19 @@ export default async function Page() {
                             </div>
                         ))}
                     </dl>
+
+                      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+                            <Link
+                                href="/dashboard/admin/payments/webhooks"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12px] font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                            >
+                                <Webhook className="h-3.5 w-3.5" />
+                                Nomba webhooks
+                            </Link>
+
+                            {/* Record payment (NEW) */}
+                            <RecordPaymentModal />
+                        </div>
                 </div>
             </section>
 

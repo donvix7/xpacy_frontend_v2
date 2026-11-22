@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
@@ -430,6 +430,20 @@ export function AddOwnerButton({
 
     const owners = Array.isArray(availableOwners) ? availableOwners : [];
 
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const params = new URLSearchParams(window.location.search);
+        const preselectId = params.get("assignOwnerId");
+        if (preselectId) {
+            setOwnerProfileId(preselectId);
+            setOpen(true);
+            params.delete("assignOwnerId");
+            const nextQuery = params.toString();
+            const cleanUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
+            window.history.replaceState(null, "", cleanUrl);
+        }
+    }, []);
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!ownerProfileId.trim()) {
@@ -531,6 +545,16 @@ export function AddOwnerButton({
                                         className="w-full rounded-lg border border-line bg-card px-3.5 py-2.5 text-xs text-ink focus:border-primary focus:outline-none"
                                     >
                                         <option value="">Choose an owner...</option>
+                                        {ownerProfileId &&
+                                            !owners.some(
+                                                (o) =>
+                                                    String(o?.id || o?._id || "") ===
+                                                    String(ownerProfileId)
+                                            ) && (
+                                                <option value={ownerProfileId}>
+                                                    Newly created owner profile
+                                                </option>
+                                            )}
                                         {owners.map((o, idx) => {
                                             const oid = String(o?.id || o?._id || "");
                                             const email = o?.email || o?.user?.email || "";

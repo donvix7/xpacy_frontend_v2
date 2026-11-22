@@ -239,25 +239,13 @@ export default function PropertiesTableList({ properties, bookings = [], paginat
         );
     };
 
-    const headerActions = recent ? (
-        <Link href={baseUrl} className="text-sm text-primary hover:underline font-medium shrink-0 whitespace-nowrap">
-            View All
-        </Link>
-    ) : (
-        <div className="flex items-center gap-4 shrink-0">
-            <Suspense fallback={<div className="h-10 w-48" />}><SearchInput /></Suspense>
-            <Suspense fallback={<div className="h-10 w-32" />}><DashboardFilter /></Suspense>
-        </div>
-    );
 
     return (
         <DataTable
-            title="Property Overview"
             headers={tableHeadings}
             data={displayProperties}
             renderRow={renderRow}
             renderMobileCard={renderMobileCard}
-            headerActions={headerActions}
             showPagination={!recent}
             pagination={pagination}
         />
