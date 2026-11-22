@@ -16,6 +16,7 @@ import {
     MapPin,
     Hash,
     CalendarCheck,
+    Pencil,
 } from "lucide-react";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
@@ -142,7 +143,7 @@ export default async function ViewLeaseDetailsPage({ params }) {
                 </Link>
                 <div className="rounded-xl border border-gray-100 bg-white p-10 text-center">
                     <EmptyState
-                        icon={FileText}
+                        icon={<FileText className="h-8 w-8 text-primary" />}
                         title="Lease not found"
                         message="This lease agreement may have expired, been removed, or the link is incorrect."
                     />
@@ -196,7 +197,18 @@ export default async function ViewLeaseDetailsPage({ params }) {
                 tagline="Lease Agreement"
                 title={leaseNumber}
                 description={`Lease agreement for ${unitNumber} · ${propertyName}`}
-                actions={<StatusChips status={status} />}
+                actions={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <StatusChips status={status} />
+                        <Link
+                            href={`/admin/add-new-lease?leaseId=${encodeURIComponent(lease.id || lease._id || leaseId)}&propertyId=${encodeURIComponent(id)}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-white/95 px-3.5 py-2 text-xs font-semibold text-side transition-colors hover:bg-white"
+                        >
+                            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                            Edit Lease
+                        </Link>
+                    </div>
+                }
                 stats={[
                     { label: "Rent Amount", value: rent, hint: `${billingCycle} cycle` },
                     { label: "Security Deposit", value: deposit, hint: "Held deposit" },

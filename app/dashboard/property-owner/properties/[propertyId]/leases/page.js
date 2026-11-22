@@ -214,8 +214,8 @@ export default async function PropertyLeasesPage({ params }) {
                 {list.length === 0 ? (
                     <EmptyState
                         message="No leases found for this property."
-                        cta="Back to property"
-                        link={baseHref}
+                        cta="New lease"
+                        link={`/admin/add-new-lease?propertyId=${encodeURIComponent(propertyId)}`}
                     />
                 ) : (
                     <DataTable

@@ -71,7 +71,7 @@ const summaryCards = [
             <div className="flex items-center justify-between">
             <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize">Leases</p>
              <Link
-        href="/dashboard/property-manager/leases/create"
+        href="/admin/add-new-lease"
         className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-600 transition-colors font-medium"
       >
         + Create Lease

@@ -2118,91 +2118,320 @@ const response = await safeFetch(`https://services.xpacy.com/api/v1/expenses/${i
 
 /////////////////////////////////////*LEASES*/////////////////////////////////////////////////
 
-export async function createLease(data,organizationId){
+export async function createLease(data, organizationId = null, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const payload = {
-  "tenantProfileId": data.tenantProfileId,
-  "unitId": data.unitId,
-  "startDate": data.startDate,
-  "endDate": data.endDate,
-  "rentAmount": data.rentAmount,
-  "billingCycle": data.billingCycle,
-  "securityDeposit": data.securityDeposit,
-  "renewalDate": data.renewalDate,
-  "terms": data.terms
-}
-
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/leases?organizationId=${organizationId}
-`,{
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
-}
-
-export async function updateLease(data,id,organizationId){
-
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const payload = {
-  "startDate": data.startDate,
-  "endDate": data.endDate,
-  "rentAmount": data.rentAmount,
-  "billingCycle": data.billingCycle,
-  "securityDeposit": data.securityDeposit,
-  "renewalDate": data.renewalDate,
-  "terms": data.terms,
-  "status": data.status
-}
-
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/leases/${id}
-
-`,{
-  method: "PATCH",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  return response.json(); 
-}
-
-export async function activateLease(id,organizationId){
-  
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/leases/${id}/activate?organizationId=${organizationId}
-
-`,{
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to create a lease.",
+        status: 401,
+      };
     }
-  });
-  return response.json(); 
+
+    const cookieOrgId =
+      cookieStore.get("organizationId")?.value ||
+      cookieStore.get("organization_id")?.value ||
+      "";
+    const resolvedOrgId = String(
+      organizationId || data?.organizationId || cookieOrgId || ""
+    ).trim();
+
+    const tenantProfileId = String(data?.tenantProfileId || "").trim();
+    const unitId = String(data?.unitId || "").trim();
+
+    if (!tenantProfileId || !unitId) {
+      return {
+        success: false,
+        message: !unitId
+          ? "Please select a unit for this lease."
+          : "Please select a tenant for this lease.",
+        status: 400,
+      };
+    }
+
+    const payload = {
+      tenantProfileId,
+      unitId,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      rentAmount: Number(data.rentAmount),
+      billingCycle: data.billingCycle || "MONTHLY",
+      securityDeposit:
+        data.securityDeposit !== "" && data.securityDeposit != null
+          ? Number(data.securityDeposit)
+          : 0,
+      ...(data.renewalDate ? { renewalDate: data.renewalDate } : {}),
+      ...(data.terms?.trim() ? { terms: data.terms.trim() } : {}),
+    };
+
+    const query = resolvedOrgId
+      ? `?organizationId=${encodeURIComponent(resolvedOrgId)}`
+      : "";
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/leases${query}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("createLease failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to create lease (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/leases`);
+    }
+    revalidatePath("/dashboard/property-manager/leases");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Lease created successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to create lease.",
+    };
+  }
 }
 
-export async function terminateLease(id,organizationId){
-  
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/leases/${id}/terminate
-`,{
-  method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token?.value}`,
-      "Content-Type": "application/json"
+export async function updateLease(data, id, organizationId = null, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to update this lease.",
+        status: 401,
+      };
     }
-  });
-  return response.json(); 
+
+    const payload = {
+      ...(data.startDate ? { startDate: data.startDate } : {}),
+      ...(data.endDate ? { endDate: data.endDate } : {}),
+      ...(data.rentAmount !== "" && data.rentAmount != null
+        ? { rentAmount: Number(data.rentAmount) }
+        : {}),
+      ...(data.billingCycle ? { billingCycle: data.billingCycle } : {}),
+      ...(data.securityDeposit !== "" && data.securityDeposit != null
+        ? { securityDeposit: Number(data.securityDeposit) }
+        : {}),
+      ...(data.renewalDate ? { renewalDate: data.renewalDate } : {}),
+      ...(data.terms?.trim() ? { terms: data.terms.trim() } : {}),
+      ...(data.status ? { status: data.status } : {}),
+    };
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/leases/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("updateLease failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to update lease (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}`);
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/leases`);
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/leases/${id}`
+      );
+    }
+    revalidatePath("/dashboard/property-manager/leases");
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Lease updated successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to update lease.",
+    };
+  }
+}
+
+export async function activateLease(id, organizationId = null, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+    const cookieOrgId =
+      cookieStore.get("organizationId")?.value ||
+      cookieStore.get("organization_id")?.value ||
+      "";
+    const resolvedOrgId = String(organizationId || cookieOrgId || "").trim();
+    const query = resolvedOrgId
+      ? `?organizationId=${encodeURIComponent(resolvedOrgId)}`
+      : "";
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/leases/${encodeURIComponent(id)}/activate${query}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({}),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: Array.isArray(resData?.message)
+          ? resData.message.join(", ")
+          : resData?.message || `Failed to activate lease (${response.status}).`,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/leases`);
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/leases/${id}`
+      );
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Lease activated successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to activate lease.",
+    };
+  }
+}
+
+export async function terminateLease(id, organizationId = null, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/leases/${encodeURIComponent(id)}/terminate`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({}),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: Array.isArray(resData?.message)
+          ? resData.message.join(", ")
+          : resData?.message || `Failed to terminate lease (${response.status}).`,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(`/dashboard/property-owner/properties/${propertyId}/leases`);
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/leases/${id}`
+      );
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Lease terminated successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to terminate lease.",
+    };
+  }
 }
 
 /////////////////////////////////////*TENANTS*/////////////////////////////////////////////////
