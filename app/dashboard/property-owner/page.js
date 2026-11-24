@@ -186,6 +186,9 @@ export default async function Page() {
           </dl>
 
                 <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+              {canShareOrganizationListings && (
+                <ShareOrganizationListings organizationId={organizationId} variant="hero" />
+              )}
               <Link
                 href="/dashboard/property-owner/properties"
                 className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
@@ -199,9 +202,6 @@ export default async function Page() {
       </section>
 
       {/* ---------- Existing content ---------- */}
-      {canShareOrganizationListings && (
-        <ShareOrganizationListings organizationId={organizationId} />
-      )}
 
 
       <UnitsOccupancySummary

@@ -1,14 +1,36 @@
+import { cookies } from "next/headers";
 import PropertiesTableList from "@/app/_components/PropertiesTableList";
 import {
   getManagedProperties,
   getMyProperties,
   getMyRentedProperties,
+  getOrganizationProperties,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
+
+function getPropertyOrgId(property) {
+  return String(
+    property?.organizationId ||
+      property?.organization_id ||
+      property?.organization?.id ||
+      property?.organization?._id ||
+      ""
+  ).trim();
+}
+
+function filterByOrganization(list, selectedOrgId, orgPropertyIds) {
+  if (!selectedOrgId) return list;
+  return list.filter((property) => {
+    const propOrgId = getPropertyOrgId(property);
+    if (propOrgId) return propOrgId === selectedOrgId;
+    const propId = String(property?.id || property?._id || "").trim();
+    return Boolean(propId && orgPropertyIds.has(propId));
+  });
+}
 
 function isArchivedProperty(property) {
   const status = String(
@@ -30,21 +52,48 @@ function isActiveProperty(property) {
 }
 
 export default async function Page() {
+  const cookieStore = await cookies();
+  const selectedOrgId = String(
+    cookieStore.get("organizationId")?.value ||
+      cookieStore.get("organization_id")?.value ||
+      ""
+  ).trim();
+
   const results = await Promise.allSettled([
     getMyProperties(),
     getManagedProperties(),
     getMyRentedProperties(),
+    selectedOrgId ? getOrganizationProperties(selectedOrgId) : Promise.resolve([]),
   ]);
-  const dataErrorMessages = getSettledErrorMessages(results);
+  const dataErrorMessages = getSettledErrorMessages(results.slice(0, 3));
 
   const unwrap = (result) =>
     result.status === "fulfilled" && Array.isArray(result.value)
       ? result.value
       : [];
 
-  const ownedProperties = unwrap(results[0]);
-  const managedProperties = unwrap(results[1]);
-  const rentedProperties = unwrap(results[2]);
+  const orgProperties = unwrap(results[3]);
+  const orgPropertyIds = new Set(
+    orgProperties
+      .map((p) => String(p?.id || p?._id || "").trim())
+      .filter(Boolean)
+  );
+
+  const ownedProperties = filterByOrganization(
+    unwrap(results[0]),
+    selectedOrgId,
+    orgPropertyIds
+  );
+  const managedProperties = filterByOrganization(
+    unwrap(results[1]),
+    selectedOrgId,
+    orgPropertyIds
+  );
+  const rentedProperties = filterByOrganization(
+    unwrap(results[2]),
+    selectedOrgId,
+    orgPropertyIds
+  );
 
   const activeOwnedProperties = ownedProperties.filter(isActiveProperty);
   const activeManagedProperties = managedProperties.filter(isActiveProperty);

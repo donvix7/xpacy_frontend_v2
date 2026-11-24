@@ -363,6 +363,25 @@ export default async function WalletPage() {
                                 view payout history.
                             </p>
                         </div>
+                        <div className="flex gap-2">
+                             <Link
+                                href="/dashboard/user/wallet/withdraw"
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                            >
+                                <ArrowUpRight
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                />
+                                Withdraw
+                            </Link>
+                            <Link
+                                href="/admin/fund-wallet?returnTo=/dashboard/property-owner/wallet"
+                                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+                            >
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                Fund wallet
+                            </Link>
+                            </div>
 
                         
                     </div>
@@ -388,21 +407,10 @@ export default async function WalletPage() {
 
                       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
                             <Link
-                                href="/dashboard/user/wallet/withdraw"
+                                href="/dashboard/property-owner/wallet/settings"
                                 className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
                             >
-                                <ArrowUpRight
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                />
-                                Withdraw
-                            </Link>
-                            <Link
-                                href="/dashboard/user/wallet/fund"
-                                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-                            >
-                                <Plus className="h-4 w-4" aria-hidden="true" />
-                                Fund wallet
+                               Manage Accounts & Settings
                             </Link>
                         </div>
                 </div>
@@ -420,9 +428,9 @@ export default async function WalletPage() {
                 walletId={walletId}
                 updatedAt={updatedAt}
                 virtualAccount={virtualAccount}
-                fundHref="/dashboard/user/wallet/fund"
-                withdrawHref="/dashboard/user/wallet/withdraw"
-                settingsHref="/dashboard/user/wallet/settings"
+                fundHref="/admin/fund-wallet?returnTo=/dashboard/property-owner/wallet"
+                withdrawHref="/dashboard/property-owner/wallet/withdraw"
+                settingsHref="/dashboard/property-owner/wallet/settings"
                 onSync={syncWallet}
             />
 
@@ -434,7 +442,7 @@ export default async function WalletPage() {
                         title="No transactions yet"
                         message="Your wallet activity will appear here once you make your first deposit or withdrawal."
                         cta="Fund wallet"
-                        link="/dashboard/user/wallet/fund"
+                        link="/admin/fund-wallet?returnTo=/dashboard/property-owner/wallet"
                     />
                 ) : (
                     <DataTable

@@ -1,6 +1,10 @@
+import { cookies } from "next/headers";
 import PropertiesTableList from "@/app/_components/PropertiesTableList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import { getManagedProperties } from "@/app/_lib/data-services";
+import {
+  getManagedProperties,
+  getOrganizationProperties,
+} from "@/app/_lib/data-services";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
@@ -11,15 +15,52 @@ const getStatus = (p, keys = ["availability_status", "status", "occupancy_status
   return "";
 };
 
+function getPropertyOrgId(property) {
+  return String(
+    property?.organizationId ||
+      property?.organization_id ||
+      property?.organization?.id ||
+      property?.organization?._id ||
+      ""
+  ).trim();
+}
+
 export default async function Page() {
-  const results = await Promise.allSettled([getManagedProperties(10000)]);
-  const dataErrorMessages = getSettledErrorMessages(results);
+  const cookieStore = await cookies();
+  const selectedOrgId = String(
+    cookieStore.get("organizationId")?.value ||
+      cookieStore.get("organization_id")?.value ||
+      ""
+  ).trim();
+
+  const results = await Promise.allSettled([
+    getManagedProperties(10000),
+    selectedOrgId ? getOrganizationProperties(selectedOrgId) : Promise.resolve([]),
+  ]);
+  const dataErrorMessages = getSettledErrorMessages(results.slice(0, 1));
   const response = results[0].status === "fulfilled" ? results[0].value : [];
-  const properties = Array.isArray(response?.[0])
+  const rawProperties = Array.isArray(response?.[0])
     ? response[0]
     : Array.isArray(response)
       ? response
       : [];
+  const orgProperties =
+    results[1].status === "fulfilled" && Array.isArray(results[1].value)
+      ? results[1].value
+      : [];
+  const orgPropertyIds = new Set(
+    orgProperties
+      .map((p) => String(p?.id || p?._id || "").trim())
+      .filter(Boolean)
+  );
+  const properties = selectedOrgId
+    ? rawProperties.filter((property) => {
+        const propOrgId = getPropertyOrgId(property);
+        if (propOrgId) return propOrgId === selectedOrgId;
+        const propId = String(property?.id || property?._id || "").trim();
+        return Boolean(propId && orgPropertyIds.has(propId));
+      })
+    : rawProperties;
 
   // ---- Hero stats ----------------------------------------------------------
   const occupied = properties.filter((p) =>

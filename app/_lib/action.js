@@ -2037,6 +2037,316 @@ export async function deleteDocument(id, propertyId = null) {
   }
 }
 
+export async function createMedia(data) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to add media.",
+        status: 401,
+      };
+    }
+
+    const propertyId = String(data?.propertyId || "").trim();
+    const url = String(data?.url || "").trim();
+
+    if (!propertyId) {
+      return {
+        success: false,
+        message: "Property ID is required.",
+        status: 400,
+      };
+    }
+    if (!url) {
+      return {
+        success: false,
+        message: "Media URL is required.",
+        status: 400,
+      };
+    }
+
+    const ALLOWED_MEDIA_KINDS = ["IMAGE", "VIDEO", "FLOOR_PLAN", "DOCUMENT"];
+    const normalizedKind = String(data?.kind || "IMAGE")
+      .trim()
+      .toUpperCase();
+    const kind = ALLOWED_MEDIA_KINDS.includes(normalizedKind)
+      ? normalizedKind
+      : "IMAGE";
+
+    const caption = String(data?.caption || "").trim();
+    const fileName = String(data?.fileName || "").trim();
+    const mimeType = String(data?.mimeType || "").trim();
+    const hasFileSize =
+      data?.fileSize !== undefined &&
+      data?.fileSize !== null &&
+      data?.fileSize !== "" &&
+      Number.isFinite(Number(data.fileSize)) &&
+      Number(data.fileSize) >= 0;
+    const sortOrder =
+      data?.sortOrder !== undefined &&
+      data?.sortOrder !== null &&
+      data?.sortOrder !== "" &&
+      Number.isFinite(Number(data.sortOrder))
+        ? Number(data.sortOrder)
+        : 0;
+
+    // CreatePropertyMediaDto
+    const payload = {
+      propertyId,
+      kind,
+      url,
+      ...(caption ? { caption } : {}),
+      ...(fileName ? { fileName } : {}),
+      ...(hasFileSize ? { fileSize: Number(data.fileSize) } : {}),
+      ...(mimeType ? { mimeType } : {}),
+      sortOrder,
+    };
+
+    const response = await safeFetch(
+      "https://services.xpacy.com/api/v1/property-media",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("createMedia failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to add media (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    revalidatePath(
+      `/dashboard/property-owner/properties/${propertyId}/media`
+    );
+    revalidatePath(
+      `/dashboard/property-manager/properties/${propertyId}/media`
+    );
+
+    return {
+      success: true,
+      data: resData?.data ?? resData?.media ?? resData,
+      message: resData?.message || "Media added successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to add media.",
+    };
+  }
+}
+
+export async function updateMedia(id, data, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to update this media item.",
+        status: 401,
+      };
+    }
+
+    const ALLOWED_MEDIA_KINDS = ["IMAGE", "VIDEO", "FLOOR_PLAN", "DOCUMENT"];
+    const normalizedKind = String(data?.kind || "")
+      .trim()
+      .toUpperCase();
+    const caption = String(data?.caption || "").trim();
+    const fileName = String(data?.fileName || "").trim();
+    const mimeType = String(data?.mimeType || "").trim();
+    const url = String(data?.url || "").trim();
+    const hasFileSize =
+      data?.fileSize !== undefined &&
+      data?.fileSize !== null &&
+      data?.fileSize !== "" &&
+      Number.isFinite(Number(data.fileSize)) &&
+      Number(data.fileSize) >= 0;
+    const hasSortOrder =
+      data?.sortOrder !== undefined &&
+      data?.sortOrder !== null &&
+      data?.sortOrder !== "" &&
+      Number.isFinite(Number(data.sortOrder));
+
+    const resolvedPropertyId = String(
+      data?.propertyId || propertyId || ""
+    ).trim();
+
+    const payload = {
+      ...(ALLOWED_MEDIA_KINDS.includes(normalizedKind)
+        ? { kind: normalizedKind }
+        : {}),
+      ...(url ? { url } : {}),
+      ...(caption ? { caption } : {}),
+      ...(fileName ? { fileName } : {}),
+      ...(hasFileSize ? { fileSize: Number(data.fileSize) } : {}),
+      ...(mimeType ? { mimeType } : {}),
+      ...(hasSortOrder ? { sortOrder: Number(data.sortOrder) } : {}),
+    };
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/property-media/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("updateMedia failed:", {
+        status: response.status,
+        payload,
+        resData,
+      });
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to update media (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (resolvedPropertyId) {
+      revalidatePath(
+        `/dashboard/property-owner/properties/${resolvedPropertyId}/media`
+      );
+      revalidatePath(
+        `/dashboard/property-owner/properties/${resolvedPropertyId}/media/${id}`
+      );
+      revalidatePath(
+        `/dashboard/property-manager/properties/${resolvedPropertyId}/media`
+      );
+      revalidatePath(
+        `/dashboard/property-manager/properties/${resolvedPropertyId}/media/${id}`
+      );
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData?.media ?? resData,
+      message: resData?.message || "Media updated successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to update media.",
+    };
+  }
+}
+
+export async function deleteMedia(id, propertyId = null) {
+  try {
+    const cookieStore = await cookies();
+    const tokenVal = cookieStore.get("token")?.value;
+
+    if (!tokenVal) {
+      return {
+        success: false,
+        message: "Please log in to delete this media item.",
+        status: 401,
+      };
+    }
+
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/property-media/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenVal}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({}),
+      }
+    );
+    console.log(response)
+
+    let resData = null;
+    try {
+      resData = await response.json();
+    } catch {
+      resData = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      const errorMessage = Array.isArray(resData?.message)
+        ? resData.message.join(", ")
+        : resData?.message ||
+          resData?.error ||
+          `Failed to delete media (${response.status}).`;
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+      };
+    }
+
+    if (propertyId) {
+      revalidatePath(
+        `/dashboard/property-owner/properties/${propertyId}/media`
+      );
+      revalidatePath(
+        `/dashboard/property-manager/properties/${propertyId}/media`
+      );
+    }
+
+    return {
+      success: true,
+      data: resData?.data ?? resData,
+      message: resData?.message || "Media deleted successfully!",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Failed to delete media.",
+    };
+  }
+}
+
 /////////////////////////////////////*PROPERTIES*/////////////////////////////////////////////////
 
 
@@ -2129,7 +2439,6 @@ export async function addProperty(propertyData) {
       ...(Number.isFinite(yearBuilt) && yearBuilt > 0 ? { yearBuilt } : {}),
       ...(Number.isFinite(totalFloors) && totalFloors > 0 ? { totalFloors } : {}),
       ...(Number.isFinite(totalUnits) && totalUnits > 0 ? { totalUnits } : {}),
-      ...(ownersPayload.length > 0 ? { owners: ownersPayload } : {}),
     };
     console.log("addProperty payload:", payload);
 
@@ -2176,14 +2485,63 @@ export async function addProperty(propertyData) {
       };
     }
 
+    const createdProperty = resData?.data || resData;
+    const createdPropertyId = String(
+      createdProperty?.id || createdProperty?._id || ""
+    ).trim();
+
+    // Assign selected owners via POST /api/v1/properties/:id/owners
+    let failedOwnerAssignments = 0;
+    if (createdPropertyId && ownersPayload.length > 0) {
+      const basePct = Math.floor(100 / ownersPayload.length);
+      const remainder = 100 - basePct * ownersPayload.length;
+
+      for (let i = 0; i < ownersPayload.length; i++) {
+        const ownerProfileId = ownersPayload[i];
+        const ownershipPercentage = basePct + (i === 0 ? remainder : 0);
+        try {
+          const assignRes = await safeFetch(
+            `https://services.xpacy.com/api/v1/properties/${encodeURIComponent(createdPropertyId)}/owners`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${tokenVal}`,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                ownerProfileId,
+                ownershipPercentage,
+              }),
+            }
+          );
+          if (!assignRes.ok) {
+            failedOwnerAssignments += 1;
+            const errText = await assignRes.text().catch(() => "");
+            console.warn("addProperty owner assignment failed:", {
+              propertyId: createdPropertyId,
+              ownerProfileId,
+              status: assignRes.status,
+              body: errText,
+            });
+          }
+        } catch (assignErr) {
+          failedOwnerAssignments += 1;
+          console.warn("addProperty owner assignment error:", assignErr);
+        }
+      }
+    }
 
     revalidatePath("/dashboard/property-owner/properties");
     revalidatePath("/dashboard/property-manager/properties");
 
     return {
       success: true,
-      data: resData?.data || resData,
-      message: resData?.message || "Property created successfully!",
+      data: createdProperty,
+      message:
+        failedOwnerAssignments > 0
+          ? `Property created, but ${failedOwnerAssignments} owner assignment(s) could not be completed. You can assign owners from the property page.`
+          : resData?.message || "Property created successfully!",
     };
   } catch (error) {
     console.warn("addProperty error:", error);

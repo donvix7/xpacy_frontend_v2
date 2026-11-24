@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Autocomplete, TextField } from "@mui/material";
+import { Building2 } from "lucide-react";
 import toast from "react-hot-toast";
+import FormInput from "@/app/_components/FormInput";
+import SpinnerMini from "@/app/_components/SpinnerMini";
 import { addProperty, updateProperty } from "@/app/_lib/action";
 
 const propertyStatuses = [
@@ -45,18 +49,7 @@ const initialForm = {
 };
 
 const inputClass =
-  "w-full rounded-lg border border-primary-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:bg-gray-50 dark:border-line dark:bg-card dark:text-ink";
-
-function Field({ label, htmlFor, children }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <label htmlFor={htmlFor} className="text-sm font-medium text-gray-700 dark:text-gray-300">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
+  "rounded-lg border border-line px-4 py-3 focus:outline-none focus:border-primary bg-card text-ink";
 
 const getOwnerId = (owner) => String(owner?.id ?? owner?._id ?? "");
 
@@ -79,13 +72,18 @@ export default function CreateNewPropertyForm({
   initialData = null,
   isEditMode = false,
   returnTo = "",
-  onChange,
-  step,
-  onStepChange,
 }) {
   const router = useRouter();
   const defaultOwnerId = currentOwner ? getOwnerId(currentOwner) : "";
   const propertyId = initialData?.id || initialData?._id || "";
+
+  const normalizedRole = String(userRole || "").toLowerCase().replace(/[_-\s]+/g, "");
+  const backHref =
+    returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
+      ? returnTo
+      : normalizedRole === "propertymanager" || normalizedRole === "manager"
+        ? "/dashboard/property-manager/properties"
+        : "/dashboard/property-owner/properties";
 
   const [form, setForm] = useState(() => ({
     ...initialForm,
@@ -140,16 +138,6 @@ export default function CreateNewPropertyForm({
     }
   }, [organizationId, form.organizationId]);
 
-  // Controlled/uncontrolled step: if `step` prop is provided, use it.
-  const [localStep, setLocalStep] = useState(1);
-  const activeStep = step ?? localStep;
-  const setActiveStep = (updater) => {
-    const next =
-      typeof updater === "function" ? updater(activeStep) : updater;
-    if (onStepChange) onStepChange(next);
-    else setLocalStep(next);
-  };
-
   // Deduplicate owners by id (or email as fallback) and ensure currentOwner is included
   const uniqueOwners = useMemo(() => {
     const list = [...owners];
@@ -170,93 +158,56 @@ export default function CreateNewPropertyForm({
     });
   }, [owners, currentOwner]);
 
-  // Lookup map so we can turn selected IDs into full owner objects,
-  // preserving the order in which the user picked them.
   const ownerById = useMemo(
     () => new Map(uniqueOwners.map((owner) => [getOwnerId(owner), owner])),
-    [uniqueOwners],
+    [uniqueOwners]
   );
 
   const selectedOwnerOptions = selectedOwners
     .map((id) => ownerById.get(id))
     .filter(Boolean);
 
-  // Notify parent of preview changes.
-  useEffect(() => {
-    if (!onChange) return;
-    const ownerNames = selectedOwners
-      .map((id) => ownerById.get(id))
-      .filter(Boolean)
-      .map((o) => getOwnerName(o));
-
-    onChange({
-      title: form.name,
-      description: form.description,
-      property_type: form.propertyType,
-      city: form.city,
-      state: form.state,
-      address: form.address,
-      country: form.country,
-      owners: ownerNames,
-    });
-  }, [form, selectedOwners, onChange, ownerById]);
-
   const updateField = (event) => {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
   };
 
-  function validateStep(currentStep) {
-    if (currentStep === 1 && !String(form.organizationId || "").trim()) {
+  function validateForm() {
+    if (!String(form.organizationId || "").trim()) {
       return "Select an organization.";
     }
-    if (currentStep === 2) {
-      if (!form.name.trim()) return "Property name is required.";
-      if (!form.propertyType) return "Property type is required.";
-    }
-    if (currentStep === 3) {
-      if (!form.address.trim()) return "Address is required.";
-      if (!form.city.trim()) return "City is required.";
-      if (!form.state.trim()) return "State / Province is required.";
-      if (!form.country.trim()) return "Country is required.";
-      if (form.latitude !== "") {
-        const lat = Number(form.latitude);
-        if (Number.isNaN(lat) || lat < -90 || lat > 90) {
-          return "Latitude must be between -90 and 90 (e.g. 6.5244).";
-        }
+    if (!form.name.trim()) return "Property name is required.";
+    if (!form.propertyType) return "Property type is required.";
+    if (!form.address.trim()) return "Address is required.";
+    if (!form.city.trim()) return "City is required.";
+    if (!form.state.trim()) return "State / Province is required.";
+    if (!form.country.trim()) return "Country is required.";
+
+    if (form.latitude !== "") {
+      const lat = Number(form.latitude);
+      if (Number.isNaN(lat) || lat < -90 || lat > 90) {
+        return "Latitude must be between -90 and 90 (e.g. 6.5244).";
       }
-      if (form.longitude !== "") {
-        const lng = Number(form.longitude);
-        if (Number.isNaN(lng) || lng < -180 || lng > 180) {
-          return "Longitude must be between -180 and 180 (e.g. 3.3792).";
-        }
+    }
+    if (form.longitude !== "") {
+      const lng = Number(form.longitude);
+      if (Number.isNaN(lng) || lng < -180 || lng > 180) {
+        return "Longitude must be between -180 and 180 (e.g. 3.3792).";
       }
     }
     return null;
   }
 
-  function goToNextStep() {
-    const error = validateStep(activeStep);
-    if (error) {
-      toast.error(error);
-      return;
-    }
-    setActiveStep((s) => Math.min(s + 1, 3));
-  }
-
   async function handleSubmit(event) {
     event?.preventDefault?.();
+    if (isSubmitting) return;
 
-    // Prioritize the current step, then check the rest.
-    const error =
-      validateStep(activeStep) || [1, 2, 3].map(validateStep).find(Boolean);
-
+    const error = validateForm();
     if (error) {
       toast.error(error);
       return;
     }
 
-    // CreatePropertyDto expects owners: [string] (array of owner IDs)
     const ownersPayload = selectedOwners
       .map((id) => String(id).trim())
       .filter(Boolean);
@@ -318,8 +269,6 @@ export default function CreateNewPropertyForm({
             : "Property created successfully!")
       );
 
-      const normalizedRole = String(userRole || "").toLowerCase().replace(/[_-\s]+/g, "");
-
       if (isEditMode) {
         router.refresh();
         const redirectPath =
@@ -335,21 +284,14 @@ export default function CreateNewPropertyForm({
 
       setForm({ ...initialForm, organizationId });
       setSelectedOwners(defaultOwnerId ? [defaultOwnerId] : []);
-      setActiveStep(1);
-
-      // Redirect to owner properties dashboard after brief delay so user can see toast
-      const redirectPath =
-        returnTo ||
-        (normalizedRole === "propertymanager" || normalizedRole === "manager"
-          ? "/dashboard/property-manager/properties"
-          : "/dashboard/property-owner/properties");
+      router.refresh();
 
       setTimeout(() => {
-        router.push(redirectPath);
-      }, 1000);
-    } catch (error) {
+        router.push(backHref);
+      }, 600);
+    } catch (err) {
       toast.error(
-        error?.message ||
+        err?.message ||
           (isEditMode
             ? "Could not update the property."
             : "Could not create the property.")
@@ -361,333 +303,322 @@ export default function CreateNewPropertyForm({
 
   return (
     <form
-      onSubmit={(e) => e.preventDefault()}
-      className="flex w-full flex-col"
+      onSubmit={handleSubmit}
+      className="p-6 sm:p-8 flex flex-col gap-8 rounded-2xl border border-line bg-card shadow-sm"
     >
-      <div className="grid gap-5 md:grid-cols-2">
-        {activeStep === 1 && (
-          <div className="md:col-span-2">
-            <Field label="Owners (optional)" htmlFor="owners">
-              <Autocomplete
-                id="owners"
-                multiple
-                options={uniqueOwners}
-                value={selectedOwnerOptions}
-                onChange={(_, selected) =>
-                  setSelectedOwners(selected.map((owner) => getOwnerId(owner)))
-                }
-                getOptionLabel={getOwnerName}
-                getOptionKey={(option) =>
-                  getOwnerId(option) || option?.email || ""
-                }
-                isOptionEqualToValue={(option, value) =>
-                  getOwnerId(option) === getOwnerId(value)
-                }
-                renderInput={(autocompleteParams) => (
-                  <TextField
-                    {...autocompleteParams}
-                    placeholder="Search owner by name or email"
-                  />
-                )}
-                sx={{
-                  width: "100%",
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "8px",
-                    fontFamily: "inherit",
-                  },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--line, #DADADA)",
-                  },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--primary, #477899)",
-                  },
-                }}
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-mute">
-                Search and select one or more property owners. The first owner is primary.
-              </p>
-            </Field>
-          </div>
-        )}
+      {/* Property Details */}
+      <div className="flex flex-col gap-6">
+        <p className="text-base font-semibold text-ink border-b border-line pb-3">
+          Property Details
+        </p>
 
-        {activeStep === 2 && (
-          <>
-            <div className="md:col-span-2">
-              <Field label="Property name *" htmlFor="name">
-                <input
-                  id="name"
-                  name="name"
-                  value={form.name}
-                  onChange={updateField}
-                  className={inputClass}
-                  placeholder="Sunrise Apartments"
-                  required
-                />
-              </Field>
-            </div>
+        <FormInput label="Property Name *" id="name">
+          <input
+            id="name"
+            name="name"
+            type="text"
+            value={form.name}
+            onChange={updateField}
+            className={inputClass}
+            placeholder="e.g. Sunrise Apartments"
+            required
+          />
+        </FormInput>
 
-            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Property type *" htmlFor="propertyType">
-                <select
-                  id="propertyType"
-                  name="propertyType"
-                  value={form.propertyType}
-                  onChange={updateField}
-                  className={inputClass}
-                  required
-                >
-                  {propertyTypes.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <FormInput label="Property Type *" id="propertyType">
+            <select
+              id="propertyType"
+              name="propertyType"
+              value={form.propertyType}
+              onChange={updateField}
+              className={inputClass}
+              required
+            >
+              {propertyTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </FormInput>
 
-              {organizations.length > 0 && (
-                <Field label="Organization" htmlFor="organizationId">
-                  <select
-                    id="organizationId"
-                    name="organizationId"
-                    value={form.organizationId}
-                    onChange={updateField}
-                    className={inputClass}
-                  >
-                    <option value="">Personal (No organization)</option>
-                    {organizations.map((org) => (
-                      <option key={org.id} value={org.id}>
-                        {org.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              )}
-            </div>
-
-            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="Year built" htmlFor="yearBuilt">
-                <input
-                  id="yearBuilt"
-                  name="yearBuilt"
-                  type="number"
-                  min="1800"
-                  max={new Date().getFullYear() + 5}
-                  value={form.yearBuilt}
-                  onChange={updateField}
-                  className={inputClass}
-                  placeholder={String(new Date().getFullYear())}
-                />
-              </Field>
-              <Field label="Total floors" htmlFor="totalFloors">
-                <input
-                  id="totalFloors"
-                  name="totalFloors"
-                  type="number"
-                  min="1"
-                  value={form.totalFloors}
-                  onChange={updateField}
-                  className={inputClass}
-                  placeholder="1"
-                />
-              </Field>
-              <Field label="Total units" htmlFor="totalUnits">
-                <input
-                  id="totalUnits"
-                  name="totalUnits"
-                  type="number"
-                  min="1"
-                  value={form.totalUnits}
-                  onChange={updateField}
-                  className={inputClass}
-                  placeholder="1"
-                />
-              </Field>
-            </div>
-
-            {isEditMode && (
-              <div className="md:col-span-2">
-                <Field label="Property status" htmlFor="status">
-                  <select
-                    id="status"
-                    name="status"
-                    value={form.status}
-                    onChange={updateField}
-                    className={inputClass}
-                  >
-                    {propertyStatuses.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-            )}
-
-            <div className="md:col-span-2">
-              <Field label="Description" htmlFor="description">
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={4}
-                  value={form.description}
-                  onChange={updateField}
-                  className={`${inputClass} resize-y`}
-                  placeholder="Describe the property"
-                />
-              </Field>
-            </div>
-          </>
-        )}
-
-        {activeStep === 3 && (
-          <>
-            <div className="md:col-span-2">
-              <Field label="Address *" htmlFor="address">
-                <input
-                  id="address"
-                  name="address"
-                  value={form.address}
-                  onChange={updateField}
-                  className={inputClass}
-                  placeholder="123 Main Street"
-                  required
-                />
-              </Field>
-            </div>
-            <Field label="City *" htmlFor="city">
-              <input
-                id="city"
-                name="city"
-                value={form.city}
-                onChange={updateField}
-                className={inputClass}
-                placeholder="Lagos"
-                required
-              />
-            </Field>
-            <Field label="State / Province *" htmlFor="state">
-              <input
-                id="state"
-                name="state"
-                value={form.state}
-                onChange={updateField}
-                className={inputClass}
-                placeholder="Lagos"
-                required
-              />
-            </Field>
-            <Field label="Country *" htmlFor="country">
-              <input
-                id="country"
-                name="country"
-                value={form.country}
+          {organizations.length > 0 && (
+            <FormInput label="Organization *" id="organizationId">
+              <select
+                id="organizationId"
+                name="organizationId"
+                value={form.organizationId}
                 onChange={updateField}
                 className={inputClass}
                 required
-              />
-            </Field>
-            <Field label="Postal code" htmlFor="postalCode">
-              <input
-                id="postalCode"
-                name="postalCode"
-                value={form.postalCode}
-                onChange={updateField}
-                className={inputClass}
-                placeholder="Postal code"
-              />
-            </Field>
-            <Field label="Latitude (-90 to 90)" htmlFor="latitude">
-              <input
-                id="latitude"
-                name="latitude"
-                type="number"
-                step="any"
-                min="-90"
-                max="90"
-                value={form.latitude}
-                onChange={updateField}
-                className={inputClass}
-                placeholder="e.g. 6.5244"
-              />
-            </Field>
-            <Field label="Longitude (-180 to 180)" htmlFor="longitude">
-              <input
-                id="longitude"
-                name="longitude"
-                type="number"
-                step="any"
-                min="-180"
-                max="180"
-                value={form.longitude}
-                onChange={updateField}
-                className={inputClass}
-                placeholder="e.g. 3.3792"
-              />
-            </Field>
-          </>
-        )}
-      </div>
-
-      <div className="mt-8 flex justify-between border-t border-gray-100 pt-5 dark:border-line">
-        {activeStep > 1 ? (
-          <button
-            type="button"
-            onClick={() => setActiveStep((s) => Math.max(s - 1, 1))}
-            className="rounded-lg border border-primary px-5 py-2.5 text-sm font-semibold text-primary transition hover:bg-primary/5"
-          >
-            Previous
-          </button>
-        ) : (
-          <span />
-        )}
-
-        <div className="flex items-center gap-3">
-          {isEditMode && activeStep < 3 && (
-            <button
-              key="save-changes-inline-btn"
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmitting ? "Saving changes..." : "Save changes"}
-            </button>
-          )}
-
-          {activeStep < 3 && (
-            <button
-              key="next-step-btn"
-              type="button"
-              onClick={goToNextStep}
-              className={`rounded-lg px-6 py-2.5 text-sm font-semibold transition cursor-pointer ${
-                isEditMode
-                  ? "border border-primary text-primary hover:bg-primary/5"
-                  : "bg-primary text-white shadow-sm hover:bg-primary/90"
-              }`}
-            >
-              Next step
-            </button>
-          )}
-
-          {activeStep === 3 && (
-            <button
-              key="publish-property-btn"
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmitting
-                ? isEditMode
-                  ? "Saving changes..."
-                  : "Creating property..."
-                : isEditMode
-                  ? "Save changes"
-                  : "Publish property"}
-            </button>
+              >
+                <option value="">Select an organization</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+            </FormInput>
           )}
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <FormInput label="Year Built" id="yearBuilt">
+            <input
+              id="yearBuilt"
+              name="yearBuilt"
+              type="number"
+              min="1800"
+              max={new Date().getFullYear() + 5}
+              value={form.yearBuilt}
+              onChange={updateField}
+              className={inputClass}
+              placeholder={String(new Date().getFullYear())}
+            />
+          </FormInput>
+
+          <FormInput label="Total Floors" id="totalFloors">
+            <input
+              id="totalFloors"
+              name="totalFloors"
+              type="number"
+              min="1"
+              value={form.totalFloors}
+              onChange={updateField}
+              className={inputClass}
+              placeholder="1"
+            />
+          </FormInput>
+
+          <FormInput label="Total Units" id="totalUnits">
+            <input
+              id="totalUnits"
+              name="totalUnits"
+              type="number"
+              min="1"
+              value={form.totalUnits}
+              onChange={updateField}
+              className={inputClass}
+              placeholder="1"
+            />
+          </FormInput>
+        </div>
+
+        {isEditMode && (
+          <FormInput label="Property Status" id="status">
+            <select
+              id="status"
+              name="status"
+              value={form.status}
+              onChange={updateField}
+              className={inputClass}
+            >
+              {propertyStatuses.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </FormInput>
+        )}
+
+        <FormInput label="Description" id="description">
+          <textarea
+            id="description"
+            name="description"
+            rows={4}
+            value={form.description}
+            onChange={updateField}
+            className={`${inputClass} resize-y`}
+            placeholder="Describe the property, amenities, and key features"
+          />
+        </FormInput>
+      </div>
+
+      {/* Location */}
+      <div className="flex flex-col gap-6">
+        <p className="text-base font-semibold text-ink border-b border-line pb-3">
+          Location
+        </p>
+
+        <FormInput label="Address *" id="address">
+          <input
+            id="address"
+            name="address"
+            type="text"
+            value={form.address}
+            onChange={updateField}
+            className={inputClass}
+            placeholder="e.g. 123 Main Street"
+            required
+          />
+        </FormInput>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <FormInput label="City *" id="city">
+            <input
+              id="city"
+              name="city"
+              type="text"
+              value={form.city}
+              onChange={updateField}
+              className={inputClass}
+              placeholder="e.g. Lagos"
+              required
+            />
+          </FormInput>
+
+          <FormInput label="State / Province *" id="state">
+            <input
+              id="state"
+              name="state"
+              type="text"
+              value={form.state}
+              onChange={updateField}
+              className={inputClass}
+              placeholder="e.g. Lagos"
+              required
+            />
+          </FormInput>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <FormInput label="Country *" id="country">
+            <input
+              id="country"
+              name="country"
+              type="text"
+              value={form.country}
+              onChange={updateField}
+              className={inputClass}
+              required
+            />
+          </FormInput>
+
+          <FormInput label="Postal Code" id="postalCode">
+            <input
+              id="postalCode"
+              name="postalCode"
+              type="text"
+              value={form.postalCode}
+              onChange={updateField}
+              className={inputClass}
+              placeholder="e.g. 100001"
+            />
+          </FormInput>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <FormInput label="Latitude (-90 to 90)" id="latitude">
+            <input
+              id="latitude"
+              name="latitude"
+              type="number"
+              step="any"
+              min="-90"
+              max="90"
+              value={form.latitude}
+              onChange={updateField}
+              className={inputClass}
+              placeholder="e.g. 6.5244"
+            />
+          </FormInput>
+
+          <FormInput label="Longitude (-180 to 180)" id="longitude">
+            <input
+              id="longitude"
+              name="longitude"
+              type="number"
+              step="any"
+              min="-180"
+              max="180"
+              value={form.longitude}
+              onChange={updateField}
+              className={inputClass}
+              placeholder="e.g. 3.3792"
+            />
+          </FormInput>
+        </div>
+      </div>
+
+      {/* Ownership */}
+      <div className="flex flex-col gap-6">
+        <p className="text-base font-semibold text-ink border-b border-line pb-3">
+          Ownership
+        </p>
+
+        <FormInput label="Owners (Optional)" id="owners">
+          <Autocomplete
+            id="owners"
+            multiple
+            options={uniqueOwners}
+            value={selectedOwnerOptions}
+            onChange={(_, selected) =>
+              setSelectedOwners(selected.map((owner) => getOwnerId(owner)))
+            }
+            getOptionLabel={getOwnerName}
+            getOptionKey={(option) =>
+              getOwnerId(option) || option?.email || ""
+            }
+            isOptionEqualToValue={(option, value) =>
+              getOwnerId(option) === getOwnerId(value)
+            }
+            renderInput={(autocompleteParams) => (
+              <TextField
+                {...autocompleteParams}
+                placeholder="Search owner by name or email"
+              />
+            )}
+            sx={{
+              width: "100%",
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "8px",
+                fontFamily: "inherit",
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "var(--line, #DADADA)",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "var(--primary, #477899)",
+              },
+            }}
+          />
+          <span className="-mt-1 text-xs text-mute">
+            Search and select one or more property owners. The first owner is primary.
+          </span>
+        </FormInput>
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 border-t border-line pt-6">
+        <Link
+          href={backHref}
+          className="w-full sm:w-auto text-center rounded-lg border border-line px-6 py-3 font-mono text-sm font-medium text-ink hover:bg-canvas transition-colors"
+        >
+          Cancel
+        </Link>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3 font-mono text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60 transition-colors cursor-pointer"
+        >
+          {isSubmitting ? (
+            <SpinnerMini />
+          ) : (
+            <Building2 className="h-4 w-4" aria-hidden="true" />
+          )}
+          <span>
+            {isSubmitting
+              ? isEditMode
+                ? "Saving..."
+                : "Creating..."
+              : isEditMode
+                ? "Save Changes"
+                : "Create Property"}
+          </span>
+        </button>
       </div>
     </form>
   );

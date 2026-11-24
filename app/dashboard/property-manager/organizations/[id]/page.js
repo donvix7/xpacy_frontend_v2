@@ -77,7 +77,6 @@ function buildDetailRows(org) {
 
     return [
         { label: "Organization Name", value: org.name, icon: Building2 },
-        { label: "Slug", value: org.slug, icon: Link2, copyValue: org.slug, mono: true },
         {
             label: "Email",
             value: org.email,
@@ -98,7 +97,6 @@ function buildDetailRows(org) {
         { label: "State / Province", value: org.state || org.province, icon: MapPin },
         { label: "Country", value: org.country, icon: Flag },
         { label: "Timezone", value: org.timezone, icon: Clock },
-        { label: "Currency", value: org.currency, icon: DollarSign, mono: true },
         {
             label: "Website",
             value: org.website,
@@ -212,21 +210,15 @@ export default async function PropertyManagerOrganizationDetailPage({ params }) 
 
     const results = await Promise.allSettled([
         getOrganizationById(orgId),
-        getOrganizationProperties(orgId),
         getOrganizationMembers(orgId),
     ]);
     const dataErrorMessages = getSettledErrorMessages(results);
 
     const result = results[0].status === "fulfilled" ? results[0].value : null;
-    const organizationProperties = results[1].status === "fulfilled" ? results[1].value : [];
-    const members = results[2].status === "fulfilled" ? results[2].value : [];
-
+    const members = results[1].status === "fulfilled" ? results[1].value : [];
     const organization = result?.organization || result;
     const memberList = Array.isArray(members) ? members : [];
-    const propertiesList = Array.isArray(organizationProperties)
-        ? organizationProperties
-        : [];
-
+    console.log(result)
     if (!organization || typeof organization !== "object" || Array.isArray(organization)) {
         return (
             <div className="space-y-6 p-2 sm:p-4">
@@ -264,12 +256,12 @@ export default async function PropertyManagerOrganizationDetailPage({ params }) 
     const heroStats = [
         {
             label: "Properties",
-            value: propertiesList.length,
-            hint: "Managed properties",
+            value: result._count.properties,
+            hint: "Active team size",
         },
         {
             label: "Members",
-            value: totalMembers,
+            value: result._count.memberships,
             hint: "Active team size",
         },
         {
@@ -395,77 +387,7 @@ export default async function PropertyManagerOrganizationDetailPage({ params }) 
                 />
             </DashboardGridItem>
 
-            {/* ---------- Properties ---------- */}
-            <DashboardGridItem title="Properties">
-                {propertiesList.length === 0 ? (
-                    <EmptyState
-                        icon={<Building2 className="h-10 w-10 text-primary" aria-hidden="true" />}
-                        title="No properties"
-                        message={`No properties found for ${organization.name || "this organization"}.`}
-                    />
-                ) : (
-                    <DataTable
-                        data={propertiesList}
-                        showPagination={propertiesList.length > 10}
-                        pageSize={10}
-                        className="p-0 border-none shadow-none"
-                        rowKey={(property, index) => property.id ?? property._id ?? index}
-                        columns={[
-                            {
-                                heading: "Property",
-                                render: (property) => (
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-soft text-ink">
-                                            <Building2 className="h-4 w-4" />
-                                        </div>
-                                        <p className="font-medium text-ink">
-                                            {property.name || property.title || "Untitled Property"}
-                                        </p>
-                                    </div>
-                                ),
-                            },
-                            {
-                                heading: "Location",
-                                className: "text-xs text-mute",
-                                render: (property) => (
-                                    <span className="inline-flex items-start gap-1.5">
-                                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                                        {[property.address, property.city, property.state, property.country]
-                                            .filter(Boolean)
-                                            .join(", ") || "—"}
-                                    </span>
-                                ),
-                            },
-                            {
-                                heading: "Status",
-                                center: true,
-                                render: (property) => (
-                                    <div className="flex justify-center">
-                                        <StatusChips
-                                            status={property.status || property.availability_status || "active"}
-                                        />
-                                    </div>
-                                ),
-                            },
-                            {
-                                heading: "",
-                                align: "right",
-                                render: (property) => {
-                                    const propId = property.id ?? property._id;
-                                    return (
-                                        <Link
-                                            href={`/dashboard/property-manager/properties/${propId}`}
-                                            className="xp-btn px-3 py-1.5 font-mono text-xs"
-                                        >
-                                            View
-                                        </Link>
-                                    );
-                                },
-                            },
-                        ]}
-                    />
-                )}
-            </DashboardGridItem>
+           
 
             {/* ---------- Organization members ---------- */}
             <DashboardGridItem title="Organization members">

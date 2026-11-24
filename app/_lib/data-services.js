@@ -976,6 +976,76 @@ export async function getDocumentById(id) {
   }
 }
 
+export async function getAllMedia(options = {}) {
+  const token = await getRawToken();
+  if (!token) return [];
+  const propertyId =
+    typeof options === "string"
+      ? options.trim()
+      : String(options?.propertyId || options?.id || "").trim();
+
+  if (!propertyId) return [];
+
+  try {
+    const response = await safeFetch(
+      `${SERVICE_URL}/property-media/property/${encodeURIComponent(propertyId)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    await ensureApiSuccess(response, "getAllMedia");
+    const payload = await response.json();
+    const list =
+      [
+        payload,
+        payload?.data,
+        payload?.media,
+        payload?.items,
+        payload?.data?.media,
+        payload?.data?.items,
+        payload?.data?.data,
+      ].find(Array.isArray) || [];
+
+    return list;
+  } catch (error) {
+    throw toDataServiceError(error, "getAllMedia");
+  }
+}
+
+export async function getMediaById(id) {
+  const token = await getRawToken();
+  if (!token || !id) return null;
+  try {
+    const response = await safeFetch(
+      `${SERVICE_URL}/property-media/${encodeURIComponent(id)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    await ensureApiSuccess(response, "getMediaById");
+    const payload = await response.json();
+    return (
+      payload?.data?.media ||
+      payload?.data ||
+      payload?.media ||
+      payload ||
+      null
+    );
+  } catch (error) {
+    throw toDataServiceError(error, "getMediaById");
+  }
+}
+
 /* ----------------------------------------------------------------
  * Organizations, users, members
  * ---------------------------------------------------------------- */

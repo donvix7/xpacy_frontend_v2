@@ -10,8 +10,8 @@ import { RiUserSettingsLine } from "react-icons/ri";
 import { LuBell, LuLayoutDashboard, LuMessageCircleQuestion, LuMessageSquare, LuWrench } from "react-icons/lu";
 import { IoCalendarOutline } from "react-icons/io5";
 import { RiHome2Line, RiSearchLine, RiSettings3Line, RiPulseLine } from "react-icons/ri";
-import { Archive, Calendar1, File, MessageSquare, Settings, User, User2 } from "lucide-react";
-import { FaBroom, FaCheck, FaClipboardList, FaHandshake, FaWallet, FaWrench } from "react-icons/fa6";
+import { Archive, Calendar1, File, MessageSquare, PlayIcon, Settings, User, User2 } from "lucide-react";
+import { FaBroom, FaCheck, FaClipboardList, FaFile, FaHandshake, FaWallet, FaWrench } from "react-icons/fa6";
 import { TbBuilding, TbBuildingCommunity, TbFileText, TbHelp, TbReportAnalytics, TbSettings, TbUsers } from "react-icons/tb";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import { BsStack, BsTools } from "react-icons/bs";
@@ -174,11 +174,7 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             link: "/dashboard/property-owner/tenants",
             icon: <IoPeopleOutline className="w-5 h-5" />,
         },
-        {
-            text: "Maintenance",
-            link: "/dashboard/property-owner/maintenance",
-            icon: <FaWrench className="w-5 h-5" />,
-        },
+      
         {
             text: "Vendor",
             link: "/dashboard/property-owner/vendor",
@@ -249,6 +245,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             text: "Reports & Analytics",
             link: "/dashboard/property-owner/reports",
             icon: <MdOutlineReport className="w-5 h-5" />,
+        },
+         {
+            text: "Documents",
+            link: "/dashboard/property-owner/documents",
+            icon: <FaFile className="w-5 h-5" />,
         },
         {
             text: "Profile Settings",
@@ -460,6 +461,11 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
             text: "Community Forum",
             link: "/dashboard/property-manager/community-forum",
             icon: <LuMessageSquare className="w-5 h-5" /> // Message square represents community/forum
+        },
+        {
+            text: "Documents",
+            link: "/dashboard/property-manager/documents",
+            icon: <FaFile className="w-5 h-5" />
         },
         {
             text: "Reports & Analytics",

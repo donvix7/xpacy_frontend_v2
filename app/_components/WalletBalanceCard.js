@@ -82,7 +82,7 @@ export default function WalletBalanceCard({
     walletId = "—",
     updatedAt = null,
     virtualAccount = null,
-    fundHref = "/dashboard/user/wallet/fund",
+    fundHref = "/admin/fund-wallet",
     withdrawHref = "/dashboard/user/wallet/withdraw",
     settingsHref = "/dashboard/user/wallet/settings",
     onSync,
@@ -327,20 +327,7 @@ export default function WalletBalanceCard({
 
                         {/* Quick Action Pills */}
                         <div className="flex items-center gap-1.5 shrink-0">
-                            <Link
-                                href={fundHref}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-gray-900 px-3.5 py-2 text-[12px] font-semibold text-white shadow-md transition-all hover:bg-black hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
-                            >
-                                <Plus className="h-3.5 w-3.5" />
-                                <span>Fund</span>
-                            </Link>
-                            <Link
-                                href={withdrawHref}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300/80 bg-white/70 px-3.5 py-2 text-[12px] font-semibold text-gray-800 shadow-sm transition-all hover:bg-white hover:scale-[1.02] active:scale-[0.98] dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-                            >
-                                <ArrowUpRight className="h-3.5 w-3.5" />
-                                <span>Withdraw</span>
-                            </Link>
+                          
                             <button
                                 type="button"
                                 onClick={handleSyncClick}
@@ -373,13 +360,7 @@ export default function WalletBalanceCard({
                     )}
                 </div>
 
-                <Link
-                    href={settingsHref}
-                    className="inline-flex items-center gap-1 font-medium text-white/80 transition-colors hover:text-white hover:underline"
-                >
-                    <CreditCard className="h-3.5 w-3.5" />
-                    <span>Manage Account & Settings →</span>
-                </Link>
+                
             </div>
         </section>
     );

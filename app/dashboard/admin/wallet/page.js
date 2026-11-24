@@ -398,7 +398,7 @@ export default async function WalletPage() {
                                 Withdraw
                             </Link>
                             <Link
-                                href="/dashboard/user/wallet/fund"
+                                href="/admin/fund-wallet?returnTo=/dashboard/admin/wallet"
                                 className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
                             >
                                 <Plus className="h-4 w-4" aria-hidden="true" />
@@ -419,7 +419,7 @@ export default async function WalletPage() {
                 transactionsCount={transactions.length}
                 updatedAt={updatedAt}
                 virtualAccount={virtualAccount}
-                fundHref="/dashboard/admin/wallet/fund"
+                fundHref="/admin/fund-wallet?returnTo=/dashboard/admin/wallet"
                 withdrawHref="/dashboard/admin/wallet/withdraw"
                 settingsHref="/dashboard/admin/wallet/settings"
                 onSync={syncWallet}
@@ -433,7 +433,7 @@ export default async function WalletPage() {
                         title="No transactions yet"
                         message="Your wallet activity will appear here once you make your first deposit or withdrawal."
                         cta="Fund wallet"
-                        link="/dashboard/user/wallet/fund"
+                        link="/admin/fund-wallet?returnTo=/dashboard/admin/wallet"
                     />
                 ) : (
                     <DataTable

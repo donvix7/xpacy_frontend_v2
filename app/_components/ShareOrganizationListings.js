@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Check, Copy, ExternalLink, Link2, Share2, X } from "lucide-react";
 import Modal from "./Modal";
 
-export default function ShareOrganizationListings({ organizationId, inHeader = false }) {
+export default function ShareOrganizationListings({ organizationId, inHeader = false, variant = "panel" }) {
     const [message, setMessage] = useState("");
     const [messageType, setMessageType] = useState("info"); // "success" | "error" | "info"
     const [isOpen, setIsOpen] = useState(false);
@@ -207,22 +207,33 @@ export default function ShareOrganizationListings({ organizationId, inHeader = f
     );
 
     /* ------------------------------------------------------------------ */
-    /* Header trigger + modal                                              */
+    /* Header / Hero trigger + modal                                       */
     /* ------------------------------------------------------------------ */
-    if (inHeader) {
+    const isHeroTrigger = variant === "hero";
+    if (inHeader || isHeroTrigger) {
+        const triggerClassName = isHeroTrigger
+            ? "group inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+            : "group inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary-900 px-3.5 py-2.5 font-sans text-sm font-semibold text-white transition-all hover:bg-primary-700";
+
         return (
             <>
                 <button
                     type="button"
                     onClick={() => setIsOpen(true)}
-                    className="group inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary-900 px-3.5 py-2.5 font-sans text-sm font-semibold text-white transition-all  hover:bg-primary-700 "
+                    className={triggerClassName}
                 >
                     <Share2
                         size={16}
                         className="transition-transform group-hover:rotate-12"
                     />
-                    <span className="hidden sm:inline">Share Listings</span>
-                    <span className="sm:hidden">Share</span>
+                    {isHeroTrigger ? (
+                        <span>Share Listings</span>
+                    ) : (
+                        <>
+                            <span className="hidden sm:inline">Share Listings</span>
+                            <span className="sm:hidden">Share</span>
+                        </>
+                    )}
                 </button>
 
             <Modal.Window

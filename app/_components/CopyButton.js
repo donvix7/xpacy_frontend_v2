@@ -6,6 +6,8 @@ import { Copy, Check } from "lucide-react";
 export default function CopyButton({
     value,
     label = "Copy",
+    text,
+    copiedText = "Copied!",
     className,
     iconSize = 14,
 }) {
@@ -46,6 +48,7 @@ export default function CopyButton({
             ) : (
                 <Copy size={iconSize} aria-hidden="true" />
             )}
+            {text ? <span>{copied ? copiedText : text}</span> : null}
         </button>
     );
 }

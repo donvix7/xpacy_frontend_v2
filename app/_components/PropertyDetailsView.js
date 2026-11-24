@@ -498,6 +498,13 @@ export default function PropertyDetailsView({
                             <Files className="h-3.5 w-3.5" aria-hidden="true" />
                             All Documents
                         </Link>
+                        <Link
+                            href={`${basePath}/properties/${encodeURIComponent(property.id)}/media`}
+                            className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                        >
+                            <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                            Media
+                        </Link>
 
                         <DeletePropertyButton
                             propertyId={property.id}

@@ -16,10 +16,14 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
+import ShareOrganizationListings from "@/app/_components/ShareOrganizationListings";
+import { isValidOrganizationId } from "@/app/_lib/public-navigation";
 
 export default async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
+  const organizationId = cookieStore.get("organizationId")?.value;
+  const canShareOrganizationListings = isValidOrganizationId(organizationId);
 
   const results = await Promise.allSettled([
     getUserProfile(token),
@@ -151,6 +155,9 @@ export default async function Page() {
           </dl>
 
                 <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+              {canShareOrganizationListings && (
+                <ShareOrganizationListings organizationId={organizationId} variant="hero" />
+              )}
               <Link
                 href="/dashboard/facility-manager/services"
                 className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
