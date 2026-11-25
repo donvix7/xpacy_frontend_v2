@@ -8,9 +8,23 @@ import StatusChips from "@/app/_components/StatusChips";
 import { formatCurrency } from "@/app/_lib/utils";
 
 function listingImage(property) {
-  const image = property?.images?.[0];
+  const firstMedia = Array.isArray(property?.media) ? property.media[0] : null;
+  const mediaUrl =
+    typeof firstMedia === "string"
+      ? firstMedia
+      : firstMedia?.url || firstMedia?.image_url || null;
+  const rawImage =
+    mediaUrl ||
+    property?.coverImage ||
+    (Array.isArray(property?.images) ? property.images[0] : null);
+  const image =
+    typeof rawImage === "string"
+      ? rawImage
+      : rawImage?.url || rawImage?.image_url || null;
   if (!image) return null;
-  return /^https?:\/\//i.test(image) ? image : `https://app.xpacy.com/src/upload/properties/${image}`;
+  return /^https?:\/\//i.test(image)
+    ? image
+    : `https://app.xpacy.com/src/upload/properties/${image}`;
 }
 
 export default function ListingsDirectoryTab({ listings = [], organizationId }) {
@@ -24,7 +38,18 @@ export default function ListingsDirectoryTab({ listings = [], organizationId }) 
   const cards = useMemo(() => listings.map((listing, index) => {
     const property = listing.property || {};
     const kind = String(listing.listingType || listing.listing_type || "").toUpperCase();
-    const categoryName = kind.includes("SHORT") ? "Shortlet" : kind === "SALE" || kind === "BUY" ? "For Sale" : "For Rent";
+    const categoryName = kind.includes("SHORT")
+      ? "Shortlet"
+      : kind === "SALE" || kind === "BUY"
+        ? "For Sale"
+        : kind === "RENT" || kind === "LEASE"
+          ? "For Rent"
+          : kind
+            ? kind
+                .replace(/[_-]+/g, " ")
+                .toLowerCase()
+                .replace(/\b\w/g, (c) => c.toUpperCase())
+            : "Property";
     const name = property.property_name || property.name || property.title || listing.title || "Property listing";
     const address = [property.address, property.city || listing.location?.city, property.state || listing.location?.state].filter(Boolean).join(", ");
     const listingId = listing.id || listing._id;

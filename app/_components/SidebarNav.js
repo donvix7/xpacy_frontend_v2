@@ -19,7 +19,11 @@ import { GiPayMoney, GiTakeMyMoney } from "react-icons/gi";
 import { MdInventory2, MdOutlineReport } from "react-icons/md";
 
 
-export default function SidebarNav({ role = "user", isOrganizationAdmin = false }) {
+export default function SidebarNav({
+    role = "user",
+    isOrganizationAdmin = false,
+    collapsed = false,
+}) {
     const userNavList = [
         {
             text: "Go to Homepage",
@@ -492,17 +496,49 @@ export default function SidebarNav({ role = "user", isOrganizationAdmin = false 
 
     const pathname = usePathname();
     return (
-        <ul className="flex flex-col gap-1.5 h-full z-10">
-            {navList.map((list, index) => (
-                <li key={index} className={`group rounded-lg transition-colors duration-200 ${pathname === list.link ? "bg-side-active" : "hover:bg-side-2"}`}>
-                    <Link href={list.link} className="flex gap-3.5 items-center px-3 py-3">
-                        <span className={`text-[22px] transition-colors ${pathname === list.link ? "text-white" : "text-side-ink/80 group-hover:text-white"}`}>{list.icon}</span>
-                        <span className="text-[15px] font-medium text-side-ink">{list.text}</span>
-                    </Link>
-                </li>
-                
-            )
-            )}
+        <ul
+            className={`flex flex-col gap-1.5 w-full h-full z-10 ${
+                collapsed ? "items-center" : ""
+            }`}
+        >
+            {navList.map((list, index) => {
+                const label = String(list.text || "").trim();
+                const isActive = pathname === list.link;
+                return (
+                    <li
+                        key={index}
+                        className={`group rounded-lg transition-colors duration-200 ${
+                            collapsed ? "w-11" : "w-full"
+                        } ${isActive ? "bg-side-active" : "hover:bg-side-2"}`}
+                    >
+                        <Link
+                            href={list.link}
+                            title={collapsed ? label : undefined}
+                            aria-label={label}
+                            className={
+                                collapsed
+                                    ? "flex h-11 w-11 items-center justify-center rounded-lg"
+                                    : "flex w-full items-center gap-3.5 px-3 py-3"
+                            }
+                        >
+                            <span
+                                className={`flex shrink-0 items-center justify-center [&_svg]:h-5 [&_svg]:w-5 transition-colors ${
+                                    isActive
+                                        ? "text-white"
+                                        : "text-side-ink/80 group-hover:text-white"
+                                }`}
+                            >
+                                {list.icon}
+                            </span>
+                            {!collapsed ? (
+                                <span className="truncate whitespace-nowrap text-[15px] font-medium text-side-ink">
+                                    {label}
+                                </span>
+                            ) : null}
+                        </Link>
+                    </li>
+                );
+            })}
         </ul>
-    )
+    );
 }

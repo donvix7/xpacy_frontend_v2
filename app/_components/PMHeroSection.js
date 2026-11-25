@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import DemoBookingForm from "./DemoBookingForm";
+import HeroChartAnimation from "./HeroChartAnimation";
 import Image from "next/image";
 
 // Fallback slides used when backend banners are missing/empty
@@ -110,9 +110,9 @@ export default function PMHeroSection({ banners = [], isAuthenticated = false })
           </div>
         </div>
 
-        {/* Right Column: Demo Form Card */}
+        {/* Right Column: Animated Portfolio Chart */}
         <div className="lg:col-span-5 w-full">
-          <DemoBookingForm isAuthenticated={isAuthenticated} />
+          <HeroChartAnimation />
         </div>
       </div>
     </section>

@@ -9,6 +9,7 @@ import {
     getPropertyTenants,
     getPropertyOwner,
     getAllMaintenanceRequest,
+    getAuditLogs,
 } from "@/app/_lib/data-services";
 import { SAMPLE_PROPERTY_DETAIL } from "@/app/_lib/sample-properties";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
@@ -77,6 +78,7 @@ export default async function Page({ params }) {
         getPropertyTenants(propId).catch(() => []),
         getPropertyOwner().catch(() => []),
         getAllMaintenanceRequest(propId).catch(() => []),
+        getAuditLogs({ propertyId: propId, entityType: "PROPERTY", entityId: propId }).catch(() => []),
     ]);
     const dataErrorMessages = getSettledErrorMessages(results.slice(0, 2));
 
@@ -116,6 +118,11 @@ export default async function Page({ params }) {
         : Array.isArray(maintenanceRes?.data)
           ? maintenanceRes.data
           : [];
+
+    const auditLogs =
+        results[5].status === "fulfilled" && Array.isArray(results[5].value)
+            ? results[5].value
+            : [];
 
     if (!rawProperty || typeof rawProperty !== "object" || Array.isArray(rawProperty)) {
         return (
@@ -163,6 +170,7 @@ export default async function Page({ params }) {
             units={unitsList}
             tenants={tenantsList}
             maintenanceRequests={maintenanceList}
+            auditLogs={auditLogs}
             availableOwners={availableOwners}
             availableMembers={availableMembers}
             organizationName={organizationName}

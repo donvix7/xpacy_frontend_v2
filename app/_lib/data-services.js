@@ -1046,6 +1046,60 @@ export async function getMediaById(id) {
   }
 }
 
+export async function getAuditLogs(options = {}) {
+  const token = await getRawToken();
+  if (!token) return [];
+
+  const propertyId = String(options?.propertyId || "").trim();
+  const organizationId = String(options?.organizationId || "").trim();
+  if (!propertyId && !organizationId) return [];
+
+  const params = new URLSearchParams({
+    page: String(options?.page || 1),
+    limit: String(options?.limit || 20),
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
+
+  const endpoint = propertyId
+    ? `${SERVICE_URL}/audit/property/${encodeURIComponent(propertyId)}?${params.toString()}`
+    : `${SERVICE_URL}/audit/organization/${encodeURIComponent(organizationId)}?${params.toString()}`;
+
+  try {
+    const response = await safeFetch(endpoint, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      await logApiFailure(response, "getAuditLogs");
+      return [];
+    }
+    const payload = await response.json();
+    console.log(payload)
+
+    return (
+      [
+        payload,
+        payload?.data,
+        payload?.logs,
+        payload?.auditLogs,
+        payload?.items,
+        payload?.data?.logs,
+        payload?.data?.auditLogs,
+        payload?.data?.items,
+        payload?.data?.data,
+      ].find(Array.isArray) || []
+    );
+  } catch (error) {
+    console.warn("getAuditLogs error:", error?.message);
+    return [];
+  }
+}
+
 /* ----------------------------------------------------------------
  * Organizations, users, members
  * ---------------------------------------------------------------- */

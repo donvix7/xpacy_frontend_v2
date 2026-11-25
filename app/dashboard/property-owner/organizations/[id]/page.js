@@ -18,8 +18,10 @@ import {
     getOrganizationById,
     getOrganizationProperties,
     getOrganizationMembers,
+    getAuditLogs,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import AuditLogSection from "@/app/_components/AuditLogSection";
 import EmptyState from "@/app/_components/EmptyState";
 import DataTable from "@/app/_components/DataTable";
 import StatusChips from "@/app/_components/StatusChips";
@@ -214,12 +216,17 @@ export default async function Page({ params }) {
         getOrganizationById(orgId),
         getOrganizationProperties(orgId),
         getOrganizationMembers(orgId),
+        getAuditLogs({ organizationId: orgId }).catch(() => []),
     ]);
-    const dataErrorMessages = getSettledErrorMessages(results);
+    const dataErrorMessages = getSettledErrorMessages(results.slice(0, 3));
 
     const result = results[0].status === "fulfilled" ? results[0].value : null;
     const organizationProperties = results[1].status === "fulfilled" ? results[1].value : [];
     const members = results[2].status === "fulfilled" ? results[2].value : [];
+    const auditLogs =
+        results[3].status === "fulfilled" && Array.isArray(results[3].value)
+            ? results[3].value
+            : [];
 
     const organization = result?.organization || result;
     const memberList = Array.isArray(members) ? members : [];
@@ -532,6 +539,13 @@ export default async function Page({ params }) {
                     />
                 )}
             </DashboardGridItem>
+
+            {/* ---------- Audit Log ---------- */}
+            <AuditLogSection
+                logs={auditLogs}
+                title={`Audit Log (${auditLogs.length})`}
+                emptyMessage={`No audit activity recorded for ${organization.name || "this organization"} yet.`}
+            />
         </div>
     );
 }

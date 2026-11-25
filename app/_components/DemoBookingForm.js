@@ -161,54 +161,15 @@ export default function DemoBookingForm() {
           {/* Core Metric Visual Cards Grid */}
           <div className="mt-4 grid grid-cols-2 gap-3">
             {/* Metric 1 */}
-            <div className="group rounded-2xl border border-white/10 bg-white/[0.05] p-3.5 transition-all duration-300 hover:border-white/25 hover:bg-white/[0.08]">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300">
-                  Inflow (MTD)
-                </span>
-                <span className="inline-flex items-center text-[10px] font-semibold text-emerald-400">
-                  <TrendingUp className="mr-0.5 h-3 w-3" />
-                  +18.4%
-                </span>
-              </div>
-              <p className="mt-1.5 font-mono text-[19px] font-bold tracking-tight text-white tabular-nums sm:text-[22px]">
-                ₦14.85M
-              </p>
-              <p className="mt-0.5 text-[10px] font-mono text-gray-400">
-                99.2% on-time rate
-              </p>
-            </div>
+            
 
             {/* Metric 2 */}
-            <div className="group rounded-2xl border border-white/10 bg-white/[0.05] p-3.5 transition-all duration-300 hover:border-white/25 hover:bg-white/[0.08]">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300">
-                  Occupancy
-                </span>
-                <span className="inline-flex items-center text-[10px] font-semibold text-secondary">
-                  142/144 units
-                </span>
-              </div>
-              <p className="mt-1.5 font-mono text-[19px] font-bold tracking-tight text-white tabular-nums sm:text-[22px]">
-                98.6%
-              </p>
-              <p className="mt-0.5 text-[10px] font-mono text-gray-400">
-                2 leases renewing
-              </p>
-            </div>
+          
           </div>
 
           {/* Animated Growth Waveform / Operations Curve */}
           <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/20 p-3.5 backdrop-blur-sm">
-            <div className="flex items-center justify-between text-[10.5px]">
-              <div className="flex items-center gap-1.5 font-mono text-gray-300">
-                <Activity className="h-3.5 w-3.5 text-secondary" />
-                <span>Yield Curve & Portfolio Velocity</span>
-              </div>
-              <span className="font-mono text-[10px] font-semibold text-emerald-400">
-                +₦2.4M Peak
-              </span>
-            </div>
+            
 
             {/* SVG Interactive Wave Graph */}
             <div className="relative mt-2 h-24 w-full">

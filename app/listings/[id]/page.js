@@ -23,7 +23,8 @@ import AppHeader from "@/app/_components/AppHeader";
 import Footer from "@/app/_components/Footer";
 import PropertyDetailsHeader from "@/app/_components/PropertyDetailsHeader";
 import PropertySavedIcon from "@/app/_components/ProperySavedIcon";
-import { getSingleListing, getPropertyById } from "@/app/_lib/data-services";
+import ListingPropertyUnitsSection from "@/app/_components/ListingPropertyUnitsSection";
+import { getSingleListing, getPropertyById, getAllUnits } from "@/app/_lib/data-services";
 import { formatCurrency } from "@/app/_lib/utils";
 
 /* -------------------------------------------------------------------------- */
@@ -161,6 +162,28 @@ export default async function PublicListingDetailsPage({ params, searchParams })
   }
 
   if (!listing || typeof listing !== "object") {
+    try {
+      const propRes = await getPropertyById(id);
+      const prop = propRes?.data ?? propRes?.property ?? propRes ?? null;
+      if (prop && typeof prop === "object" && (prop.id || prop._id || prop.name)) {
+        listing = {
+          id: prop.id || prop._id || id,
+          propertyId: prop.id || prop._id || id,
+          title: prop.name || prop.property_name || "Property",
+          description: prop.description || prop.property_description || "",
+          status: prop.status || prop.property_status || "ACTIVE",
+          listingType: prop.propertyType || prop.property_type || "RESIDENTIAL",
+          price: prop.price ?? prop.property_price ?? null,
+          currency: prop.currency || "NGN",
+          property: prop,
+        };
+      }
+    } catch {
+      listing = null;
+    }
+  }
+
+  if (!listing || typeof listing !== "object") {
     notFound();
   }
 
@@ -210,6 +233,24 @@ export default async function PublicListingDetailsPage({ params, searchParams })
   const resolvedUnitId = listing.unitId || unit?.id || unit?._id || "";
   const resolvedPropertyId =
     listing.propertyId || property?.id || property?._id || unit?.propertyId || "";
+
+  // Fetch all units belonging to this property
+  let propertyUnits = Array.isArray(property?.units) ? property.units : [];
+  if (resolvedPropertyId) {
+    try {
+      const unitsRes = await getAllUnits(resolvedPropertyId);
+      const fetchedUnits = Array.isArray(unitsRes)
+        ? unitsRes
+        : Array.isArray(unitsRes?.data)
+          ? unitsRes.data
+          : [];
+      if (fetchedUnits.length > 0) {
+        propertyUnits = fetchedUnits;
+      }
+    } catch {
+      // keep embedded property.units fallback if any
+    }
+  }
   const currentListingPath = organizationId
     ? `/listings/${encodeURIComponent(resolvedListingId)}?organizationId=${encodeURIComponent(organizationId)}`
     : `/listings/${encodeURIComponent(resolvedListingId)}`;
@@ -298,52 +339,7 @@ export default async function PublicListingDetailsPage({ params, searchParams })
           {/* Left 3 Columns */}
           <div className="flex min-w-0 flex-col gap-10 md:col-span-3">
             {/* Specification Bar */}
-            <div className="flex flex-col gap-4">
-              <p className="text-lg font-medium text-primary-900 sm:text-[1.375rem]">
-                Specification
-              </p>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-4 rounded-xl bg-white p-4 shadow-lg sm:gap-4 sm:p-6 md:flex md:justify-between md:px-10 md:py-6 border border-gray-100">
-                <div className="flex min-w-0 flex-col items-center gap-2 font-mono">
-                  <div className="flex items-center gap-2 text-xl text-black sm:text-2xl">
-                    <RiHotelBedLine />
-                    <span className="text-sm sm:text-base">Bedrooms</span>
-                  </div>
-                  <span className="text-lg font-bold text-gray-900">
-                    {bedrooms ?? "—"}
-                  </span>
-                </div>
-
-                <div className="flex min-w-0 flex-col items-center gap-2 font-mono">
-                  <div className="flex items-center gap-2 text-xl text-black sm:text-2xl">
-                    <LuBath />
-                    <span className="text-sm sm:text-base">Bathrooms</span>
-                  </div>
-                  <span className="text-lg font-bold text-gray-900">
-                    {bathrooms ?? "—"}
-                  </span>
-                </div>
-
-                <div className="flex min-w-0 flex-col items-center gap-2 font-mono">
-                  <div className="flex items-center gap-2 text-xl text-black sm:text-2xl">
-                    <FaRegSquare />
-                    <span className="text-sm sm:text-base">Size</span>
-                  </div>
-                  <span className="text-lg font-bold text-gray-900">
-                    {sqm != null ? `${sqm} m²` : "—"}
-                  </span>
-                </div>
-
-                <div className="flex min-w-0 flex-col items-center gap-2 font-mono">
-                  <div className="flex items-center gap-2 text-xl text-black sm:text-2xl">
-                    <Layers className="h-5 w-5" />
-                    <span className="text-sm sm:text-base">Floor</span>
-                  </div>
-                  <span className="text-lg font-bold text-gray-900">
-                    {floor ?? "—"}
-                  </span>
-                </div>
-              </div>
-            </div>
+           
 
             <div className="border-b border-neutral-200" />
 
@@ -423,6 +419,17 @@ export default async function PublicListingDetailsPage({ params, searchParams })
                 </div>
               </div>
             </div>
+
+            {/* Units in this Property */}
+            <div className="border-b border-neutral-200" />
+            <ListingPropertyUnitsSection
+              units={propertyUnits}
+              currency={currency}
+              listingId={resolvedListingId}
+              propertyId={resolvedPropertyId}
+              returnTo={currentListingPath}
+              isAuthenticated={isAuthenticated}
+            />
 
             {/* Amenities */}
             {amenities.length > 0 && (

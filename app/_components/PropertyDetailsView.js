@@ -26,6 +26,7 @@ import {
     Files,
 } from "lucide-react";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import AuditLogSection from "@/app/_components/AuditLogSection";
 import EmptyState from "@/app/_components/EmptyState";
 import DataTable from "@/app/_components/DataTable";
 import StatusChips from "@/app/_components/StatusChips";
@@ -330,6 +331,7 @@ export default function PropertyDetailsView({
     units = [],
     tenants = [],
     maintenanceRequests = [],
+    auditLogs = [],
     availableOwners = [],
     availableMembers = [],
     organizationName = null,
@@ -1006,6 +1008,12 @@ export default function PropertyDetailsView({
                     </div>
                 )}
             </DashboardGridItem>
+            {/* ---------- Audit Log ---------- */}
+            <AuditLogSection
+                logs={auditLogs}
+                title={`Audit Log (${Array.isArray(auditLogs) ? auditLogs.length : 0})`}
+                emptyMessage={`No audit activity recorded for ${property.name} yet.`}
+            />
         </div>
     );
 }
