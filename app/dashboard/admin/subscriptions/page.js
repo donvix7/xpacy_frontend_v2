@@ -1,7 +1,7 @@
 import AdminSubscriptionPlans from "@/app/_components/AdminSubscriptionPlans";
 import CreateSubscriptionPlanButton from "@/app/_components/CreateSubscriptionPlanButton";
 import HeroBand from "@/app/_components/HeroBand";
-import { getSubscriptionList, getAllUsers } from "@/app/_lib/data-services";
+import { getSubscriptionList, getAllUsers, getSubscriptionPlans } from "@/app/_lib/data-services";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
@@ -30,7 +30,7 @@ export default async function Page({ searchParams }) {
   const openCreate = resolvedParams?.create === "1";
 
   const results = await Promise.allSettled([
-    getSubscriptionList(),
+    getSubscriptionPlans(),
     getAllUsers(),
   ]);
   const dataErrorMessages = getSettledErrorMessages([results[0]]);

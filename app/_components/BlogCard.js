@@ -1,77 +1,255 @@
 import Image from "next/image";
-import { format } from "date-fns";
-import insightImg1 from "../../public/insight-image1.png";
 import Link from "next/link";
+import { format } from "date-fns";
+import { ArrowUpRight, Clock } from "lucide-react";
+import insightImg1 from "../../public/insight-image1.png";
 import BlogOptionsMenu from "./blogs/BlogOptionsMenu";
 
+function isValidImageString(value) {
+  if (!value || typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (
+    !trimmed ||
+    trimmed.startsWith("[object ") ||
+    trimmed === "null" ||
+    trimmed === "undefined"
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function resolveImage(blog) {
+  const rawImage =
+    blog?.coverImage ||
+    blog?.cover_image ||
+    blog?.image ||
+    (Array.isArray(blog?.images) ? blog.images[0] : null);
+
+  if (!isValidImageString(rawImage)) return null;
+  const trimmed = rawImage.trim();
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/")
+  ) {
+    return trimmed;
+  }
+  return `https://app.xpacy.com/src/upload/blog/${trimmed}`;
+}
+
+function getAuthorName(author) {
+  if (!author) return "Xpacy Editorial";
+  const full = [author.firstName, author.lastName].filter(Boolean).join(" ").trim();
+  return full || author.name || "Xpacy Editorial";
+}
+
+function getAuthorInitials(name) {
+  const parts = String(name || "X")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return (parts[0]?.[0] || "X").toUpperCase();
+}
+
+function estimateReadTime(blog) {
+  if (blog?.readTime) return blog.readTime;
+  const text = String(blog?.content || "")
+    .replace(/<[^>]+>/g, " ")
+    .trim();
+  if (!text) return "2 min read";
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const mins = Math.max(1, Math.ceil(words / 200));
+  return `${mins} min read`;
+}
+
+function getExcerpt(blog) {
+  if (blog?.excerpt && String(blog.excerpt).trim()) {
+    return String(blog.excerpt).trim();
+  }
+  const plain = String(blog?.content || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return plain || "";
+}
+
+function getStatusMeta(status) {
+  const normalized = String(status || "").trim().toUpperCase();
+  if (normalized === "PUBLISHED") {
+    return {
+      label: "Published",
+      pill: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80",
+      dot: "bg-emerald-500",
+    };
+  }
+  if (normalized === "ARCHIVED") {
+    return {
+      label: "Archived",
+      pill: "bg-slate-100 text-slate-600 ring-1 ring-slate-200/80",
+      dot: "bg-slate-400",
+    };
+  }
+  if (normalized === "DRAFT") {
+    return {
+      label: "Draft",
+      pill: "bg-amber-50 text-amber-700 ring-1 ring-amber-200/80",
+      dot: "bg-amber-500",
+    };
+  }
+  return null;
+}
+
 export default function BlogCard({ blog, isAdmin = false }) {
-  const rawImage = blog.image || (Array.isArray(blog.images) ? blog.images[0] : null);
-  const baseImageUrl = "https://app.xpacy.com/src/upload/blog";
-  
-  const imageSrc = rawImage
-    ? rawImage.startsWith("http")
-      ? rawImage
-      : `${baseImageUrl}/${rawImage.startsWith("/") ? rawImage.slice(1) : rawImage}`
-    : insightImg1;
-    
-  const formattedDate = blog.created_at || blog.createdAt
-    ? format(new Date(blog.created_at || blog.createdAt), "dd MMMM yyyy") 
-    : "Unknown Date";
+  const externalImage = resolveImage(blog);
+  const rawDate = blog?.publishedAt || blog?.created_at || blog?.createdAt;
+  const parsedDate = rawDate ? new Date(rawDate) : null;
+  const formattedDate =
+    parsedDate && !Number.isNaN(parsedDate.getTime())
+      ? format(parsedDate, "MMM dd, yyyy")
+      : "Unscheduled";
+
+  const blogHref = `/blogs/${blog?.slug || blog?.id || blog?._id}`;
+  const categoryLabel = blog?.category?.name || blog?.category || "Insights";
+  const excerpt = getExcerpt(blog);
+  const readTime = estimateReadTime(blog);
+  const statusMeta = isAdmin ? getStatusMeta(blog?.status) : null;
+  const authorName = getAuthorName(blog?.author);
+  const authorInitials = getAuthorInitials(authorName);
+  const authorAvatar = isValidImageString(blog?.author?.avatar)
+    ? blog.author.avatar.trim()
+    : null;
 
   return (
-    <div className="relative bg-white flex flex-col w-full group rounded-2xl md:rounded-[24px] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-500 border border-primary-200 overflow-hidden">
-      {isAdmin && (
-        <div className="absolute top-3 right-3 md:top-4 md:right-4 z-30">
-          <div className="bg-white/95 backdrop-blur-md rounded-full shadow-lg p-0.5 hover:bg-white transition-all transform hover:scale-105 border border-gray-100/50">
-            <BlogOptionsMenu id={blog._id || blog.id} slug={blog.slug} />
+    <article className="group relative flex h-full w-full flex-col overflow-hidden rounded-[22px] border border-line/90 bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_18px_40px_-14px_rgba(15,23,42,0.16)]">
+      {/* Inset cover image frame */}
+      <div className="p-2.5 pb-0">
+        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[16px] bg-soft">
+          <Link href={blogHref} className="block h-full w-full">
+            {externalImage ? (
+              <img
+                src={externalImage}
+                alt={blog?.title || "Blog cover"}
+                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
+              />
+            ) : (
+              <Image
+                src={insightImg1}
+                alt={blog?.title || "Blog cover"}
+                fill
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
+              />
+            )}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/10 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-60" />
+          </Link>
+
+          {/* Category pill */}
+          <div className="pointer-events-none absolute left-3 top-3 z-20 flex items-center gap-1.5">
+            <span className="rounded-full bg-white/95 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-primary shadow-sm backdrop-blur-md">
+              {categoryLabel}
+            </span>
+            {blog?.is_featured && (
+              <span className="rounded-full bg-slate-900/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md">
+                Featured
+              </span>
+            )}
+          </div>
+
+          {/* Admin options menu */}
+          {isAdmin && (
+            <div className="absolute right-2.5 top-2.5 z-30">
+              <div className="rounded-full border border-white/50 bg-white/95 p-0.5 shadow-md backdrop-blur-md transition-transform duration-200 hover:scale-105">
+                <BlogOptionsMenu id={blog?.id || blog?._id} slug={blog?.slug} />
+              </div>
+            </div>
+          )}
+
+          {/* Read time pill */}
+          <div className="pointer-events-none absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 rounded-full bg-slate-950/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-md">
+            <Clock className="h-3 w-3 opacity-85" aria-hidden="true" />
+            {readTime}
           </div>
         </div>
-      )}
+      </div>
 
-      <header className="w-full h-48 md:h-[267px] relative shrink-0 bg-gray-50 overflow-hidden">
-       <Link href={`/blogs/${blog.slug}`} className="block w-full h-full">
-        <Image
-          src={imageSrc}
-          alt={blog.title}
-          fill
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-        />
-        </Link>
-        
-        {blog.is_featured && (
-          <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 bg-gray-900/90 backdrop-blur-md text-[10px] text-white px-3 py-1.5 rounded-full font-bold uppercase tracking-widest shadow-xl border border-white/10">
-            Featured
+      {/* Card body */}
+      <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
+        <div className="flex-1">
+          {/* Status & date row */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <time className="font-medium text-mute">{formattedDate}</time>
+            {statusMeta && (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusMeta.pill}`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${statusMeta.dot}`} />
+                {statusMeta.label}
+              </span>
+            )}
           </div>
-        )}
-      </header>
-      
-      <footer className="flex flex-col flex-1 p-4 md:p-6 bg-white gap-2 md:gap-3">
-        <div className="flex items-center gap-2 mb-1 md:mb-2">
-           {blog.slug ? (
-              <p className="text-[10px] md:text-[11px] text-primary font-black hover:text-primary-dark transition-colors uppercase tracking-[0.2em] font-mono">
-                {blog.category?.name || blog.category || "Uncategorized"}
-              </p>
-          ) : (
-            <p className="text-[10px] md:text-[11px] text-primary font-black uppercase tracking-[0.2em] font-mono">
-              {blog.category?.name || blog.category || "Uncategorized"}
+
+          {/* Title */}
+          <Link href={blogHref} className="mt-2.5 block">
+            <h3 className="line-clamp-2 text-[18px] font-bold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-200 group-hover:text-primary">
+              {blog?.title || "Untitled article"}
+            </h3>
+          </Link>
+
+          {/* Excerpt */}
+          {excerpt && (
+            <p className="mt-2 line-clamp-2 text-[13.5px] leading-[1.6] text-mute">
+              {excerpt}
+            </p>
+          )}
+
+          {/* Admin slug preview */}
+          {isAdmin && blog?.slug && (
+            <p className="mt-3 truncate font-mono text-[11px] text-mute/75">
+              /blogs/{blog.slug}
             </p>
           )}
         </div>
 
-        <p className="font-bold text-lg md:text-xl text-gray-900 line-clamp-2 leading-[1.3] md:leading-[1.4] group-hover:text-primary transition-colors mb-3 md:mb-4">
-          {blog.title}
-        </p>
-        
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100/80">
-          <p className="text-[10px] md:text-[11px] font-semibold text-gray-400 uppercase tracking-wider font-mono">
-            {formattedDate}
-          </p>
-          <p className="text-[10px] md:text-[11px] font-bold text-gray-400 uppercase tracking-wider font-mono italic flex items-center gap-1.5">
-             <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-             {blog.readTime || "5 min read"}
-          </p>
+        {/* Footer */}
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-line/75 pt-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {authorAvatar ? (
+              <img
+                src={authorAvatar}
+                alt={authorName}
+                className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-line"
+              />
+            ) : (
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-primary/5 text-[11px] font-bold tracking-tight text-primary ring-1 ring-primary/15">
+                {authorInitials}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-[12.5px] font-semibold leading-tight text-ink">
+                {authorName}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] text-mute">
+                Author
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href={blogHref}
+            aria-label={`Read ${blog?.title || "article"}`}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-soft px-3 py-1.5 text-xs font-semibold text-ink transition-all duration-200 group-hover:bg-primary group-hover:text-white"
+          >
+            Read
+            <ArrowUpRight
+              className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </Link>
         </div>
-      </footer>
-    </div>
+      </div>
+    </article>
   );
 }

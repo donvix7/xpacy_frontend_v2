@@ -190,7 +190,7 @@ export async function getAdminBlogs() {
   const token = await getRawToken();
   try {
     const response = await safeFetch(
-      `${SERVICE_URL}/blogs?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
+      `https://services.xpacy.com/api/v1/admin/blogs?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
       {
         method: "GET",
         headers: {
@@ -201,33 +201,106 @@ export async function getAdminBlogs() {
       }
     );
     await ensureApiSuccess(response, "getAdminBlogs");
-    const { data } = await response.json();
+    const {data}  = await response.json();
+
     return data || [];
   } catch (error) {
     throw toDataServiceError(error, "getAdminBlogs");
   }
 }
 
-export async function getBlog(id) {
- const token = await getRawToken();
-  try {
-    const response = await safeFetch(
-      `${SERVICE_URL}/blogs?page=1&limit=20&sortBy=createdAt&sortOrder=desc`,
-      {
+export async function getBlog(idOrSlug) {
+  if (!idOrSlug) return null;
+  const token = await getRawToken();
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    Accept: "application/json",
+  };
+
+  const unwrapSingle = (payload) => {
+    if (!payload) return null;
+    const candidate =
+      payload?.data?.blog ||
+      payload?.blog ||
+      (payload?.data && typeof payload.data === "object" && !Array.isArray(payload.data)
+        ? payload.data
+        : null) ||
+      (typeof payload === "object" && !Array.isArray(payload) ? payload : null);
+    if (candidate && (candidate.id || candidate._id || candidate.slug || candidate.title)) {
+      return candidate;
+    }
+    return null;
+  };
+
+  const tryFetchSingle = async (endpoint) => {
+    try {
+      const response = await safeFetch(endpoint, {
         method: "GET",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          Accept: "application/json",
-        },
+        headers,
         cache: "no-store",
-      }
-    );
-    await ensureApiSuccess(response, "getAdminBlogById");
-    const { data } = await response.json();
-    return data || [];
-  } catch (error) {
-    throw toDataServiceError(error, "getAdminBloById");
+      });
+      if (!response.ok) return null;
+      const json = await response.json().catch(() => null);
+      return unwrapSingle(json);
+    } catch {
+      return null;
+    }
+  };
+
+  const encoded = encodeURIComponent(idOrSlug);
+  const endpoints = [
+    `${SERVICE_URL}/blogs/${encoded}`,
+    ...(token
+      ? [
+          `${SERVICE_URL}/admin/blogs/${encoded}`,
+          `${SERVICE_URL}/admin/blogs/slug/${encoded}`,
+        ]
+      : []),
+  ];
+
+  for (const endpoint of endpoints) {
+    const found = await tryFetchSingle(endpoint);
+    if (found) return found;
   }
+
+  // Fallback: search in blog lists by id or slug
+  const listEndpoints = [
+    `${SERVICE_URL}/blogs?page=1&limit=100&sortBy=createdAt&sortOrder=desc`,
+    ...(token
+      ? [`${SERVICE_URL}/admin/blogs?page=1&limit=100&sortBy=createdAt&sortOrder=desc`]
+      : []),
+  ];
+
+  for (const endpoint of listEndpoints) {
+    try {
+      const response = await safeFetch(endpoint, {
+        method: "GET",
+        headers,
+        cache: "no-store",
+      });
+      if (!response.ok) continue;
+      const json = await response.json().catch(() => null);
+      const list = Array.isArray(json)
+        ? json
+        : Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json?.data?.blogs)
+            ? json.data.blogs
+            : Array.isArray(json?.blogs)
+              ? json.blogs
+              : [];
+      const match = list.find(
+        (b) =>
+          String(b?.slug || "") === String(idOrSlug) ||
+          String(b?.id || b?._id || "") === String(idOrSlug)
+      );
+      if (match) return match;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
 }
 
 export async function getBlogCategories() {

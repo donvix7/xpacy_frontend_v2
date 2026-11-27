@@ -1,5 +1,6 @@
 import AdminBlogsList from "@/app/_components/blogs/AdminBlogsList";
 import AdminBlogSlugSearch from "@/app/_components/blogs/AdminBlogSlugSearch";
+import HeroBand from "@/app/_components/HeroBand";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { getAdminBlogs } from "@/app/_lib/data-services";
@@ -7,27 +8,49 @@ import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
+function unwrapBlogs(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.blogs)) return payload.blogs;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.blogs)) return payload.data.blogs;
+  return [];
+}
+
+function getBlogStatus(blog) {
+  const explicit = String(blog?.status || "").trim().toUpperCase();
+  if (explicit) return explicit;
+  if (blog?.isPublished === true || blog?.is_published === true) {
+    return "PUBLISHED";
+  }
+  return "DRAFT";
+}
+
 export default async function Page({ searchParams: searchParamsPromise }) {
   const searchParams = await searchParamsPromise;
   const results = await Promise.allSettled([getAdminBlogs()]);
   const dataErrorMessages = getSettledErrorMessages(results);
-  const blogs = (results[0].status === "fulfilled" ? results[0].value : null) || [];
+  const blogs = unwrapBlogs(
+    results[0].status === "fulfilled" ? results[0].value : null
+  );
 
-  const stats = {
-    totalBlogs: blogs.length,
-    publishedBlogs: blogs.filter((b) => b.is_published === true).length,
-    featuredBlogs: blogs.filter((b) => b.is_featured === true).length,
-  };
+  const totalBlogs = blogs.length;
+  const publishedBlogs = blogs.filter(
+    (b) => getBlogStatus(b) === "PUBLISHED"
+  ).length;
+  const draftBlogs = blogs.filter(
+    (b) => getBlogStatus(b) === "DRAFT"
+  ).length;
+  const archivedBlogs = blogs.filter(
+    (b) => getBlogStatus(b) === "ARCHIVED"
+  ).length;
 
   const heroStats = [
-    { label: "Total Blogs", value: stats.totalBlogs, hint: "All drafts & posts" },
-    { label: "Published", value: stats.publishedBlogs, hint: "Live on site" },
-    { label: "Featured", value: stats.featuredBlogs, hint: "Highlighted posts" },
-    {
-      label: "Drafts",
-      value: stats.totalBlogs - stats.publishedBlogs,
-      hint: "Not yet published",
-    },
+    { label: "Total Blogs", value: totalBlogs, hint: "All drafts & posts" },
+    { label: "Published", value: publishedBlogs, hint: "Live on site" },
+    { label: "Drafts", value: draftBlogs, hint: "Not yet published" },
+    { label: "Archived", value: archivedBlogs, hint: "Hidden from site" },
   ];
 
   const today = new Date().toLocaleDateString("en-NG", {
@@ -42,58 +65,26 @@ export default async function Page({ searchParams: searchParamsPromise }) {
 
   return (
     <div className="space-y-6 p-2">
-      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
+      {dataErrorMessages.length > 0 ? (
+        <DataErrorNotice messages={dataErrorMessages} />
+      ) : null}
+
       {/* ---------- Hero summary ---------- */}
-      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
-        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
-                Admin console · {today}
-              </p>
-              <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
-                Blogs Management
-              </h1>
-              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
-                Draft, publish and feature articles — manage everything your readers see in one place.
-              </p>
-            </div>
-
-            
-          </div>
-
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {heroStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
-              >
-                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
-                  {stat.label}
-                </dt>
-                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
-                  {typeof stat.value === "number"
-                    ? stat.value.toLocaleString()
-                    : stat.value}
-                </dd>
-                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
-                  {stat.hint}
-                </p>
-              </div>
-            ))}
-          </dl>
-
-                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
-              <Link
-                href="/dashboard/admin/blogs/create"
-                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Create New Blog
-              </Link>
-            </div>
-        </div>
-      </section>
+      <HeroBand
+        tagline={`Admin console · ${today}`}
+        title="Blogs Management"
+        description="Draft, publish and feature articles — manage everything your readers see in one place."
+        stats={heroStats}
+        actions={
+          <Link
+            href="/dashboard/admin/blogs/create"
+            className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Create New Blog
+          </Link>
+        }
+      />
 
       {/* ---------- Existing content ---------- */}
       <AdminBlogSlugSearch />

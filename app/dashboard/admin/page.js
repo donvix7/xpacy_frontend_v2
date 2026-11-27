@@ -146,6 +146,8 @@ export default async function Page() {
 
     const plan = subscription?.plan ?? null;
     const limits = subscriptionsRaw?.limits ?? {};
+    console.log("plan", plan)
+    console.log("subscription", subscriptionPlans)
 
     const planPrices = plan
         ? {

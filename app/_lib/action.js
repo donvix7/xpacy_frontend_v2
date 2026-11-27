@@ -1659,6 +1659,7 @@ export async function createBlog(input) {
                 body: JSON.stringify(payload),
             }
         );
+        console.log(response)
 
         let data;
         try {
@@ -1692,12 +1693,12 @@ export async function updateBlog(id, formData) {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
 
-    const response = await safeFetch(`${URL}/blog/update-post/${id}`, {
-      method: "PUT",
+    const response = await safeFetch(`https://services.xpacy.com/api/v1/admin/blogs/${id}`, {
+      method: "PATCH",
       headers: {
         "Authorization": `Bearer ${token?.value}`,
       },
-      body: formData,
+      body: JSON.stringify({formData}),
     });
 
     let data;
@@ -1721,31 +1722,45 @@ export async function updateBlog(id, formData) {
 
 export async function deleteBlog(id) {
   try {
+    if (!id) return { error: "Blog ID is required." };
     const cookieStore = await cookies();
-    const token = cookieStore.get("token");
+    const token = cookieStore.get("token")?.value;
 
-    const response = await safeFetch(`${URL}/blog/delete-post/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${token?.value}`,
-        "Content-Type": "application/json"
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/admin/blogs/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Accept: "application/json",
+        },
+        cache: "no-store",
       }
-    });
+    );
 
-    let data;
-    try {
-        data = await response.json();
-    } catch (e) {
-        const text = await response.text();
-        return { error: `Server returned non-JSON response: ${text}` };
+    const text = await response.text();
+    let data = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        if (!response.ok) {
+          return { error: `Failed to delete blog post (${response.status}).` };
+        }
+      }
     }
 
     if (!response.ok) {
-        return { error: data.message || data.error || data.details || "Failed to delete blog post" };
+      const errMsg = Array.isArray(data?.message)
+        ? data.message.join(", ")
+        : data?.message || data?.error || data?.details;
+      return { error: errMsg || "Failed to delete blog post" };
     }
 
     revalidateTag("blogs");
-    return data;
+    revalidatePath("/dashboard/admin/blogs");
+    revalidatePath("/blogs");
+    return { success: true, ...data };
   } catch (error) {
     return { error: error.message || "An unexpected error occurred during deletion" };
   }
@@ -5065,7 +5080,7 @@ export async function saveSubscriptionPlan(formData) {
   try {
     const endpoint = "https://services.xpacy.com/api/v1/admin/subscription-plans";
     const response = await fetch(id ? `${endpoint}/${encodeURIComponent(id)}` : endpoint, {
-      method: id ? "PUT" : "POST",
+      method: id ? "PATCH" : "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",

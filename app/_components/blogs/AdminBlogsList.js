@@ -10,11 +10,19 @@ export default async function AdminBlogsList({ blogs = [], filter = "all", searc
     // Filter by search term
     if (search) {
         const query = search.toLowerCase();
-        filteredBlogs = filteredBlogs.filter(blog => 
-            blog.title?.toLowerCase().includes(query) || 
-            blog.content?.toLowerCase().includes(query) ||
-            blog.author?.name?.toLowerCase().includes(query)
-        );
+        filteredBlogs = filteredBlogs.filter((blog) => {
+            const authorFullName = [blog.author?.firstName, blog.author?.lastName]
+                .filter(Boolean)
+                .join(" ");
+            return (
+                blog.title?.toLowerCase().includes(query) ||
+                blog.excerpt?.toLowerCase().includes(query) ||
+                blog.content?.toLowerCase().includes(query) ||
+                blog.slug?.toLowerCase().includes(query) ||
+                blog.author?.name?.toLowerCase().includes(query) ||
+                authorFullName.toLowerCase().includes(query)
+            );
+        });
     }
 
     // Filter by category
