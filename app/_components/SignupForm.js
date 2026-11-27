@@ -27,18 +27,26 @@ export default function SignupForm({ cities, role = "user" }) {
             return;
         }
 
+        const registerPayload = {
+            email: String(data.email || "").trim(),
+            password: data.password,
+            firstName: String(data.firstName || "").trim(),
+            lastName: String(data.lastName || "").trim(),
+            ...(data.phone?.trim() ? { phone: data.phone.trim() } : {}),
+        };
+
         setPending(true);
         try {
             let response;
             if (role === "property-owner") {
-                response = await handlePropertyOwnerSignup(data, referralCode);
+                response = await handlePropertyOwnerSignup(registerPayload, referralCode);
             } else {
-                response = await handleSignup(data, referralCode);
+                response = await handleSignup(registerPayload, referralCode);
             }
 
             if (response.success) {
                 toast.success(response.message);
-                setUserData({ ...(response.user || {}), email: response.user?.email || data.email });
+                setUserData({ ...(response.user || {}), email: response.user?.email || registerPayload.email });
                 reset();
                 setCaptchaValue(null);
                 recaptchaRef.current?.reset();
@@ -56,32 +64,32 @@ export default function SignupForm({ cities, role = "user" }) {
     return (
         <form className="flex flex-col gap-5" onSubmit={handleSubmit(onSubmit)}>
             <div className="flex flex-col items-start gap-5 md:flex-row md:items-center">
-                <FormInput register={register} errors={errors} label={"First Name"} id={"firstname"}>
+                <FormInput register={register} errors={errors} label={"First Name *"} id={"firstName"}>
                     <input
-                        {...register("firstname", { required: "Please enter your first name" })}
+                        {...register("firstName", { required: "Please enter your first name" })}
                         type="text"
-                        name="firstname"
-                        id="firstname"
-                        placeholder="Enter your first name"
-                        className={`xp-field ${errors.firstname ? "xp-field-error" : ""}`}
+                        name="firstName"
+                        id="firstName"
+                        placeholder="John"
+                        className={`xp-field ${errors.firstName ? "xp-field-error" : ""}`}
                     />
-                    {errors.firstname && <span className="-mt-2 text-xs text-error">{errors.firstname.message}</span>}
+                    {errors.firstName && <span className="-mt-2 text-xs text-error">{errors.firstName.message}</span>}
                 </FormInput>
-                <FormInput register={register} errors={errors} label={"Last Name"} id={"lastname"}>
+                <FormInput register={register} errors={errors} label={"Last Name *"} id={"lastName"}>
                     <input
-                        {...register("lastname", { required: "Please enter your lastname" })}
+                        {...register("lastName", { required: "Please enter your last name" })}
                         type="text"
-                        name="lastname"
-                        id="lastname"
-                        placeholder="Enter your last name"
-                        className={`xp-field ${errors.lastname ? "xp-field-error" : ""}`}
+                        name="lastName"
+                        id="lastName"
+                        placeholder="Doe"
+                        className={`xp-field ${errors.lastName ? "xp-field-error" : ""}`}
                     />
-                    {errors.lastname && <span className="-mt-2 text-xs text-error">{errors.lastname.message}</span>}
+                    {errors.lastName && <span className="-mt-2 text-xs text-error">{errors.lastName.message}</span>}
                 </FormInput>
             </div>
 
             <div className="flex flex-col items-start gap-5 md:flex-row md:items-center">
-                <FormInput register={register} errors={errors} label={"Email address"} id={"email"}>
+                <FormInput register={register} errors={errors} label={"Email address *"} id={"email"}>
                     <input
                         {...register("email", {
                             required: "Email is required",
@@ -93,27 +101,26 @@ export default function SignupForm({ cities, role = "user" }) {
                         type="email"
                         name="email"
                         id="email"
-                        placeholder="Enter your email address"
+                        placeholder="john@example.com"
                         className={`xp-field ${errors.email ? "xp-field-error" : ""}`}
                     />
                     {errors.email && <span className="-mt-2 text-xs text-error">{errors.email.message}</span>}
                 </FormInput>
-                <FormInput register={register} errors={errors} label={"Phone Number"} id={"phoneNumber"}>
+                <FormInput register={register} errors={errors} label={"Phone Number (Optional)"} id={"phone"}>
                     <input
-                        {...register("phoneNumber", {
-                            required: "Phone number is required",
+                        {...register("phone", {
                             pattern: {
-                                value: /^[0-9]{10}$/,
-                                message: "Provide a valid phone number",
+                                value: /^\+?[0-9\s\-()]{7,20}$/,
+                                message: "Provide a valid phone number (e.g. +1234567890)",
                             },
                         })}
-                        type="text"
-                        name="phoneNumber"
-                        id="phoneNumber"
-                        placeholder="Enter your phone number"
-                        className={`xp-field ${errors.phoneNumber ? "xp-field-error" : ""}`}
+                        type="tel"
+                        name="phone"
+                        id="phone"
+                        placeholder="+1234567890"
+                        className={`xp-field ${errors.phone ? "xp-field-error" : ""}`}
                     />
-                    {errors.phoneNumber && <span className="-mt-2 text-xs text-error">{errors.phoneNumber.message}</span>}
+                    {errors.phone && <span className="-mt-2 text-xs text-error">{errors.phone.message}</span>}
                 </FormInput>
             </div>
 

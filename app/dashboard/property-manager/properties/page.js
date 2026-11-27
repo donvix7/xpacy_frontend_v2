@@ -206,12 +206,12 @@ export default async function Page() {
       </section>
 
       {/* ---------- Active Properties Sections ---------- */}
-      <DashboardGridItem title={`My Properties List (${activeOwnedProperties.length})`}>
-        <PropertiesTableList properties={activeOwnedProperties} />
-      </DashboardGridItem>
-
       <DashboardGridItem title={`Managed Properties List (${activeManagedProperties.length})`}>
         <PropertiesTableList properties={activeManagedProperties} />
+      </DashboardGridItem>
+
+      <DashboardGridItem title={`My Properties List (${activeOwnedProperties.length})`}>
+        <PropertiesTableList properties={activeOwnedProperties} />
       </DashboardGridItem>
 
       <DashboardGridItem title={`Rented Properties List (${activeRentedProperties.length})`}>

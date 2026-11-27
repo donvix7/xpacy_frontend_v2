@@ -1,13 +1,7 @@
 export const publicNavigationLinks = [
   { label: "Home", href: "/" },
-  { label: "Rent", href: "/rent" },
-  { label: "Buy", href: "/buy" },
-  { label: "Shortlet", href: "/shortlet" },
   { label: "Explore", href: "/listings" },
-  { label: "Management", href: "/management" },
-  { label: "Pricing", href: "/subscriptions" },
   { label: "Blogs", href: "/blogs" },
-  { label: "Contact", href: "/contact" },
 ];
 
 export function isValidOrganizationId(value) {

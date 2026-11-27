@@ -2,50 +2,193 @@ import AdminPropertyOwnersList from "@/app/_components/AdminPropertyOwnersList";
 import AdminUsersList from "@/app/_components/AdminUsersList";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import HeroBand from "@/app/_components/HeroBand";
-import { getPropertyOwner, getAllAdmin, getAllUsers } from "@/app/_lib/data-services";
+import {
+  getAllAdminOrganization,
+  getAdminOrganizationMembers,
+  getAllUsers,
+} from "@/app/_lib/data-services";
 import { UserPlus } from "lucide-react";
 import Link from "next/link";
 import { FaPlus } from "react-icons/fa6";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
+function normalizeRole(role) {
+  return String(role || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]/g, "");
+}
+
+function unwrapOrgs(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.organizations)) return payload.organizations;
+  if (Array.isArray(payload?.data?.organizations)) return payload.data.organizations;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
+function unwrapMembers(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.members)) return payload.members;
+  if (Array.isArray(payload?.data?.members)) return payload.data.members;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
+function memberToUserRecord(member, roleLabel) {
+  const u = member?.user || member?.profile || {};
+  const id = String(
+    u?.id || u?._id || member?.userId || member?.user_id || member?.id || ""
+  ).trim();
+  const firstName =
+    u?.firstName ||
+    u?.firstname ||
+    u?.first_name ||
+    member?.firstName ||
+    member?.firstname ||
+    member?.first_name ||
+    "";
+  const lastName =
+    u?.lastName ||
+    u?.lastname ||
+    u?.last_name ||
+    member?.lastName ||
+    member?.lastname ||
+    member?.last_name ||
+    "";
+  const email = u?.email || member?.email || "";
+  const phone = u?.phone || u?.phone_number || member?.phone || "";
+  const displayPicture = u?.display_picture || member?.display_picture || null;
+  const isActive =
+    typeof u?.isActive === "boolean"
+      ? u.isActive
+      : typeof member?.isActive === "boolean"
+        ? member.isActive
+        : true;
+
+  return {
+    ...u,
+    id: id || email,
+    _id: id || email,
+    firstName,
+    lastName,
+    first_name: firstName || u?.name || email || "Member",
+    last_name: lastName,
+    email,
+    phone,
+    display_picture: displayPicture,
+    isActive,
+    email_verified_at: u?.email_verified_at ?? u?.emailVerifiedAt ?? null,
+    kyc_status: u?.kyc_status ?? u?.kycStatus ?? null,
+    role: roleLabel,
+  };
+}
+
 export default async function Page() {
   const results = await Promise.allSettled([
-    getPropertyOwner(),
-    getAllAdmin(),
     getAllUsers(),
+    getAllAdminOrganization(),
   ]);
   const dataErrorMessages = getSettledErrorMessages(results);
 
-  const owners = results[0].status === "fulfilled" ? results[0].value : [];
-  const admins = results[1].status === "fulfilled" ? results[1].value : [];
-  const regularUsers = results[2].status === "fulfilled" ? results[2].value : [];
+  const regularUsers =
+    results[0].status === "fulfilled" && Array.isArray(results[0].value)
+      ? results[0].value
+      : [];
+  const organizations =
+    results[1].status === "fulfilled" ? unwrapOrgs(results[1].value) : [];
 
-  // Normalize data structure if needed
-  const ownersList = (owners || []).map((u) => ({ ...u, role: "property-owner" }));
-  const adminsList = (admins || []).map((u) => ({ ...u, role: "admin" }));
+  // Fetch members for every organization to collect Organization Owners & Facility Managers
+  const orgMembersResults = await Promise.allSettled(
+    organizations.map((org) => {
+      const orgId = org?.id || org?._id || org?.organizationId;
+      return orgId
+        ? getAdminOrganizationMembers(orgId, 100).catch(() => [])
+        : Promise.resolve([]);
+    })
+  );
+
+  const orgOwnersMap = new Map();
+  const facilityManagersMap = new Map();
+
+  organizations.forEach((org, index) => {
+    // Check embedded owner if present on the org
+    if (org?.owner && typeof org.owner === "object") {
+      const rec = memberToUserRecord({ user: org.owner }, "organization-owner");
+      const key = rec.id || rec.email;
+      if (key && !orgOwnersMap.has(key)) orgOwnersMap.set(key, rec);
+    }
+
+    const res = orgMembersResults[index];
+    const members = res?.status === "fulfilled" ? unwrapMembers(res.value) : [];
+
+    members.forEach((member) => {
+      const rawRole =
+        member?.role?.name ||
+        member?.role?.value ||
+        member?.role ||
+        member?.organizationRole ||
+        member?.memberRole ||
+        "";
+      const norm = normalizeRole(rawRole);
+
+      if (["owner", "organizationowner", "orgowner"].includes(norm)) {
+        const rec = memberToUserRecord(member, "organization-owner");
+        const key = rec.id || rec.email;
+        if (key && !orgOwnersMap.has(key)) orgOwnersMap.set(key, rec);
+      } else if (norm === "facilitymanager") {
+        const rec = memberToUserRecord(member, "facility-manager");
+        const key = rec.id || rec.email;
+        if (key && !facilityManagersMap.has(key)) {
+          facilityManagersMap.set(key, rec);
+        }
+      }
+    });
+  });
+
+  // Also include any users with role facility-manager from the users list
+  regularUsers.forEach((u) => {
+    const norm = normalizeRole(u?.role || u?.user_role || u?.user_type);
+    if (norm === "facilitymanager") {
+      const key = String(u?.id || u?._id || u?.email || "").trim();
+      if (key && !facilityManagersMap.has(key)) {
+        facilityManagersMap.set(key, { ...u, role: "facility-manager" });
+      }
+    }
+  });
+
+  const organizationOwnersList = Array.from(orgOwnersMap.values());
+  const facilityManagersList = Array.from(facilityManagersMap.values());
+
   const usersList = (regularUsers || [])
     .filter(
       (user) =>
-        ![user.role, user.user_role, user.user_type].some(
-          (role) => String(role || "").trim().toLowerCase() === "tenant",
-        ),
+        normalizeRole(user?.role || user?.user_role || user?.user_type) === "user"
     )
     .map((u) => ({ ...u, role: "user" }));
 
-  // Deduplicate users for the "All Registered Users" list
-  // Priority: Admin > Property Owner > User
+  // Deduplicate all users
   const allUsersMap = new Map();
-  usersList.forEach((u) => allUsersMap.set(u.id, u));
-  ownersList.forEach((u) => allUsersMap.set(u.id, u));
-  adminsList.forEach((u) => allUsersMap.set(u.id, u));
+  usersList.forEach((u) => allUsersMap.set(String(u.id || u.email), u));
+  organizationOwnersList.forEach((u) =>
+    allUsersMap.set(String(u.id || u.email), u)
+  );
+  facilityManagersList.forEach((u) =>
+    allUsersMap.set(String(u.id || u.email), u)
+  );
   const allUsers = Array.from(allUsersMap.values());
 
   const stats = {
     totalUsers: allUsers.length,
-    admins: allUsers.filter((u) => u.role === "admin" || u.role === "SUPER_ADMIN").length,
-    propertyOwners: ownersList.length,
-    regularUsers: usersList.filter((u) => u.role === "user" || u.role === "USER").length,
+    organizationOwners: organizationOwnersList.length,
+    facilityManagers: facilityManagersList.length,
+    regularUsers: usersList.filter(
+      (u) => normalizeRole(u.role) === "user"
+    ).length,
     processedKyc: allUsers.filter((u) => u.kyc_status === "processing").length,
     activeUsers: allUsers.filter((u) => u.isActive === true).length,
     inactiveUsers: allUsers.filter((u) => u.isActive === false).length,
@@ -55,9 +198,21 @@ export default async function Page() {
   // ---- Hero stats (top 4 headline numbers) --------------------------------
   const heroStats = [
     { label: "Total Users", value: stats.totalUsers, hint: "All accounts" },
-    { label: "Property Owners", value: stats.propertyOwners, hint: "Listings owners" },
-    { label: "Admins", value: stats.admins, hint: "Elevated access" },
-    { label: "Regular Users", value: stats.regularUsers, hint: "Non-tenant accounts" },
+    {
+      label: "Organization Owners",
+      value: stats.organizationOwners,
+      hint: "Organization owners",
+    },
+    {
+      label: "Facility Managers",
+      value: stats.facilityManagers,
+      hint: "Facility operations",
+    },
+    {
+      label: "Regular Users",
+      value: stats.regularUsers,
+      hint: "User role accounts",
+    },
   ];
 
   // ---- Secondary status strip (health metrics) ----------------------------
@@ -84,34 +239,22 @@ export default async function Page() {
 
   return (
     <div className="space-y-6 p-2">
-      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
+      {dataErrorMessages.length > 0 ? (
+        <DataErrorNotice messages={dataErrorMessages} />
+      ) : null}
+
       {/* ---------- Hero summary ---------- */}
       <HeroBand
         tagline={`Admin console · ${today}`}
         title="User Management"
-        description="Every account in one place — admins, property owners and regular users, plus their verification and activity status."
+        description="Every account in one place — organization owners, facility managers, and regular users, plus their verification and activity status."
         actions={
-          <>
-            <Link
-              href="/admin/add-new-owner"
-              className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-            >
-              <FaPlus className="h-3.5 w-3.5" aria-hidden="true" />
-              Add owner
-            </Link>
-            <Link
-              href="/admin/invite-user"
-              className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-            >
-              <UserPlus className="h-4 w-4" aria-hidden="true" />
-              Add user
-            </Link>
-          </>
+         null
         }
         stats={heroStats}
       />
 
-      {/* ---------- Status strip (kept from old SummaryCards) ---------- */}
+      {/* ---------- Status strip ---------- */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {statusStats.map((s) => (
           <div
@@ -128,14 +271,28 @@ export default async function Page() {
         ))}
       </div>
 
-      {/* ---------- Existing content ---------- */}
-      <DashboardGridItem >
-        <AdminUsersList users={usersList} title="All Users List" variant="tenant" />
+      {/* ---------- Lists ---------- */}
+      <DashboardGridItem>
+        <AdminUsersList
+          users={usersList}
+          title="All Users List"
+          variant="tenant"
+        />
       </DashboardGridItem>
 
+      <DashboardGridItem>
+        <AdminPropertyOwnersList
+          owners={organizationOwnersList}
+          title="Organization Owners List"
+        />
+      </DashboardGridItem>
 
-      <DashboardGridItem >
-        <AdminPropertyOwnersList owners={ownersList} title="Property Owners List" />
+      <DashboardGridItem>
+        <AdminUsersList
+          users={facilityManagersList}
+          title="Facility Managers List"
+          variant="tenant"
+        />
       </DashboardGridItem>
     </div>
   );

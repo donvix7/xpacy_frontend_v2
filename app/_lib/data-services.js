@@ -2201,6 +2201,163 @@ export async function getAccountSubscriptions(){
   }
 }
 
+function normalizeOrganizationSubscription(rawSub, orgFallback = null) {
+  const candidateList = Array.isArray(rawSub?.subscriptions)
+    ? rawSub.subscriptions
+    : Array.isArray(rawSub?.data?.subscriptions)
+      ? rawSub.data.subscriptions
+      : Array.isArray(orgFallback?.subscriptions)
+        ? orgFallback.subscriptions
+        : null;
+
+  const activeFromList = candidateList
+    ? candidateList.find((s) =>
+        ["ACTIVE", "TRIALING", "TRIAL"].includes(
+          String(s?.status || "").toUpperCase()
+        )
+      ) || candidateList[0]
+    : null;
+
+  const sub =
+    rawSub?.subscription ??
+    rawSub?.data?.subscription ??
+    (rawSub?.data && typeof rawSub.data === "object" && !Array.isArray(rawSub.data) && (rawSub.data.status || rawSub.data.plan || rawSub.data.endDate)
+      ? rawSub.data
+      : null) ??
+    (rawSub && typeof rawSub === "object" && (rawSub.status || rawSub.plan || rawSub.endDate) && !rawSub.name
+      ? rawSub
+      : null) ??
+    orgFallback?.subscription ??
+    orgFallback?.owner?.subscription ??
+    activeFromList ??
+    null;
+
+  const explicitFlag =
+    rawSub?.hasActiveSubscription ??
+    rawSub?.isSubscriptionActive ??
+    rawSub?.data?.hasActiveSubscription ??
+    orgFallback?.hasActiveSubscription ??
+    orgFallback?.isSubscriptionActive;
+
+  const rawStatus =
+    sub?.status ??
+    rawSub?.subscriptionStatus ??
+    rawSub?.data?.subscriptionStatus ??
+    orgFallback?.subscriptionStatus ??
+    orgFallback?.subscription_status ??
+    (explicitFlag === true ? "ACTIVE" : "NONE");
+
+  const statusUpper = String(rawStatus || "NONE").toUpperCase();
+  const endDate = sub?.endDate || sub?.expiresAt || sub?.currentPeriodEnd || null;
+  const isExpired = endDate ? new Date(endDate).getTime() < Date.now() : false;
+  const isActive =
+    explicitFlag === true
+      ? !isExpired
+      : (statusUpper === "ACTIVE" || statusUpper === "TRIALING" || statusUpper === "TRIAL") &&
+        !isExpired;
+
+  return {
+    data: sub,
+    plan: sub?.plan ?? orgFallback?.plan ?? null,
+    status: rawStatus || "NONE",
+    isActive,
+    isExpired,
+    endDate,
+  };
+}
+
+export async function getOrganizationSubscription(organizationId, orgObject = null) {
+  const cleanId = String(organizationId || orgObject?.id || "").trim();
+  const token = await getRawToken();
+
+  // 1. Check if the organization object already includes subscription details
+  if (
+    orgObject &&
+    (orgObject.subscription ||
+      Array.isArray(orgObject.subscriptions) ||
+      orgObject.subscriptionStatus ||
+      orgObject.subscription_status ||
+      typeof orgObject.hasActiveSubscription === "boolean" ||
+      typeof orgObject.isSubscriptionActive === "boolean")
+  ) {
+    const embedded = normalizeOrganizationSubscription(null, orgObject);
+    if (embedded.isActive || embedded.data) {
+      return embedded;
+    }
+  }
+
+  if (!cleanId || !token) {
+    return normalizeOrganizationSubscription(null, orgObject);
+  }
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  // 2. Try dedicated organization subscription endpoint first
+  try {
+    const res = await safeFetch(
+      `${SERVICE_URL}/organizations/${encodeURIComponent(cleanId)}/subscription`,
+      { method: "GET", headers, cache: "no-store" }
+    );
+    if (res.ok) {
+      const payload = await safeJson(res);
+      if (payload) {
+        return normalizeOrganizationSubscription(payload, orgObject);
+      }
+    }
+  } catch {
+    // fall through to next endpoint
+  }
+
+  // 3. Try full organization details endpoint (may embed subscription or owner.subscription)
+  try {
+    const res = await safeFetch(
+      `${SERVICE_URL}/organizations/${encodeURIComponent(cleanId)}`,
+      { method: "GET", headers, cache: "no-store" }
+    );
+    if (res.ok) {
+      const payload = await safeJson(res);
+      const orgData =
+        payload?.organization ?? payload?.data?.organization ?? payload?.data ?? payload;
+      if (
+        orgData &&
+        (orgData.subscription ||
+          Array.isArray(orgData.subscriptions) ||
+          orgData.subscriptionStatus ||
+          orgData.subscription_status ||
+          typeof orgData.hasActiveSubscription === "boolean" ||
+          typeof orgData.isSubscriptionActive === "boolean" ||
+          orgData.owner?.subscription)
+      ) {
+        return normalizeOrganizationSubscription(null, orgData);
+      }
+    }
+  } catch {
+    // fall through
+  }
+
+  // 4. Fallback: query /account/subscription?organizationId=...
+  try {
+    const res = await safeFetch(
+      `${SERVICE_URL}/account/subscription?organizationId=${encodeURIComponent(cleanId)}`,
+      { method: "GET", headers, cache: "no-store" }
+    );
+    if (res.ok) {
+      const payload = await safeJson(res);
+      if (payload) {
+        return normalizeOrganizationSubscription(payload, orgObject);
+      }
+    }
+  } catch {
+    // fall through
+  }
+
+  return normalizeOrganizationSubscription(null, orgObject);
+}
+
 export async function getActiveOrganizationRole() {
   try {
     const cookieStore = await cookies();

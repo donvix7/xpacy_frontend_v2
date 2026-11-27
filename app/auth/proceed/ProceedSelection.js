@@ -57,10 +57,24 @@ export default function ProceedSelection({
 
     const hasOrganizations = organizations.length > 0;
     const hasLoadError = Boolean(errorMessage);
-    const isSubscriptionActive = Boolean(subscription?.isActive);
     const selectedOrganization = organizations.find(
         (organization) => String(organization.id) === selectedId
     );
+    const selectedOrgRequiresSub = Boolean(
+        selectedOrganization?.requiresSubscriptionCheck
+    );
+    const selectedOrgSub = selectedOrganization?.subscription || null;
+    const isSelectedOrgSubscriptionActive =
+        !selectedOrgRequiresSub || Boolean(selectedOrgSub?.isActive);
+    const hasAnyOwnerOrg = organizations.some((org) =>
+        Boolean(org?.requiresSubscriptionCheck)
+    );
+    const hasAnyActiveOrg = organizations.some(
+        (org) => !org?.requiresSubscriptionCheck || Boolean(org?.subscription?.isActive)
+    );
+    const subscribeHref = selectedId
+        ? `/auth/subscriptions?organizationId=${encodeURIComponent(selectedId)}`
+        : "/auth/subscriptions";
     const roleLabel = formatRoleLabel(role);
 
     // When there's nothing to pick from (empty list) we just go straight to
@@ -83,9 +97,11 @@ export default function ProceedSelection({
     };
 
     const continueWithSelection = async () => {
-        if (!isSubscriptionActive) {
+        if (!isSelectedOrgSubscriptionActive) {
             setError(
-                "An active subscription is required to select and access an organization workspace. Please choose a subscription plan to proceed."
+                selectedOrgSub?.isExpired
+                    ? "This organization's subscription has expired. Please renew its plan to access this workspace."
+                    : "This organization requires an active subscription before its workspace can be accessed."
             );
             setShowConfirmation(false);
             return;
@@ -115,10 +131,12 @@ export default function ProceedSelection({
             return;
         }
 
-        // Validate subscription before opening workspace confirmation
-        if (!isSubscriptionActive) {
+        // Validate the selected organization's subscription before opening workspace confirmation
+        if (!isSelectedOrgSubscriptionActive) {
             setError(
-                "An active subscription is required to select and access an organization workspace. Please choose a subscription plan to proceed, or proceed directly to your individual dashboard."
+                selectedOrgSub?.isExpired
+                    ? "This organization's subscription has expired. Please renew its plan to proceed, or skip to your personal dashboard."
+                    : "This organization requires an active subscription to access its workspace. Please choose a subscription plan, or skip to your personal dashboard."
             );
             return;
         }
@@ -145,21 +163,21 @@ export default function ProceedSelection({
                     </div>
                 </div>
 
-                {/* Subscription status indicator */}
-                {subscription && (
-                    isSubscriptionActive ? (
+                {/* Selected Organization Subscription status indicator (owners only) */}
+                {selectedOrganization && selectedOrgRequiresSub && (
+                    isSelectedOrgSubscriptionActive ? (
                         <div className="flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-ink">
                             <div className="flex items-center gap-2">
                                 <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
                                 <span className="font-mono text-[12.5px] text-ink">
-                                    Subscription Active:{" "}
+                                    Organization Subscription Active:{" "}
                                     <strong className="font-semibold text-emerald-600 dark:text-emerald-400">
-                                        {subscription.plan?.name || "Active Plan"}
+                                        {selectedOrgSub?.plan?.name || "Active Plan"}
                                     </strong>
                                 </span>
                             </div>
                             <span className="font-mono text-[11.5px] text-mute uppercase">
-                                {subscription.status}
+                                {selectedOrgSub?.status}
                             </span>
                         </div>
                     ) : (
@@ -168,15 +186,17 @@ export default function ProceedSelection({
                                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                                 <div>
                                     <p className="font-sans text-[13.5px] font-semibold text-ink">
-                                        {subscription.isExpired ? "Subscription Expired" : "Subscription Required for Workspaces"}
+                                        {selectedOrgSub?.isExpired
+                                            ? "Organization Subscription Expired"
+                                            : "Organization Subscription Required"}
                                     </p>
                                     <p className="mt-0.5 font-mono text-[12px] text-mute">
-                                        An active subscription is required to select and enter an organization workspace.
+                                        {selectedOrganization.name} needs an active subscription to open its workspace.
                                     </p>
                                 </div>
                             </div>
                             <Link
-                                href="/auth/subscriptions"
+                                href={subscribeHref}
                                 className="xp-btn xp-btn-fill shrink-0 py-2 px-3 text-center font-mono text-[12px] sm:w-auto"
                             >
                                 Subscribe Now
@@ -299,11 +319,20 @@ export default function ProceedSelection({
                                                         ? formatRoleLabel(userRoleInOrg)
                                                         : formatRoleLabel(role || "Member")}
                                                 </span>
-                                                {!isSubscriptionActive && (
-                                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 font-mono text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                                                        <AlertTriangle className="h-3 w-3" />
-                                                        Subscription required
-                                                    </span>
+                                                {organization?.requiresSubscriptionCheck && (
+                                                    organization?.subscription?.isActive ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 font-mono text-[11px] font-medium text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                            {organization.subscription.plan?.name || "Active subscription"}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 font-mono text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                                                            <AlertTriangle className="h-3 w-3" />
+                                                            {organization?.subscription?.isExpired
+                                                                ? "Subscription expired"
+                                                                : "Subscription required"}
+                                                        </span>
+                                                    )
                                                 )}
                                             </div>
                                         </span>
@@ -344,9 +373,9 @@ export default function ProceedSelection({
                                 {error}
                             </p>
                         </div>
-                        {!isSubscriptionActive && (
+                        {selectedId && !isSelectedOrgSubscriptionActive && (
                             <Link
-                                href="/auth/subscriptions"
+                                href={subscribeHref}
                                 className="xp-btn xp-btn-fill shrink-0 py-1.5 px-3 text-center font-mono text-[12px] sm:w-auto"
                             >
                                 Subscribe Now
@@ -355,34 +384,38 @@ export default function ProceedSelection({
                     </div>
                 )}
 
-                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    {selectedId && !isSubscriptionActive && (
+                <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                    {selectedId && !isSelectedOrgSubscriptionActive && (
                         <button
                             type="button"
                             disabled={isSubmitting}
                             onClick={() => void continueWithoutSelection()}
-                            className="xp-btn w-full py-3 text-center font-mono text-[14px] sm:w-auto"
+                            className="xp-btn w-full px-4 py-2.5 text-center font-mono text-[13px] whitespace-nowrap sm:w-auto"
                         >
                             Skip to personal dashboard
                         </button>
                     )}
 
-                    <Link
-                        href="/auth/subscriptions"
-                        className={
-                            hasLoadError || !isSubscriptionActive
-                                ? "xp-btn xp-btn-fill w-full py-3 text-center font-mono text-[14px] sm:w-auto"
-                                : "xp-btn w-full py-3 text-center font-mono text-[14px] sm:w-auto"
-                        }
-                    >
-                        {isSubscriptionActive ? "Manage Subscription" : "Subscribe"}
-                    </Link>
+                    {(hasLoadError || hasAnyOwnerOrg || !hasOrganizations) && (
+                        <Link
+                            href={subscribeHref}
+                            className={
+                                hasLoadError || (selectedId && !isSelectedOrgSubscriptionActive) || (!hasAnyActiveOrg && hasOrganizations)
+                                    ? "xp-btn xp-btn-fill w-full px-4 py-2.5 text-center font-mono text-[13px] whitespace-nowrap sm:w-auto"
+                                    : "xp-btn w-full px-4 py-2.5 text-center font-mono text-[13px] whitespace-nowrap sm:w-auto"
+                            }
+                        >
+                            {isSelectedOrgSubscriptionActive || hasAnyActiveOrg
+                                ? "Manage Subscription"
+                                : "Subscribe"}
+                        </Link>
+                    )}
 
                     <button
                         type="button"
                         disabled={isSubmitting}
                         onClick={handleContinueClick}
-                        className="xp-btn xp-btn-fill w-full py-3 font-mono text-[14px] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                        className="xp-btn xp-btn-fill w-full px-4 py-2.5 font-mono text-[13px] whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                     >
                         {isSubmitting ? (
                             <LoaderCircle className="h-4 w-4 animate-spin" />

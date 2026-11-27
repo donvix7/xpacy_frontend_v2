@@ -39,40 +39,43 @@ function buildFeatures(plan) {
 
 // -- Component --
 
+const BILLING_CYCLES = [
+  { value: "monthly", label: "Bill Monthly" },
+  { value: "quarterly", label: "Bill Quarterly" },
+  { value: "yearly", label: "Bill Yearly" },
+];
+
 export default function PricingCards({ plans, selectedPlan, returnTo, canClaimTrial }) {
   const [billingCycle, setBillingCycle] = useState("monthly");
 
   return (
     <div className="w-full">
-      {/* Interactive Toggle */}
-      <div className="mb-12 flex items-center justify-center gap-4 text-sm font-semibold">
-        <span 
-          className={`transition-colors duration-200 ${billingCycle === "monthly" ? "text-gray-900" : "text-gray-400"}`}
+      {/* Interactive 3-way Billing Toggle */}
+      <div className="mb-12 flex items-center justify-center">
+        <div
+          role="radiogroup"
+          aria-label="Billing cycle"
+          className="inline-flex flex-wrap items-center justify-center gap-1 rounded-full border border-gray-200 bg-gray-100 p-1 text-sm font-semibold"
         >
-          Bill Monthly
-        </span>
-        
-        <button
-          type="button"
-          role="switch"
-          aria-checked={billingCycle === "yearly"}
-          onClick={() => setBillingCycle((prev) => (prev === "monthly" ? "yearly" : "monthly"))}
-          className="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full bg-primary/20 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-        >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-primary shadow-sm ring-0 transition-transform duration-200 ease-in-out ${
-              billingCycle === "yearly" ? "translate-x-6" : "translate-x-1"
-            }`}
-          />
-        </button>
-        
-        <div className="flex items-center gap-2">
-          <span 
-            className={`transition-colors duration-200 ${billingCycle === "yearly" ? "text-gray-900" : "text-gray-400"}`}
-          >
-            Bill Yearly
-          </span>
-          
+          {BILLING_CYCLES.map((cycle) => {
+            const active = billingCycle === cycle.value;
+            return (
+              <button
+                key={cycle.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setBillingCycle(cycle.value)}
+                className={`cursor-pointer rounded-full px-4 py-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
+                  active
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                {cycle.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -90,7 +93,7 @@ export default function PricingCards({ plans, selectedPlan, returnTo, canClaimTr
           if (billingCycle === "yearly") {
             priceToShow = yearlyPrice;
             intervalLabel = "/ Year";
-          } else if (billingCycle === "quarterly" && quarterlyPrice) {
+          } else if (billingCycle === "quarterly") {
             priceToShow = quarterlyPrice;
             intervalLabel = "/ Quarter";
           }

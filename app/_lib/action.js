@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers"
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getAdminOrganizationMembers, getOrganizationMembers, getAccountSubscriptions } from "./data-services";
+import { getAdminOrganizationMembers, getOrganizationMembers, getAccountSubscriptions, getOrganizationSubscription } from "./data-services";
 import { getOrganizationMemberRole, normalizeOrganizationMembers } from "./organization-members";
 import { toDataServiceError } from "./api-error";
 
@@ -27,9 +27,10 @@ const dashboardByOrganizationRole = {
   propertyowner: "/dashboard/property-owner",
   organizationadmin: "/dashboard/property-owner",
   organizationadministrator: "/dashboard/property-owner",
-  organizationowner: "/dashboard/property-owner",
+  organizationowner: "/dashboard/facility-manager",
+  orgowner: "/dashboard/facility-manager",
   orgadmin: "/dashboard/property-owner",
-  owner: "/dashboard/property-owner",
+  owner: "/dashboard/facility-manager",
   admin: "/dashboard/property-owner",
   tenant: "/dashboard/user",
 };
@@ -331,32 +332,6 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
   if (typeof organizationId === "string" && organizationId.trim()) {
     const selectedOrganizationId = organizationId.trim();
 
-    // Validate account subscription before granting organization workspace access
-    try {
-      const subRaw = await getAccountSubscriptions();
-      const subscription = subRaw?.subscription ?? subRaw?.data?.subscription ?? subRaw?.data ?? null;
-      const status = String(subscription?.status || "").toUpperCase();
-      const isExpired = subscription?.endDate ? new Date(subscription.endDate).getTime() < Date.now() : false;
-      const isSubActive = (status === "ACTIVE" || status === "TRIALING") && !isExpired;
-
-      if (!isSubActive) {
-        return {
-          success: false,
-          requiresSubscription: true,
-          redirectTo: "/auth/subscriptions",
-          message: "An active subscription is required to select and access an organization workspace. Please choose a subscription plan to proceed.",
-        };
-      }
-    } catch (subError) {
-      console.warn("Subscription check failed in completeProceedSelection:", subError?.message || subError);
-      return {
-        success: false,
-        requiresSubscription: true,
-        redirectTo: "/auth/subscriptions",
-        message: "Unable to verify your account's subscription. An active subscription is required to select an organization workspace.",
-      };
-    }
-
     organizationRole = await getOrganizationMembershipRole(
       selectedOrganizationId,
       cookieStore.get("token")?.value,
@@ -364,7 +339,8 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
       cookieStore.get("userEmail")?.value
     );
 
-    const organizationDashboard = dashboardByOrganizationRole[normalizeRole(organizationRole)];
+    const normalizedOrgRole = normalizeRole(organizationRole);
+    const organizationDashboard = dashboardByOrganizationRole[normalizedOrgRole];
     if (!organizationRole || !organizationDashboard) {
       cookieStore.delete("organizationId");
       cookieStore.delete("organizationRole");
@@ -372,6 +348,32 @@ export async function completeProceedSelection(organizationId, requestedReturnTo
         success: false,
         message: "We couldn’t verify your role in that organization. Please try again or ask an organization admin to check your membership.",
       };
+    }
+
+    // Only enforce subscription check for organization owners
+    const isOrganizationOwner = ["owner", "organizationowner", "orgowner"].includes(normalizedOrgRole);
+    if (isOrganizationOwner) {
+      try {
+        const orgSub = await getOrganizationSubscription(selectedOrganizationId);
+        if (!orgSub?.isActive) {
+          return {
+            success: false,
+            requiresSubscription: true,
+            redirectTo: `/auth/subscriptions?organizationId=${encodeURIComponent(selectedOrganizationId)}`,
+            message: orgSub?.isExpired
+              ? "This organization's subscription has expired. Please renew the organization's subscription plan to access its workspace."
+              : "This organization requires an active subscription before its workspace can be accessed.",
+          };
+        }
+      } catch (subError) {
+        console.warn("Organization subscription check failed in completeProceedSelection:", subError?.message || subError);
+        return {
+          success: false,
+          requiresSubscription: true,
+          redirectTo: `/auth/subscriptions?organizationId=${encodeURIComponent(selectedOrganizationId)}`,
+          message: "Unable to verify this organization's subscription status. Please try again.",
+        };
+      }
     }
 
     cookieStore.set("organizationId", selectedOrganizationId, {
@@ -558,27 +560,86 @@ function getApiErrorMessage(data, fallback) {
 }
 
 export async function handleSignup(userData, referralCode) {
-  const payload = {
-    firstName: userData.firstname ?? userData.firstName,
-    lastName: userData.lastname ?? userData.lastName,
-    phone: userData.phoneNumber ?? userData.phone,
-    email: userData.email,
-    password: userData.password,
-  };
-  const query = referralCode ? `?referralCode=${encodeURIComponent(referralCode)}` : "";
-  const response = await safeFetch(`https://services.xpacy.com/api/v1/auth/register${query}`, {
+  try {
+    const email = String(userData?.email || "").trim().toLowerCase();
+    const password = String(userData?.password || "");
+    const firstName = String(
+      userData?.firstName ?? userData?.firstname ?? ""
+    ).trim();
+    const lastName = String(
+      userData?.lastName ?? userData?.lastname ?? ""
+    ).trim();
+    const phone = String(
+      userData?.phone ?? userData?.phoneNumber ?? ""
+    ).trim();
 
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload)
-  })
-  const data = await response.json();
+    if (!email || !password || !firstName || !lastName) {
+      return {
+        success: false,
+        message: "Email, password, first name, and last name are required.",
+      };
+    }
 
-  if (!response.ok) return { success: false, message: getApiErrorMessage(data, "We could not create your account. Please try again.") }
+    // RegisterDto: { email*, password*, firstName*, lastName*, phone? }
+    const payload = {
+      email,
+      password,
+      firstName,
+      lastName,
+      ...(phone ? { phone } : {}),
+    };
 
-  return { success: true, message: data.message || "Account created. Check your email to verify your address.", user: data.user }
+    const query = referralCode
+      ? `?referralCode=${encodeURIComponent(referralCode)}`
+      : "";
+    const response = await safeFetch(
+      `https://services.xpacy.com/api/v1/auth/register${query}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = { message: response.statusText };
+    }
+
+    if (!response.ok) {
+      console.error("handleSignup failed:", {
+        status: response.status,
+        data,
+      });
+      return {
+        success: false,
+        message: getApiErrorMessage(
+          data,
+          "We could not create your account. Please try again."
+        ),
+      };
+    }
+
+    return {
+      success: true,
+      message:
+        data?.message ||
+        "Account created. Check your email to verify your address.",
+      user: data?.data?.user || data?.user || data?.data || null,
+    };
+  } catch (error) {
+    console.error("handleSignup error:", error);
+    return {
+      success: false,
+      message:
+        error?.message || "We could not create your account. Please try again.",
+    };
+  }
 }
 
 export async function handlePropertyOwnerSignup(userData, referralCode) {
@@ -1715,7 +1776,14 @@ export async function refreshToken() {
       return { success: false, message: data.message || "Token refresh failed" };
     }
 
-    const newAccessToken = data.accessToken || data.token;
+    const newAccessToken =
+      data?.accessToken ||
+      data?.token ||
+      data?.data?.accessToken ||
+      data?.data?.token;
+    const newRefreshToken =
+      data?.refreshToken ||
+      data?.data?.refreshToken;
 
     // Persist the new tokens into cookies
     if (newAccessToken) {
@@ -1728,8 +1796,8 @@ export async function refreshToken() {
       });
     }
 
-    if (data.refreshToken) {
-      cookieStore.set("refreshToken", data.refreshToken, {
+    if (newRefreshToken) {
+      cookieStore.set("refreshToken", newRefreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
@@ -4397,6 +4465,7 @@ export async function createOrganization(data){
     },
     body: JSON.stringify(payload)
   });
+  console.log(response)
   return response.json(); 
 }
 
@@ -4902,8 +4971,17 @@ export async function saveSubscriptionPlan(formData) {
   }
 
   const id = String(formData.get("id") || "").trim();
-  const priceValue = String(formData.get("price") || "").trim();
+  const parseNullableNumber = (key) => {
+    const raw = String(formData.get(key) ?? "").trim();
+    if (raw === "") return null;
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : NaN;
+  };
+
   const isActive = formData.get("isActive") === "on";
+  const planType = String(formData.get("planType") || "STANDARD").trim().toUpperCase();
+  const interval = String(formData.get("interval") || "MONTHLY").trim().toUpperCase();
+
   let features;
   try {
     features = JSON.parse(String(formData.get("features") || "{}"));
@@ -4914,32 +4992,75 @@ export async function saveSubscriptionPlan(formData) {
     return { success: false, message: "Features must be a JSON object." };
   }
 
-  const payload = {
-    name: String(formData.get("name") || "").trim(),
-    slug: String(formData.get("slug") || "").trim().toLowerCase(),
-    description: String(formData.get("description") || "").trim(),
-    currency: String(formData.get("currency") || "NGN").trim().toUpperCase(),
-    price: priceValue === "" ? null : Number(priceValue),
-    interval: String(formData.get("interval") || "MONTHLY").trim().toUpperCase(),
-    features,
-    maxOrganizations: Number(formData.get("maxOrganizations") || 0),
-    maxProperties: Number(formData.get("maxProperties") || 0),
-    isActive,
-    sortOrder: Number(formData.get("sortOrder") || 0),
-  };
+  const monthlyPrice = parseNullableNumber("monthlyPrice");
+  const quarterlyPrice = parseNullableNumber("quarterlyPrice");
+  const yearlyPrice = parseNullableNumber("yearlyPrice");
+  const durationDays = parseNullableNumber("durationDays");
+  const maxOrganizations = parseNullableNumber("maxOrganizations");
+  const maxProperties = parseNullableNumber("maxProperties");
+  const maxBuildings = parseNullableNumber("maxBuildings");
+  const maxUnits = parseNullableNumber("maxUnits");
+  const sortOrder = Number(formData.get("sortOrder") || 0);
 
-  if (!payload.name || !payload.slug) return { success: false, message: "Enter a name and slug for this plan." };
-  if (!Number.isFinite(payload.price) || payload.price < 0) {
-    return { success: false, message: "Plan price must be a valid non-negative number." };
+  const name = String(formData.get("name") || "").trim();
+  const slug = String(formData.get("slug") || "").trim().toLowerCase();
+
+  if (!name) return { success: false, message: "Enter a name for this plan." };
+  if (!["STANDARD", "TRIAL", "LIFETIME"].includes(planType)) {
+    return { success: false, message: "Choose a valid plan type (STANDARD, TRIAL, or LIFETIME)." };
   }
-  if (!Number.isInteger(payload.maxOrganizations) || payload.maxOrganizations < 0 ||
-      !Number.isInteger(payload.maxProperties) || payload.maxProperties < 0 ||
-      !Number.isInteger(payload.sortOrder) || payload.sortOrder < 0) {
-    return { success: false, message: "Limits and sort order must be non-negative whole numbers." };
+  if (!["MONTHLY", "QUARTERLY", "YEARLY"].includes(interval)) {
+    return { success: false, message: "Choose a valid billing interval (MONTHLY, QUARTERLY, or YEARLY)." };
   }
-  if (!["MONTHLY", "YEARLY"].includes(payload.interval)) {
-    return { success: false, message: "Choose a valid billing interval." };
+
+  for (const [label, val] of [
+    ["Monthly price", monthlyPrice],
+    ["Quarterly price", quarterlyPrice],
+    ["Yearly price", yearlyPrice],
+  ]) {
+    if (val !== null && (!Number.isFinite(val) || val < 0)) {
+      return { success: false, message: `${label} must be a valid non-negative number.` };
+    }
   }
+
+  for (const [label, val] of [
+    ["Maximum organizations", maxOrganizations],
+    ["Maximum properties", maxProperties],
+    ["Maximum buildings", maxBuildings],
+    ["Maximum units", maxUnits],
+  ]) {
+    if (val !== null && (!Number.isInteger(val) || val < 0)) {
+      return { success: false, message: `${label} must be a non-negative whole number or left blank for unlimited.` };
+    }
+  }
+
+  if (!Number.isInteger(sortOrder) || sortOrder < 0) {
+    return { success: false, message: "Sort order must be a non-negative whole number." };
+  }
+
+  if (planType === "TRIAL" && durationDays !== null && (!Number.isInteger(durationDays) || durationDays <= 0)) {
+    return { success: false, message: "Trial duration days must be a positive whole number." };
+  }
+
+  const payload = {
+    name,
+    ...(slug ? { slug } : {}),
+    description: String(formData.get("description") || "").trim(),
+    planType,
+    ...(planType === "TRIAL" ? { durationDays: durationDays ?? 14 } : {}),
+    monthlyPrice,
+    quarterlyPrice,
+    yearlyPrice,
+    currency: String(formData.get("currency") || "NGN").trim().toUpperCase(),
+    interval,
+    features,
+    maxOrganizations,
+    maxProperties,
+    maxBuildings,
+    maxUnits,
+    isActive,
+    sortOrder,
+  };
 
   try {
     const endpoint = "https://services.xpacy.com/api/v1/admin/subscription-plans";
@@ -4953,13 +5074,82 @@ export async function saveSubscriptionPlan(formData) {
       body: JSON.stringify(payload),
       cache: "no-store",
     });
+    console.log(response)
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result?.success === false || result?.error) {
-      return { success: false, message: result?.message || result?.error || "The subscription plan could not be saved." };
+      const errMsg = Array.isArray(result?.message)
+        ? result.message.join(", ")
+        : result?.message || result?.error;
+      return { success: false, message: errMsg || "The subscription plan could not be saved." };
     }
     revalidatePath("/dashboard/admin/subscriptions");
     revalidatePath("/subscriptions");
     return { success: true };
+  } catch {
+    return { success: false, message: "The subscription service could not be reached. Try again." };
+  }
+}
+
+export async function assignUserSubscription(formData) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const role = normalizeRole(cookieStore.get("userRole")?.value);
+  if (!token || !["admin", "administrator", "superadmin", "superadministrator"].includes(role)) {
+    return { success: false, message: "Only an administrator can assign subscriptions." };
+  }
+
+  const userId = String(formData.get("userId") || "").trim();
+  const planId = String(formData.get("planId") || "").trim();
+  const billingInterval = String(formData.get("billingInterval") || "").trim().toUpperCase();
+  const rawStartDate = String(formData.get("startDate") || "").trim();
+  const rawEndDate = String(formData.get("endDate") || "").trim();
+
+  if (!userId) return { success: false, message: "Select a user account to assign this plan to." };
+  if (!planId) return { success: false, message: "Select a subscription plan to assign." };
+  if (billingInterval && !["MONTHLY", "QUARTERLY", "YEARLY"].includes(billingInterval)) {
+    return { success: false, message: "Choose a valid billing interval (MONTHLY, QUARTERLY, or YEARLY)." };
+  }
+
+  const payload = { userId, planId };
+  if (billingInterval) payload.billingInterval = billingInterval;
+
+  if (rawStartDate) {
+    const start = new Date(rawStartDate);
+    if (Number.isNaN(start.getTime())) {
+      return { success: false, message: "Start date must be a valid date." };
+    }
+    payload.startDate = start.toISOString();
+  }
+
+  if (rawEndDate) {
+    const end = new Date(rawEndDate);
+    if (Number.isNaN(end.getTime())) {
+      return { success: false, message: "End date must be a valid date." };
+    }
+    payload.endDate = end.toISOString();
+  }
+
+  try {
+    const response = await fetch("https://services.xpacy.com/api/v1/admin/subscriptions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result?.success === false || result?.error) {
+      const errMsg = Array.isArray(result?.message)
+        ? result.message.join(", ")
+        : result?.message || result?.error;
+      return { success: false, message: errMsg || "Could not assign subscription to this user." };
+    }
+    revalidatePath("/dashboard/admin/subscriptions");
+    revalidatePath("/dashboard/admin/payments");
+    return { success: true, message: "Subscription assigned successfully." };
   } catch {
     return { success: false, message: "The subscription service could not be reached. Try again." };
   }

@@ -8,8 +8,8 @@ export default function UsersListTabs({ allUsers, regularUsers, owners, admins }
     const tabs = [
         { id: "all", label: "Registered Users" },
         { id: "tenants", label: "Tenants / Buyers" },
-        { id: "owners", label: "Property Owners" },
-        { id: "admins", label: "Admins" }
+        { id: "owners", label: "Organization Owners" },
+        { id: "admins", label: "Facility Managers" }
     ];
 
     return (
@@ -38,10 +38,10 @@ export default function UsersListTabs({ allUsers, regularUsers, owners, admins }
                      <AdminUsersList users={regularUsers} title="Tenants / Buyers List" />
                 )}
                 {activeTab === "owners" && (
-                     <AdminUsersList users={owners} title="Property Owners List" />
+                     <AdminUsersList users={owners} title="Organization Owners List" />
                 )}
                 {activeTab === "admins" && (
-                     <AdminUsersList users={admins} title="Admins List" />
+                     <AdminUsersList users={admins} title="Facility Managers List" />
                 )}
             </div>
         </div>

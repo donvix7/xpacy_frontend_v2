@@ -1,5 +1,7 @@
 import AdminSubscriptionPlans from "@/app/_components/AdminSubscriptionPlans";
-import { getSubscriptionList } from "@/app/_lib/data-services";
+import CreateSubscriptionPlanButton from "@/app/_components/CreateSubscriptionPlanButton";
+import HeroBand from "@/app/_components/HeroBand";
+import { getSubscriptionList, getAllUsers } from "@/app/_lib/data-services";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
@@ -23,22 +25,46 @@ function formatPrice(amount, currency = "₦") {
   return `${currency}${n.toLocaleString()}`;
 }
 
-export default async function Page() {
-  const results = await Promise.allSettled([getSubscriptionList()]);
-  const dataErrorMessages = getSettledErrorMessages(results);
+export default async function Page({ searchParams }) {
+  const resolvedParams = (await searchParams) || {};
+  const openCreate = resolvedParams?.create === "1";
+
+  const results = await Promise.allSettled([
+    getSubscriptionList(),
+    getAllUsers(),
+  ]);
+  const dataErrorMessages = getSettledErrorMessages([results[0]]);
   const plans = unwrapPlans(results[0].status === "fulfilled" ? results[0].value : null);
+  const users =
+    results[1].status === "fulfilled" && Array.isArray(results[1].value)
+      ? results[1].value
+      : [];
 
   // ---- Hero stats ----------------------------------------------------------
   const totalPlans = plans.length;
   const activePlans = plans.filter(
-    (p) => p.isActive === true || p.active === true || p.status === "active",
+    (p) =>
+      p.isActive !== false &&
+      p.active !== false &&
+      String(p.status || "ACTIVE").toLowerCase() !== "inactive"
   ).length;
   const monthlyPlans = plans.filter(
-    (p) => (p.interval || p.billingCycle || p.period) === "monthly",
+    (p) =>
+      String(p.interval || p.billingCycle || p.period || "").toLowerCase() ===
+      "monthly"
   ).length;
 
   const prices = plans
-    .map((p) => Number(p.price ?? p.amount ?? p.cost))
+    .map((p) =>
+      Number(
+        p.monthlyPrice ??
+          p.price ??
+          p.quarterlyPrice ??
+          p.yearlyPrice ??
+          p.amount ??
+          p.cost
+      )
+    )
     .filter((n) => Number.isFinite(n) && n > 0);
   const minPrice = prices.length ? Math.min(...prices) : null;
   const maxPrice = prices.length ? Math.max(...prices) : null;
@@ -54,7 +80,7 @@ export default async function Page() {
     { label: "Plans", value: totalPlans, hint: "Configured tiers" },
     { label: "Active", value: activePlans, hint: "Visible to customers" },
     { label: "Monthly", value: monthlyPlans, hint: "Billed monthly" },
-    { label: "Price range", value: priceRange, hint: "Across all plans" },
+    { label: "Monthly range", value: priceRange, hint: "Across all plans" },
   ];
 
   const today = new Date().toLocaleDateString("en-NG", {
@@ -66,49 +92,23 @@ export default async function Page() {
 
   return (
     <div className="space-y-8 p-2">
-      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
-      {/* ---------- Hero summary ---------- */}
-      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
-        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
-                Admin console · {today}
-              </p>
-              <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
-                Manage Subscriptions
-              </h1>
-              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
-                Create and update the plans shown on the subscriptions page — pricing, billing cycles and visibility in one place.
-              </p>
-            </div>
-          </div>
+      {dataErrorMessages.length > 0 ? (
+        <DataErrorNotice messages={dataErrorMessages} />
+      ) : null}
 
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {heroStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
-              >
-                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
-                  {stat.label}
-                </dt>
-                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
-                  {typeof stat.value === "number"
-                    ? stat.value.toLocaleString()
-                    : stat.value}
-                </dd>
-                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
-                  {stat.hint}
-                </p>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
+      <HeroBand
+        tagline={`Admin console · ${today}`}
+        title="Manage Subscriptions"
+        description="Create and update the plans shown on the subscriptions page — pricing, billing cycles and visibility in one place."
+        actions={<CreateSubscriptionPlanButton />}
+        stats={heroStats}
+      />
 
-      {/* ---------- Existing content ---------- */}
-      <AdminSubscriptionPlans plans={plans} />
+      <AdminSubscriptionPlans
+        plans={plans}
+        users={users}
+        defaultCreateOpen={openCreate}
+      />
     </div>
   );
 }

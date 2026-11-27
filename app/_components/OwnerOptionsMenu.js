@@ -49,13 +49,8 @@ export default function OwnerOptionsMenu({ id }) {
     const actions = [
         {
             label: "View owner details",
-            href: `/admin/owner-details/${id}`,
+            href: `/dashboard/admin/users/${id}`,
             icon: <VscNote className="text-gray-400" />,
-        },
-        {
-            label: "Issue invoice",
-            href: `/admin/issue-invoice/${id}`,
-            icon: <TbInvoice className="text-gray-400" />,
         },
         {
             label: "Delete owner",

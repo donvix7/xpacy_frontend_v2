@@ -1,15 +1,16 @@
+import Link from "next/link";
 import { cookies } from "next/headers";
+import { Plus, Wrench } from "lucide-react";
 import {
     getPropertyOwnerProfile,
     getPropertyOwnerProperties,
     getPropertyOwnerServices,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import SummaryCards from "@/app/_components/SummaryCards";
+import DataTable from "@/app/_components/DataTable";
 import EmptyState from "@/app/_components/EmptyState";
-import { FaCheckCircle } from "react-icons/fa";
-import { FaClipboardList, FaClock } from "react-icons/fa6";
-import { PiSpinner } from "react-icons/pi";
+import HeroBand from "@/app/_components/HeroBand";
+import StatusChips from "@/app/_components/StatusChips";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
 
@@ -24,95 +25,146 @@ export default async function Page() {
     ]);
     const dataErrorMessages = getSettledErrorMessages(results);
 
-    const profile = results[0].status === "fulfilled" ? results[0].value : null;
-    const propertiesData = results[1].status === "fulfilled" ? results[1].value : [];
     const services = results[2].status === "fulfilled" ? results[2].value : [];
-
-    const allProperties = Array.isArray(propertiesData?.[0]) ? propertiesData[0] : Array.isArray(propertiesData) ? propertiesData : [];
-    const properties = allProperties.filter(p => p.property_owner_id === profile?.id);
     const myServices = Array.isArray(services) ? services : [];
 
-    const maintenanceServices = myServices.filter(s =>
-        ["maintenance", "repair", "plumbing", "electrical", "cleaning", "hvac", "painting", "general"].includes(
-            (s.service_type || s.category || "").toLowerCase()
-        )
+    const maintenanceServices = myServices.filter((s) =>
+        [
+            "maintenance",
+            "repair",
+            "plumbing",
+            "electrical",
+            "cleaning",
+            "hvac",
+            "painting",
+            "general",
+        ].includes((s.service_type || s.category || "").toLowerCase())
     );
-    const pendingMaintenance = maintenanceServices.filter(s => (s.status || "").toLowerCase() === "pending");
-    const inProgressMaintenance = maintenanceServices.filter(s => (s.status || "").toLowerCase() === "in-progress");
-    const completedMaintenance = maintenanceServices.filter(s => (s.status || "").toLowerCase() === "completed");
 
-const summaryCards = [
-    {
-        title: "Total Requests",
-        count: maintenanceServices.length,
-        icon: <FaClipboardList className="text-blue-700" size={20} />,
-        color: "bg-blue-100 border-blue-700",
-        bgColor: "bg-blue-100"
-    },
-    {
-        title: "Pending",
-        count: pendingMaintenance.length,
-        icon: <FaClock className="text-amber-700" size={20} />,
-        color: "bg-amber-100 border-amber-700",
-        bgColor: "bg-amber-100"
-    },
-    {
-        title: "In Progress",
-        count: inProgressMaintenance.length,
-        icon: <PiSpinner className="text-blue-700" size={20} animate-spin />,
-        color: "bg-blue-100 border-blue-700",
-        bgColor: "bg-blue-100"
-    },
-    {
-        title: "Completed",
-        count: completedMaintenance.length,
-        icon: <FaCheckCircle className="text-green-700" size={20} />,
-        color: "bg-green-100 border-green-700",
-        bgColor: "bg-green-100"
-    }
-];
+    const pendingMaintenance = maintenanceServices.filter(
+        (s) => (s.status || "").toLowerCase() === "pending"
+    );
+    const inProgressMaintenance = maintenanceServices.filter((s) =>
+        ["in-progress", "in_progress"].includes((s.status || "").toLowerCase())
+    );
+    const completedMaintenance = maintenanceServices.filter((s) =>
+        ["completed", "resolved", "closed"].includes((s.status || "").toLowerCase())
+    );
+
+    const today = new Date().toLocaleDateString("en-NG", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    });
+
+    const addHref = `/admin/add-new-maintenance?returnTo=${encodeURIComponent(
+        "/dashboard/property-manager/maintenance"
+    )}`;
+
+    const columns = [
+        {
+            heading: "Request",
+            render: (service, idx) => (
+                <span className="text-sm font-medium text-ink">
+                    {service.title || service.description || `Request ${idx + 1}`}
+                </span>
+            ),
+        },
+        {
+            heading: "Type",
+            className: "capitalize text-mute",
+            render: (service) =>
+                service.service_type || service.category || "General",
+        },
+        {
+            heading: "Date",
+            className: "font-mono text-xs text-mute",
+            render: (service) =>
+                service.created_at || service.createdAt
+                    ? new Date(
+                          service.created_at || service.createdAt
+                      ).toLocaleDateString("en-NG", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                      })
+                    : "—",
+        },
+        {
+            heading: "Status",
+            center: true,
+            render: (service) => (
+                <div className="flex justify-center">
+                    <StatusChips status={(service.status || "pending").toLowerCase()} />
+                </div>
+            ),
+        },
+    ];
 
     return (
-        <div className="space-y-8 p-2">
-            {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
-            <p className="lg:text-4xl text-[28px] text-primary font-bold capitalize mb-8">Maintenance & Work Orders</p>
+        <div className="space-y-8 p-2 sm:p-4">
+            {dataErrorMessages.length > 0 ? (
+                <DataErrorNotice messages={dataErrorMessages} />
+            ) : null}
 
-            <SummaryCards cards={summaryCards} />
+            <HeroBand
+                tagline={`Property operations · ${today}`}
+                title="Maintenance & Work Orders"
+                description="Track open maintenance requests, active repairs, and completed work orders across your managed portfolio."
+                stats={[
+                    {
+                        label: "Total Requests",
+                        value: maintenanceServices.length,
+                        hint: "All work orders",
+                    },
+                    {
+                        label: "Pending",
+                        value: pendingMaintenance.length,
+                        hint: "Awaiting action",
+                    },
+                    {
+                        label: "In Progress",
+                        value: inProgressMaintenance.length,
+                        hint: "Currently active",
+                    },
+                    {
+                        label: "Completed",
+                        value: completedMaintenance.length,
+                        hint: "Resolved orders",
+                    },
+                ]}
+                actions={
+                    <Link
+                        href={addHref}
+                        className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
+                    >
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        New request
+                    </Link>
+                }
+            />
 
-            <DashboardGridItem title="Work Orders">
+            <DashboardGridItem title={`Work Orders (${maintenanceServices.length})`}>
                 {maintenanceServices.length === 0 ? (
-                    <EmptyState message="No work orders found. Maintenance requests will appear here when submitted." />
+                    <EmptyState
+                        icon={<Wrench className="h-10 w-10 text-primary" aria-hidden="true" />}
+                        title="No work orders found"
+                        message="Maintenance requests will appear here when submitted."
+                        cta="New request"
+                        link={addHref}
+                    />
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-primary-200">
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Request</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Type</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Date</th>
-                                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {maintenanceServices.slice(0, 20).map((service, i) => (
-                                    <tr key={service.id || service._id || i} className="border-b border-primary-100 hover:bg-gray-50">
-                                        <td className="py-3 px-4 text-sm font-medium">{service.title || service.description || `Request ${i + 1}`}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600 capitalize">{service.service_type || service.category || "General"}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">{service.created_at ? new Date(service.created_at).toLocaleDateString() : "—"}</td>
-                                        <td className="py-3 px-4">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                (service.status || "").toLowerCase() === "completed" ? "bg-green-100 text-green-700"
-                                                : (service.status || "").toLowerCase() === "in-progress" ? "bg-blue-100 text-blue-700"
-                                                : "bg-yellow-100 text-yellow-700"
-                                            }`}>
-                                                {service.status || "Pending"}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <DataTable
+                        data={maintenanceServices}
+                        columns={columns}
+                        rowKey={(service, idx) =>
+                            service.id || service._id || `maint-${idx}`
+                        }
+                        showPagination={maintenanceServices.length > 10}
+                        pageSize={10}
+                        className="p-0! border-none shadow-none"
+                    />
                 )}
             </DashboardGridItem>
         </div>

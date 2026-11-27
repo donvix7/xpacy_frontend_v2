@@ -21,6 +21,7 @@ import {
 import SpinnerMini from "../SpinnerMini";
 import { createBlog, updateBlog } from "../../_lib/action";
 import { compressImages } from "../../_lib/image-compression";
+import { buildAutoSlug, randomAlphaNum } from "../../_lib/slug";
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
@@ -72,9 +73,9 @@ export default function BlogForm({ initialData = null, isEditMode = false }) {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
 
+    const [slugSuffix] = useState(() => randomAlphaNum(5));
     const [title, setTitle] = useState(initialData?.title ?? "");
     const [slug, setSlug] = useState(initialData?.slug ?? "");
-    const [slugTouched, setSlugTouched] = useState(!!initialData?.slug);
     const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? "");
     const [content, setContent] = useState(initialData?.content ?? "");
     const [coverImage, setCoverImage] = useState(
@@ -87,10 +88,12 @@ export default function BlogForm({ initialData = null, isEditMode = false }) {
 
     const [errors, setErrors] = useState({});
 
-    /* ---- Auto-slug from title (only if not manually edited) ---- */
+    /* ---- Auto-slug from title (always derived on create; preserved on edit) ---- */
     useEffect(() => {
-        if (!slugTouched && title) setSlug(slugify(title));
-    }, [title, slugTouched]);
+        if (!isEditMode || !initialData?.slug) {
+            setSlug(buildAutoSlug(title, slugSuffix));
+        }
+    }, [title, slugSuffix, isEditMode, initialData?.slug]);
 
     /* ---- Cover image upload ---- */
     const handleCoverChange = async (e) => {
@@ -414,7 +417,7 @@ export default function BlogForm({ initialData = null, isEditMode = false }) {
                                 error={errors.slug?.message}
                                 htmlFor="slug"
                             >
-                                <div className="flex overflow-hidden rounded-lg border border-gray-300 bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                                <div className="flex overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
                                     <span className="flex items-center border-r border-gray-200 bg-gray-50 px-2.5 font-mono text-[11px] text-gray-500">
                                         /blog/
                                     </span>
@@ -422,13 +425,9 @@ export default function BlogForm({ initialData = null, isEditMode = false }) {
                                         id="slug"
                                         type="text"
                                         value={slug}
-                                        onChange={(e) => {
-                                            setSlug(e.target.value);
-                                            setSlugTouched(true);
-                                        }}
-                                        required
-                                        placeholder="url-friendly-slug"
-                                        className="min-w-0 flex-1 border-0 bg-white px-3 py-2.5 font-mono text-[12px] text-ink outline-none placeholder:text-gray-400"
+                                        disabled
+                                        placeholder="blog-title-a1b2c"
+                                        className="min-w-0 flex-1 cursor-not-allowed border-0 bg-gray-100 px-3 py-2.5 font-mono text-[12px] text-gray-500 outline-none placeholder:text-gray-400"
                                     />
                                 </div>
                             </Field>

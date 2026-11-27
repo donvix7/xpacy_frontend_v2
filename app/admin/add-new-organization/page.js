@@ -4,8 +4,9 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Building2, RotateCcw } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { createOrganization } from "@/app/_lib/action";
+import { buildAutoSlug, randomAlphaNum } from "@/app/_lib/slug";
 import AdminHeader from "@/app/_components/AdminHeader";
 import FormInput from "@/app/_components/FormInput";
 import SpinnerMini from "@/app/_components/SpinnerMini";
@@ -36,15 +37,6 @@ const TIMEZONES = [
     { value: "Africa/Nairobi", label: "Africa/Nairobi (EAT)" },
 ];
 
-function slugify(text) {
-    return String(text || "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/[\s_-]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-}
-
 function AddNewOrganizationContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -54,6 +46,7 @@ function AddNewOrganizationContent() {
             ? rawReturnTo
             : "/dashboard/admin/organizations";
 
+    const [slugSuffix] = useState(() => randomAlphaNum(5));
     const [form, setForm] = useState({
         name: "",
         slug: "",
@@ -67,7 +60,6 @@ function AddNewOrganizationContent() {
         currency: "NGN",
     });
 
-    const [isSlugManual, setIsSlugManual] = useState(false);
     const [isPending, setIsPending] = useState(false);
     const [errors, setErrors] = useState({});
 
@@ -81,36 +73,25 @@ function AddNewOrganizationContent() {
 
     const handleNameChange = (e) => {
         const newName = e.target.value;
-        setForm((prev) => {
-            const shouldAutoSlug =
-                !isSlugManual || !prev.slug || prev.slug === slugify(prev.name);
-            return {
-                ...prev,
-                name: newName,
-                slug: shouldAutoSlug ? slugify(newName) : prev.slug,
-            };
-        });
-        if (errors.name) setErrors((prev) => ({ ...prev, name: "" }));
-    };
-
-    const handleSlugChange = (e) => {
-        setIsSlugManual(true);
-        setForm((prev) => ({ ...prev, slug: e.target.value }));
-        if (errors.slug) setErrors((prev) => ({ ...prev, slug: "" }));
-    };
-
-    const handleRegenerateSlug = () => {
-        setIsSlugManual(false);
-        setForm((prev) => ({ ...prev, slug: slugify(prev.name) }));
+        const autoSlug = buildAutoSlug(newName, slugSuffix);
+        setForm((prev) => ({
+            ...prev,
+            name: newName,
+            slug: autoSlug,
+        }));
+        if (errors.name || errors.slug) {
+            setErrors((prev) => ({ ...prev, name: "", slug: "" }));
+        }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (isPending) return;
 
+        const computedSlug = buildAutoSlug(form.name, slugSuffix);
         const nextErrors = {};
         if (!form.name.trim()) nextErrors.name = "Organization name is required";
-        if (!form.slug.trim()) nextErrors.slug = "Slug is required";
+        if (!computedSlug) nextErrors.slug = "Slug is required";
         if (!form.email.trim()) nextErrors.email = "Email is required";
         if (Object.keys(nextErrors).length > 0) {
             setErrors(nextErrors);
@@ -119,7 +100,7 @@ function AddNewOrganizationContent() {
 
         const payload = {
             name: form.name.trim(),
-            slug: slugify(form.slug),
+            slug: computedSlug,
             email: form.email.trim(),
             phone: form.phone.trim(),
             address: form.address.trim(),
@@ -197,25 +178,15 @@ function AddNewOrganizationContent() {
                             </FormInput>
 
                             <FormInput label="URL Slug *" id="slug">
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        id="slug"
-                                        name="slug"
-                                        type="text"
-                                        value={form.slug}
-                                        onChange={handleSlugChange}
-                                        placeholder="acme-properties"
-                                        className={`flex-1 font-mono ${inputClass(errors.slug)}`}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleRegenerateSlug}
-                                        title="Regenerate slug from name"
-                                        className="rounded-lg border border-line bg-card p-3 text-mute hover:text-primary transition-colors cursor-pointer"
-                                    >
-                                        <RotateCcw className="h-4 w-4" />
-                                    </button>
-                                </div>
+                                <input
+                                    id="slug"
+                                    name="slug"
+                                    type="text"
+                                    value={form.slug}
+                                    disabled
+                                    placeholder="acme-properties-a1b2c"
+                                    className="w-full cursor-not-allowed rounded-lg border border-line bg-soft px-4 py-3 font-mono text-mute outline-none"
+                                />
                                 {errors.slug && (
                                     <span className="-mt-2 text-xs text-error">
                                         {errors.slug}

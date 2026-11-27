@@ -32,6 +32,16 @@ function getMemberCount(org) {
     );
 }
 
+function getPropertyCount(org) {
+    return Number(
+        org?._count?.properties ??
+        org?.properties?.length ??
+        org?.propertyCount ??
+        org?.propertiesCount ??
+        0
+    );
+}
+
 /* -------------------------------------------------------------------------- */
 /* Page                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -56,17 +66,10 @@ export default async function Page() {
         Boolean(o?.email || o?.contactEmail || o?.owner?.email)
     ).length;
 
-    const countries = new Set(
-        organizations
-            .map(
-                (o) =>
-                    o?.country ||
-                    o?.address?.country ||
-                    o?.location?.country ||
-                    null
-            )
-            .filter(Boolean)
-    ).size;
+    const totalProperties = organizations.reduce(
+        (sum, org) => sum + getPropertyCount(org),
+        0
+    );
 
     const heroStats = [
         {
@@ -80,9 +83,9 @@ export default async function Page() {
             hint: "Across all orgs",
         },
         {
-            label: "Countries",
-            value: countries,
-            hint: "Global footprint",
+            label: "Properties",
+            value: totalProperties,
+            hint: "Across all orgs",
         },
         {
             label: "Contactable",
@@ -109,15 +112,7 @@ export default async function Page() {
                 tagline={`Admin console · ${today}`}
                 title="Organizations"
                 description="Manage organizations and their members — contacts, locations and membership in one place."
-                actions={
-                    <Link
-                        href="/admin/add-new-organization"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-                    >
-                        <Plus className="h-4 w-4" aria-hidden="true" />
-                        Create organization
-                    </Link>
-                }
+                actions={null}
                 stats={heroStats}
             />
 

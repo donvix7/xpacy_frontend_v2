@@ -15,7 +15,11 @@ const tableHeadings = [
     { heading: "" }
 ];
 
-export default function AdminPropertyOwnersList({ owners,  variant = "default" }) {
+export default function AdminPropertyOwnersList({
+    owners = [],
+    title = "Organization Owners List",
+    variant = "default",
+}) {
 
     const renderRow = (owner) => (
         <tr key={owner._id || owner.id} className="text-neutrals-900 text-sm font-mono border-b border-primary-100 hover:bg-gray-50/50 transition-colors last:border-0">
@@ -135,24 +139,16 @@ export default function AdminPropertyOwnersList({ owners,  variant = "default" }
                 </div>
     );
 
-    const AddOwnerBtn = (
-       
-                <Link 
-                href={'/admin/add-new-owner'}
-                className="flex items-center justify-center cursor-pointer gap-2 px-4 py-2.5 bg-primary rounded-lg font-mono font-medium text-white text-sm hover:bg-primary-dark transition-colors shrink-0 whitespace-nowrap">
-                    <HiOutlineUserAdd className="text-xl" />
-                    <span>Add New Owner</span>
-                </Link>
-    );
+   
 
     return (
         <DataTable
-            title="Property Owners List"
+            title={title}
             headers={tableHeadings}
             data={owners}
             renderRow={renderRow}
             renderMobileCard={renderMobileCard}
-            headerActions={AddOwnerBtn}
+            headerActions={null}
         />
     )
 }

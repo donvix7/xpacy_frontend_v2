@@ -279,14 +279,24 @@ export default function SidebarNav({
             icon: <FiBell />
         },
         {
+            text: "Organizations",
+            link: "/dashboard/facility-manager/organizations",
+            icon: <TbBuildingCommunity />
+        },
+        {
             text: "My Properties",
             link: "/dashboard/facility-manager/properties",
             icon: <BiBuildingHouse />
         },
-           {
+        {
             text: "Tenants",
             link: "/dashboard/facility-manager/tenants",
             icon: <User2 />
+        },
+        {
+            text: "Leases",
+            link: "/dashboard/facility-manager/leases",
+            icon: <TbFileText />
         },
         {
             text: "Inventory",
@@ -344,9 +354,29 @@ export default function SidebarNav({
             icon: <IoCalendarOutline />
         },
         {
+            text: "Subscriptions",
+            link: "/dashboard/facility-manager/subscriptions",
+            icon: <IoDocumentOutline />
+        },
+        {
+            text: "My Wallet",
+            link: "/dashboard/facility-manager/wallet",
+            icon: <FaWallet />
+        },
+        {
+            text: "Expenses",
+            link: "/dashboard/facility-manager/expenses",
+            icon: <FaWallet />
+        },
+        {
             text: "Payments",
             link: "/dashboard/facility-manager/payments",
             icon: <IoCardOutline />
+        },
+        {
+            text: "Documents",
+            link: "/dashboard/facility-manager/documents",
+            icon: <FaFile className="w-5 h-5" />
         },
         {
             text: "Reports & Analytics",

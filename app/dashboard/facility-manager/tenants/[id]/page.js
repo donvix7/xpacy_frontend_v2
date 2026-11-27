@@ -1,47 +1,43 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
-    Building2,
     ChevronLeft,
-    UserRound,
     User,
+    UserRound,
     Mail,
     Phone,
-    ShieldCheck,
-    Calendar,
-    Briefcase,
     Home,
-    DoorOpen,
+    Calendar,
+    DollarSign,
+    Clock,
+    ShieldCheck,
+    MapPin,
+    Briefcase,
+    FileText,
+    Wallet,
     Hash,
     IdCard,
     Contact,
-    BriefcaseBusiness,
-    FileText,
-    Wallet,
+    Building2,
+    DoorOpen,
+    CheckCircle2,
+    ArrowUpRight,
+    Pencil,
 } from "lucide-react";
 import { getTenantById } from "@/app/_lib/data-services";
-import StatusChips from "@/app/_components/StatusChips";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
 import EmptyState from "@/app/_components/EmptyState";
-import { formatCurrency } from "@/app/_lib/utils";
+import DataTable from "@/app/_components/DataTable";
+import StatusChips from "@/app/_components/StatusChips";
+import CopyButton from "@/app/_components/CopyButton";
+import LinkTenantToUserButton from "@/app/_components/LinkTenantToUserButton";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
+import { formatCurrency } from "@/app/_lib/utils";
+import { SAMPLE_TENANT_DETAIL } from "@/app/_lib/sample-tenants";
 
-const UPLOAD_BASE =
-    process.env.NEXT_PUBLIC_UPLOAD_URL ||
-    "https://app.xpacy.com/src/upload/display_img";
-
-/* ---------------- helpers ---------------- */
-
-function displayName(tenant) {
-    return (
-        [tenant.firstName, tenant.lastName].filter(Boolean).join(" ") ||
-        tenant.name ||
-        tenant.user?.firstName ||
-        "Tenant"
-    );
-}
-
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
 function formatDate(value) {
     if (!value) return "—";
     const date = new Date(value);
@@ -49,533 +45,711 @@ function formatDate(value) {
         ? "—"
         : date.toLocaleDateString("en-NG", {
               year: "numeric",
-              month: "long",
+              month: "short",
               day: "numeric",
           });
 }
 
-const titleCase = (value) =>
-    !value
-        ? "—"
-        : String(value)
-              .replace(/[_-]+/g, " ")
-              .toLowerCase()
-              .replace(/\b\w/g, (c) => c.toUpperCase());
+function displayName(tenant) {
+    if (!tenant) return "Tenant";
+    const fullName = [tenant.firstName, tenant.lastName].filter(Boolean).join(" ");
+    if (fullName) return fullName;
+    if (tenant.name) return tenant.name;
+    if (tenant.user?.firstName || tenant.user?.lastName) {
+        return [tenant.user.firstName, tenant.user.lastName].filter(Boolean).join(" ");
+    }
+    if (tenant.user?.name) return tenant.user.name;
+    return tenant.email || "Tenant";
+}
+
+function statusOf(tenant) {
+    if (!tenant) return "active";
+    const explicit = tenant.status || tenant.tenant_status || tenant.tenantStatus;
+    if (explicit) return String(explicit).toLowerCase();
+    const flag = tenant.isActive ?? tenant.is_active;
+    if (typeof flag === "boolean") {
+        return flag ? "active" : "inactive";
+    }
+    return "active";
+}
+
+function titleCase(value) {
+    if (!value) return "—";
+    return String(value)
+        .replace(/[_-]+/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatIdType(type) {
+    if (!type) return "—";
+    const map = {
+        "drivers-license": "Driver's License",
+        nin: "National ID (NIN)",
+        passport: "International Passport",
+        voters: "Voter's Card",
+    };
+    return map[type.toLowerCase()] || titleCase(type);
+}
 
 function buildDetailRows(tenant) {
-    return [
-        { label: "First name", value: tenant.firstName, icon: User },
-        { label: "Last name", value: tenant.lastName, icon: User },
-        { label: "Email", value: tenant.email, icon: Mail },
-        { label: "Phone", value: tenant.phone, icon: Phone },
-        { label: "Date of Birth", value: formatDate(tenant.dateOfBirth), icon: Calendar },
-        { label: "Joined", value: formatDate(tenant.createdAt), icon: Calendar },
-        { label: "Last Updated", value: formatDate(tenant.updatedAt), icon: Calendar },
-    ].filter(
-        ({ value }) => value !== undefined && value !== null && value !== ""
-    );
-}
-
-function leasePropertyName(lease) {
-    const property = Array.isArray(lease?.property)
-        ? lease.property[0]
-        : lease?.property;
-    return property?.name || property?.property_name || property?.title || "—";
-}
-
-function leaseUnit(lease) {
-    const unit = Array.isArray(lease?.unit) ? lease.unit[0] : lease?.unit;
-    if (!unit) return "—";
-    return unit.unitNumber
-        ? `Unit ${unit.unitNumber}`
-        : unit.name || unit.unitName || "—";
-}
-
-/* ---------------- reusable presentational ---------------- */
-
-function InfoRow({ icon: Icon, label, value, capitalize = false }) {
-    if (value === undefined || value === null || value === "") return null;
-    return (
-        <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                <Icon className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {label}
-                </dt>
-                <dd
-                    className={`mt-0.5 text-sm text-gray-800 break-words ${
-                        capitalize ? "capitalize" : ""
-                    }`}
-                >
-                    {value}
-                </dd>
-            </div>
-        </div>
-    );
-}
-
-function SectionEmpty({ icon, message }) {
-    return (
-        <EmptyState icon={icon} title="Not provided" message={message} />
-    );
-}
-
-/* ---------------- field renderers ---------------- */
-
-/** Renders identification whether it's a string, or an object with common keys. */
-function IdentificationDetails({ identification }) {
-    if (!identification) {
-        return (
-            <SectionEmpty
-                icon={IdCard}
-                message="No identification document has been provided for this tenant."
-            />
-        );
-    }
-
-    // Simple string value
-    if (typeof identification === "string") {
-        return (
-            <dl className="flex flex-col gap-4">
-                <InfoRow icon={IdCard} label="Identification" value={identification} capitalize />
-            </dl>
-        );
-    }
-
-    // Object shape — try common keys
-    const type = identification.type || identification.documentType;
-    const number =
+    const identification = tenant.identification || {};
+    const idType =
+        tenant.idType ||
+        tenant.identificationType ||
+        identification.type ||
+        identification.idType;
+    const idNumber =
+        tenant.idNumber ||
+        tenant.identificationNumber ||
         identification.number ||
-        identification.idNumber ||
-        identification.documentNumber;
-    const issuedBy = identification.issuedBy || identification.issuer;
-    const issuedDate = identification.issuedDate || identification.issuedAt;
-    const expiryDate = identification.expiryDate || identification.expiresAt;
-    const verified = identification.verified ?? identification.isVerified;
-    const documentUrl =
-        identification.documentUrl ||
-        identification.url ||
-        identification.file;
+        identification.idNumber;
+    const phone = tenant.phone || tenant.phoneNumber;
 
-    const hasAny = [type, number, issuedBy, issuedDate, expiryDate, verified, documentUrl]
-        .some((v) => v !== undefined && v !== null && v !== "");
+    return [
+        { label: "First Name", value: tenant.firstName, icon: User },
+        { label: "Last Name", value: tenant.lastName, icon: User },
+        {
+            label: "Email Address",
+            value: tenant.email,
+            icon: Mail,
+            href: tenant.email ? `mailto:${tenant.email}` : null,
+            copyValue: tenant.email,
+        },
+        {
+            label: "Phone Number",
+            value: phone,
+            icon: Phone,
+            href: phone ? `tel:${phone}` : null,
+            copyValue: phone,
+            mono: true,
+        },
+        { label: "Occupation", value: tenant.occupation, icon: Briefcase },
+        { label: "Gender", value: titleCase(tenant.gender), icon: UserRound },
+        { label: "Date of Birth", value: formatDate(tenant.dateOfBirth), icon: Calendar },
+        { label: "ID Type", value: formatIdType(idType), icon: IdCard },
+        { label: "ID Number", value: idNumber, icon: Hash, copyValue: idNumber, mono: true },
+        { label: "ID Issued Date", value: formatDate(identification.issuedDate), icon: Calendar },
+        { label: "ID Expiry Date", value: formatDate(identification.expiryDate), icon: Calendar },
+        {
+            label: "Linked User Account",
+            value:
+                tenant.user?.email ||
+                tenant.userId ||
+                "Not linked",
+            icon: ShieldCheck,
+            copyValue: tenant.userId || tenant.user?.id || null,
+            mono: Boolean(tenant.userId && !tenant.user?.email),
+        },
+        {
+            label: "Registration Date",
+            value: formatDate(tenant.createdAt || tenant.created_at),
+            icon: Calendar,
+        },
+        {
+            label: "Last Updated",
+            value: formatDate(tenant.updatedAt || tenant.updated_at),
+            icon: Clock,
+        },
+    ].filter(
+        ({ value }) =>
+            value !== undefined && value !== null && value !== "" && value !== "—"
+    );
+}
 
-    if (!hasAny) {
-        return (
-            <SectionEmpty
-                icon={IdCard}
-                message="No identification document has been provided for this tenant."
-            />
-        );
-    }
-
-    return (
-        <dl className="flex flex-col gap-4">
-            <InfoRow icon={IdCard} label="Document Type" value={titleCase(type)} />
-            <InfoRow icon={Hash} label="Document Number" value={number} />
-            <InfoRow icon={Building2} label="Issued By" value={issuedBy} />
-            <InfoRow
-                icon={Calendar}
-                label="Issued Date"
-                value={issuedDate ? formatDate(issuedDate) : null}
-            />
-            <InfoRow
-                icon={Calendar}
-                label="Expiry Date"
-                value={expiryDate ? formatDate(expiryDate) : null}
-            />
-            <InfoRow
-                icon={ShieldCheck}
-                label="Verified"
-                value={verified === undefined ? null : verified ? "Yes" : "No"}
-            />
-            {documentUrl && (
-                <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                        <FileText className="h-4 w-4 text-primary" />
+const keyValueColumns = [
+    {
+        heading: "Field",
+        render: (row) => {
+            const Icon = row.icon;
+            return (
+                <div className="flex items-center gap-2.5">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-50 dark:bg-primary-950/40">
+                        <Icon className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                        <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                            Document
-                        </dt>
-                        <dd className="mt-0.5 text-sm text-gray-800 break-all">
-                            <a
-                                href={documentUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline"
-                            >
-                                View document
-                            </a>
-                        </dd>
-                    </div>
+                    <span className="text-xs font-semibold uppercase tracking-[0.08em] text-mute">
+                        {row.label}
+                    </span>
                 </div>
-            )}
-        </dl>
-    );
+            );
+        },
+    },
+    {
+        heading: "Details",
+        render: (row) => (
+            <div
+                className={`flex flex-wrap items-center gap-2 text-[13.5px] font-medium text-ink ${
+                    row.mono ? "font-mono" : ""
+                }`}
+            >
+                {row.href ? (
+                    <a
+                        href={row.href}
+                        className="transition-colors hover:text-primary hover:underline"
+                    >
+                        {row.value}
+                    </a>
+                ) : (
+                    <span>{row.value}</span>
+                )}
+                {row.badge && (
+                    <span className="rounded-md bg-soft px-2 py-0.5 text-[11px] font-semibold text-mute">
+                        {row.badge}
+                    </span>
+                )}
+            </div>
+        ),
+    },
+    {
+        heading: "",
+        align: "right",
+        render: (row) =>
+            row.copyValue ? (
+                <div className="flex justify-end">
+                    <CopyButton
+                        value={row.copyValue}
+                        label={row.label}
+                        iconSize={13}
+                    />
+                </div>
+            ) : null,
+    },
+];
+
+function resolveLeases(tenant) {
+    if (Array.isArray(tenant.leases) && tenant.leases.length > 0) {
+        return tenant.leases;
+    }
+    if (tenant.lease) {
+        return [tenant.lease];
+    }
+    if (tenant.currentLease) {
+        return [tenant.currentLease];
+    }
+    return [];
 }
 
-/** Renders emergency contact whether it's a string or an object. */
-function EmergencyContactDetails({ contact }) {
-    if (!contact) {
+/* -------------------------------------------------------------------------- */
+/* Page                                                                       */
+/* -------------------------------------------------------------------------- */
+export default async function TenantDetailsPage({ params }) {
+    const resolvedParams = await params;
+    const rawId = resolvedParams?.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!id || typeof id !== "string" || !id.trim()) {
         return (
-            <SectionEmpty
-                icon={Contact}
-                message="No emergency contact has been provided for this tenant."
-            />
-        );
-    }
-
-    if (typeof contact === "string") {
-        return (
-            <dl className="flex flex-col gap-4">
-                <InfoRow icon={Contact} label="Contact" value={contact} />
-            </dl>
-        );
-    }
-
-    const name = contact.name || contact.fullName;
-    const relationship = contact.relationship || contact.relation;
-    const phone = contact.phone || contact.phoneNumber;
-    const email = contact.email;
-    const address = contact.address;
-
-    const hasAny = [name, relationship, phone, email, address].some(
-        (v) => v !== undefined && v !== null && v !== ""
-    );
-
-    if (!hasAny) {
-        return (
-            <SectionEmpty
-                icon={Contact}
-                message="No emergency contact has been provided for this tenant."
-            />
-        );
-    }
-
-    return (
-        <dl className="flex flex-col gap-4">
-            <InfoRow icon={User} label="Full Name" value={name} />
-            <InfoRow
-                icon={UserRound}
-                label="Relationship"
-                value={relationship}
-                capitalize
-            />
-            <InfoRow icon={Phone} label="Phone" value={phone} />
-            <InfoRow icon={Mail} label="Email" value={email} />
-            <InfoRow icon={Home} label="Address" value={address} />
-        </dl>
-    );
-}
-
-/** Renders occupation — usually just a string. */
-function OccupationDetails({ occupation }) {
-    if (!occupation) {
-        return (
-            <SectionEmpty
-                icon={Briefcase}
-                message="No occupation has been provided for this tenant."
-            />
-        );
-    }
-
-    if (typeof occupation === "string") {
-        return (
-            <dl className="flex flex-col gap-4">
-                <InfoRow icon={Briefcase} label="Occupation" value={occupation} capitalize />
-            </dl>
-        );
-    }
-
-    const title = occupation.title || occupation.jobTitle;
-    const employer = occupation.employer || occupation.company;
-    const industry = occupation.industry;
-
-    return (
-        <dl className="flex flex-col gap-4">
-            <InfoRow icon={Briefcase} label="Job Title" value={title} capitalize />
-            <InfoRow icon={Building2} label="Employer" value={employer} />
-            <InfoRow icon={FileText} label="Industry" value={industry} capitalize />
-        </dl>
-    );
-}
-
-/** Renders employment information — often an object with income / employer etc. */
-function EmploymentInformationDetails({ info }) {
-    if (!info) {
-        return (
-            <SectionEmpty
-                icon={BriefcaseBusiness}
-                message="No employment information has been provided for this tenant."
-            />
-        );
-    }
-
-    if (typeof info === "string") {
-        return (
-            <dl className="flex flex-col gap-4">
-                <InfoRow icon={BriefcaseBusiness} label="Employment" value={info} capitalize />
-            </dl>
-        );
-    }
-
-    const employer = info.employer || info.company || info.employerName;
-    const position = info.position || info.jobTitle || info.role;
-    const employmentType = info.employmentType || info.type;
-    const monthlyIncome =
-        info.monthlyIncome || info.income || info.salary;
-    const yearsEmployed =
-        info.yearsEmployed || info.yearsOfService || info.tenure;
-    const workAddress = info.workAddress || info.address;
-    const supervisor = info.supervisor || info.supervisorName;
-
-    const hasAny = [
-        employer,
-        position,
-        employmentType,
-        monthlyIncome,
-        yearsEmployed,
-        workAddress,
-        supervisor,
-    ].some((v) => v !== undefined && v !== null && v !== "");
-
-    if (!hasAny) {
-        return (
-            <SectionEmpty
-                icon={BriefcaseBusiness}
-                message="No employment information has been provided for this tenant."
-            />
-        );
-    }
-
-    return (
-        <dl className="flex flex-col gap-4">
-            <InfoRow icon={Building2} label="Employer" value={employer} />
-            <InfoRow icon={Briefcase} label="Position" value={position} capitalize />
-            <InfoRow
-                icon={FileText}
-                label="Employment Type"
-                value={titleCase(employmentType)}
-            />
-            <InfoRow
-                icon={Wallet}
-                label="Monthly Income"
-                value={
-                    monthlyIncome != null
-                        ? formatCurrency(monthlyIncome)
-                        : null
-                }
-            />
-            <InfoRow
-                icon={Calendar}
-                label="Years Employed"
-                value={
-                    yearsEmployed != null ? `${yearsEmployed} year(s)` : null
-                }
-            />
-            <InfoRow icon={Home} label="Work Address" value={workAddress} />
-            <InfoRow icon={User} label="Supervisor" value={supervisor} />
-        </dl>
-    );
-}
-
-/* ---------------- page ---------------- */
-
-export default async function Page({ params }) {
-    const { id } = await params;
-    const results = await Promise.allSettled([getTenantById(id)]);
-    const dataErrorMessages = getSettledErrorMessages(results);
-    const tenant = results[0].status === "fulfilled" ? results[0].value : null;
-
-    if (!tenant || typeof tenant !== "object" || Array.isArray(tenant)) {
-        return (
-            <div className="space-y-6 p-2">
-                {dataErrorMessages.length > 0 ? (
-                    <DataErrorNotice messages={dataErrorMessages} />
-                ) : null}
+            <div className="space-y-6 p-2 sm:p-4">
                 <Link
-                    href="/dashboard/admin/users"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary"
+                    href="/dashboard/property-manager/tenants"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
                 >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                     Back to tenants
                 </Link>
 
                 <EmptyState
-                    icon={UserRound}
-                    title="Tenant not found"
-                    message="This tenant may have been removed or the link may be incorrect."
+                    icon={<UserRound className="h-10 w-10 text-primary" aria-hidden="true" />}
+                    title="Invalid tenant ID"
+                    message="The tenant ID in the URL is missing or malformed."
                 />
             </div>
         );
     }
 
-    const name = displayName(tenant);
-    const profilePicture = tenant.display_picture
-        ? `${UPLOAD_BASE}/${tenant.display_picture}`
-        : "/avatar.png";
+    const tenantId = id.trim();
 
+    const results = await Promise.allSettled([getTenantById(tenantId)]);
+    const dataErrorMessages = getSettledErrorMessages(results);
+
+    const result = results[0].status === "fulfilled" ? results[0].value : null;
+
+    // Normalize response wrapper: { success: true, data: { ... } } or { tenant: { ... } }
+    const tenant =
+        result?.data?.tenant ??
+        result?.data ??
+        result?.tenant ??
+        result ??
+        (tenantId === SAMPLE_TENANT_DETAIL.id ? SAMPLE_TENANT_DETAIL : null);
+
+    if (!tenant || typeof tenant !== "object" || Array.isArray(tenant)) {
+        return (
+            <div className="space-y-6 p-2 sm:p-4">
+                {dataErrorMessages.length > 0 ? (
+                    <DataErrorNotice messages={dataErrorMessages} />
+                ) : null}
+                <Link
+                    href="/dashboard/property-manager/tenants"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
+                >
+                    <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                    Back to tenants
+                </Link>
+
+                <EmptyState
+                    icon={<UserRound className="h-10 w-10 text-primary" aria-hidden="true" />}
+                    title="Tenant not found"
+                    message={`No tenant was found for ID "${tenantId}". The record may have been removed or the link is incorrect.`}
+                />
+            </div>
+        );
+    }
+
+    const tenantName = displayName(tenant);
+    const status = statusOf(tenant);
     const details = buildDetailRows(tenant);
-    const leases = Array.isArray(tenant.leases) ? tenant.leases : [];
+    const leases = resolveLeases(tenant);
+
+    // Active Lease details
+    const activeLease = leases[0] || null;
+    const property =
+        tenant.property ||
+        activeLease?.property ||
+        (Array.isArray(activeLease?.property) ? activeLease.property[0] : null);
+    const propertyName =
+        property?.name || property?.title || property?.property_name || "—";
+    const propertyId = property?.id || property?._id;
+
+    const unit =
+        tenant.unit ||
+        activeLease?.unit ||
+        (Array.isArray(activeLease?.unit) ? activeLease.unit[0] : null);
+    const unitName =
+        unit?.unitNumber
+            ? `Unit ${unit.unitNumber}`
+            : unit?.name || unit?.unitName || "—";
+
+    const rentAmount =
+        tenant.rentAmount ??
+        activeLease?.rentAmount ??
+        activeLease?.rent ??
+        activeLease?.amount;
+
+    const idDoc = tenant.identification || {};
+
+    // Employment details
+    const emp = tenant.employmentInformation || tenant.employmentInfo || tenant.employment || {};
+    const employer = emp.employer || emp.company || emp.employerName || tenant.employer;
+    const jobTitle = emp.position || emp.jobTitle || emp.role || tenant.occupation;
+    const monthlyIncome = emp.monthlyIncome || emp.income || emp.salary || tenant.monthlyIncome;
+    const workAddress = emp.workAddress || emp.address;
+    const workEmail = emp.workEmail;
+    const workPhone = emp.workPhone;
+
+    const hasEmployment = Boolean(employer || jobTitle || monthlyIncome || workAddress || workEmail || workPhone);
+
+    // Emergency / Next of kin
+    const emg = tenant.emergencyContact || tenant.nextOfKin || tenant.guarantor || {};
+    const emgName = typeof emg === "string" ? emg : emg.name || emg.fullName;
+    const emgRelation = typeof emg === "object" ? emg.relationship || emg.relation : null;
+    const emgPhone = typeof emg === "object" ? emg.phone || emg.phoneNumber : null;
+    const emgEmail = typeof emg === "object" ? emg.email : null;
+    const emgAddress = typeof emg === "object" ? emg.address : null;
+
+    const hasEmergency = Boolean(emgName || emgPhone || emgEmail || emgAddress);
+
+    // Hero stats (context-aware for tenants with or without leases)
+    const heroStats = [
+        {
+            label: propertyName !== "—" ? "Property" : "Assigned Unit",
+            value: propertyName !== "—" ? propertyName : "Not assigned",
+            hint: unitName !== "—" ? unitName : "No active unit",
+        },
+        {
+            label: "Status",
+            value: titleCase(status),
+            hint: "Tenancy state",
+        },
+        {
+            label: rentAmount != null ? "Rent" : (jobTitle ? "Occupation" : "Leases"),
+            value: rentAmount != null
+                ? formatCurrency(rentAmount)
+                : (jobTitle ? titleCase(jobTitle) : `${leases.length} leases`),
+            hint: rentAmount != null
+                ? (activeLease?.billingCycle ? titleCase(activeLease.billingCycle) : "Per cycle")
+                : (employer || "Registered"),
+        },
+        {
+            label: idDoc.type ? "Identity Doc" : "Joined",
+            value: idDoc.type ? formatIdType(idDoc.type) : formatDate(tenant.createdAt || tenant.created_at),
+            hint: idDoc.number ? `No: ${idDoc.number}` : "Onboarding date",
+        },
+    ];
+
+    const today = new Date().toLocaleDateString("en-NG", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    });
 
     return (
-        <div className="space-y-6 p-2 sm:p-4">
+        <div className="space-y-8 p-2 sm:p-4">
             {dataErrorMessages.length > 0 ? (
                 <DataErrorNotice messages={dataErrorMessages} />
             ) : null}
+
+            {/* Back link */}
             <Link
-                href="/dashboard/admin/users"
-                className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary"
+                href="/dashboard/property-manager/tenants"
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
             >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                 Back to tenants
             </Link>
 
-            {/* Header card */}
-            <DashboardGridItem>
-                <div className="grid grid-cols-4 gap-3">
-                    <div className="col-span-3 flex w-full items-center gap-4">
-                        <Image
-                            src={profilePicture}
-                            alt={`${name} profile`}
-                            width={72}
-                            height={72}
-                            className="h-[72px] w-[72px] shrink-0 rounded-full object-cover"
-                            unoptimized
-                        />
+            {/* ---------- Hero Section ---------- */}
+            <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
+                <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
                         <div className="min-w-0">
-                            <h1 className="break-words text-2xl font-bold text-primary lg:text-3xl">
-                                {name}
-                            </h1>
-                            <p className="mt-1 break-all text-sm text-gray-500">
-                                {tenant.email || "No email available"}
+                            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
+                                Tenant profile · {today}
                             </p>
-                         
+                            <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
+                                {tenantName}
+                            </h1>
+                            <p className="mt-2 max-w-xl break-all text-[13.5px] leading-relaxed text-side-mute">
+                                {[
+                                    propertyName !== "—" ? propertyName : null,
+                                    unitName !== "—" ? unitName : null,
+                                    tenant.email,
+                                ]
+                                    .filter(Boolean)
+                                    .join(" · ") || "Tenant Record"}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            <StatusChips status={status} />
                         </div>
                     </div>
-                    <div className="flex h-full w-full flex-wrap items-start justify-end gap-2">
-                        <StatusChips status={tenant.status || "active"} />
+
+                    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {heroStats.map((stat) => (
+                            <div
+                                key={stat.label}
+                                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
+                            >
+                                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
+                                    {stat.label}
+                                </dt>
+                                <dd className="mt-1 truncate text-[18px] font-semibold leading-tight tracking-[-0.3px] text-white sm:text-[20px]">
+                                    {stat.value}
+                                </dd>
+                                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
+                                    {stat.hint}
+                                </p>
+                            </div>
+                        ))}
+                    </dl>
+
+                    {/* Action row */}
+                    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+                        <Link
+                            href={`/admin/add-new-tenant?tenantId=${encodeURIComponent(tenant.id || tenantId)}&returnTo=${encodeURIComponent(`/dashboard/property-manager/tenants/${tenant.id || tenantId}`)}`}
+                            className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-3.5 py-2 text-[12.5px] font-semibold text-side transition-colors hover:bg-white"
+                        >
+                            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                            Edit tenant
+                        </Link>
+                        <LinkTenantToUserButton
+                            tenantId={tenant.id || tenantId}
+                            tenantName={tenantName}
+                            tenantEmail={tenant.email || ""}
+                            linkedUserId={tenant.userId || tenant.user?.id || null}
+                            linkedUserEmail={tenant.user?.email || null}
+                        />
+                        {tenant.email && (
+                            <Link
+                                href={`mailto:${tenant.email}`}
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                            >
+                                <Mail className="h-3.5 w-3.5" aria-hidden="true" />
+                                Send email
+                            </Link>
+                        )}
+                        {(tenant.phone || tenant.phoneNumber) && (
+                            <a
+                                href={`tel:${tenant.phone || tenant.phoneNumber}`}
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                            >
+                                <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+                                Call
+                            </a>
+                        )}
+                        {propertyId && (
+                            <Link
+                                href={`/dashboard/property-manager/properties/${propertyId}`}
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                            >
+                                <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                View property
+                            </Link>
+                        )}
                     </div>
                 </div>
+            </section>
+
+            {/* ---------- Identity Verification & Document Banner ---------- */}
+            {idDoc.type && (
+                <div className="rounded-2xl border border-line bg-card p-5 sm:p-6 shadow-sm">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3.5">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <IdCard className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-ink text-base">
+                                        {formatIdType(idDoc.type)}
+                                    </h3>
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/40 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        Verified
+                                    </span>
+                                </div>
+                                <div className="mt-1 flex items-center gap-2 font-mono text-xs text-mute">
+                                    <span>Number: {idDoc.number || "—"}</span>
+                                    {idDoc.number && (
+                                        <CopyButton
+                                            value={idDoc.number}
+                                            label="ID Number"
+                                            iconSize={12}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-6 border-t border-line pt-3 text-xs sm:border-t-0 sm:pt-0">
+                            {idDoc.issuedDate && (
+                                <div>
+                                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-mute block">
+                                        Issued Date
+                                    </span>
+                                    <span className="mt-0.5 font-medium text-ink block">
+                                        {formatDate(idDoc.issuedDate)}
+                                    </span>
+                                </div>
+                            )}
+                            {idDoc.expiryDate && (
+                                <div>
+                                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-mute block">
+                                        Expiry Date
+                                    </span>
+                                    <span className="mt-0.5 font-medium text-ink block">
+                                        {formatDate(idDoc.expiryDate)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ---------- Tenant information ---------- */}
+            <DashboardGridItem title="Tenant information">
+                <DataTable
+                    data={details}
+                    columns={keyValueColumns}
+                    showPagination={false}
+                    className="p-0 border-none shadow-none"
+                    rowKey={(row) => row.label}
+                />
             </DashboardGridItem>
 
-            {/* Basic tenant info */}
-            <DashboardGridItem title="Tenant Information">
-                <dl className="flex flex-col gap-4">
-                    {details.map(({ label, value, icon: Icon }) => (
-                        <InfoRow
-                            key={label}
-                            icon={Icon}
-                            label={label}
-                            value={value}
-                            capitalize
-                        />
-                    ))}
-                </dl>
-            </DashboardGridItem>
+            {/* ---------- Employment & Financial Profile ---------- */}
+            {hasEmployment && (
+                <DashboardGridItem title="Employment & Financial Profile">
+                    <DataTable
+                        data={[
+                            employer && {
+                                label: "Employer",
+                                value: employer,
+                                icon: Building2,
+                            },
+                            jobTitle && {
+                                label: "Position / Occupation",
+                                value: titleCase(jobTitle),
+                                icon: Briefcase,
+                            },
+                            emp.employmentType && {
+                                label: "Employment Type",
+                                value: titleCase(emp.employmentType),
+                                icon: ShieldCheck,
+                            },
+                            monthlyIncome != null && {
+                                label: "Monthly Income",
+                                value: formatCurrency(monthlyIncome),
+                                icon: Wallet,
+                                mono: true,
+                            },
+                            workAddress && {
+                                label: "Work Address",
+                                value: workAddress,
+                                icon: MapPin,
+                            },
+                            workEmail && {
+                                label: "Work Email",
+                                value: workEmail,
+                                icon: Mail,
+                                href: `mailto:${workEmail}`,
+                                copyValue: workEmail,
+                            },
+                            workPhone && {
+                                label: "Work Phone",
+                                value: workPhone,
+                                icon: Phone,
+                                href: `tel:${workPhone}`,
+                                copyValue: workPhone,
+                                mono: true,
+                            },
+                        ].filter(Boolean)}
+                        columns={keyValueColumns}
+                        showPagination={false}
+                        className="p-0 border-none shadow-none"
+                        rowKey={(row) => row.label}
+                    />
+                </DashboardGridItem>
+            )}
 
-            {/* Identification */}
-            <DashboardGridItem title="Identification">
-                <IdentificationDetails identification={tenant.identification} />
-            </DashboardGridItem>
+            {/* ---------- Emergency Contact / Next of Kin ---------- */}
+            {hasEmergency && (
+                <DashboardGridItem title="Emergency Contact & Next of Kin">
+                    <DataTable
+                        data={[
+                            emgName && {
+                                label: "Contact Name",
+                                value: emgName,
+                                icon: Contact,
+                                badge: emgRelation ? titleCase(emgRelation) : null,
+                            },
+                            emgPhone && {
+                                label: "Phone Number",
+                                value: emgPhone,
+                                icon: Phone,
+                                href: `tel:${emgPhone}`,
+                                copyValue: emgPhone,
+                                mono: true,
+                            },
+                            emgEmail && {
+                                label: "Email Address",
+                                value: emgEmail,
+                                icon: Mail,
+                                href: `mailto:${emgEmail}`,
+                                copyValue: emgEmail,
+                            },
+                            emgAddress && {
+                                label: "Address",
+                                value: emgAddress,
+                                icon: Home,
+                            },
+                        ].filter(Boolean)}
+                        columns={keyValueColumns}
+                        showPagination={false}
+                        className="p-0 border-none shadow-none"
+                        rowKey={(row) => row.label}
+                    />
+                </DashboardGridItem>
+            )}
 
-            {/* Emergency Contact */}
-            <DashboardGridItem title="Emergency Contact">
-                <EmergencyContactDetails contact={tenant.emergencyContact} />
-            </DashboardGridItem>
-
-            {/* Occupation */}
-            <DashboardGridItem title="Occupation">
-                <OccupationDetails occupation={tenant.occupation} />
-            </DashboardGridItem>
-
-            {/* Employment Information */}
-            <DashboardGridItem title="Employment Information">
-                <EmploymentInformationDetails info={tenant.employmentInformation} />
-            </DashboardGridItem>
-
-            {/* Leases */}
-            <DashboardGridItem title="Leases">
+            {/* ---------- Lease & Property Information ---------- */}
+            <DashboardGridItem title="Leases & Tenancy History">
                 {leases.length === 0 ? (
                     <EmptyState
-                        icon={Home}
-                        title="No leases"
-                        message={`No lease agreements found for ${name}.`}
+                        icon={<FileText className="h-10 w-10 text-primary" aria-hidden="true" />}
+                        title="No active leases"
+                        message={`No active or past leases found for ${tenantName}. This tenant is registered but not currently assigned to a property unit.`}
                     />
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-gray-200 bg-primary-100">
-                                    <th className="px-4 py-3 text-sm font-semibold text-gray-600">
-                                        Lease
-                                    </th>
-                                    <th className="px-4 py-3 text-sm font-semibold text-gray-600">
-                                        Property / Unit
-                                    </th>
-                                    <th className="px-4 py-3 text-sm font-semibold text-gray-600">
-                                        Term
-                                    </th>
-                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">
-                                        Rent
-                                    </th>
-                                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">
-                                        Status
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {leases.map((lease) => (
-                                    <tr
-                                        key={lease.id}
-                                        className="border-b border-gray-200 hover:bg-gray-50"
-                                    >
-                                        <td className="px-4 py-3 text-sm font-medium text-primary">
-                                            <div className="flex items-center gap-2">
-                                                <Hash className="h-4 w-4 shrink-0 text-gray-400" />
-                                                <span className="break-words">
-                                                    {lease.leaseNumber || lease.id?.slice(0, 8)}
-                                                </span>
+                    <DataTable
+                        data={leases}
+                        showPagination={leases.length > 5}
+                        pageSize={5}
+                        className="p-0 border-none shadow-none"
+                        rowKey={(lease, index) => lease.id ?? lease._id ?? index}
+                        columns={[
+                            {
+                                heading: "Property / Unit",
+                                render: (lease) => {
+                                    const p = Array.isArray(lease?.property) ? lease.property[0] : lease?.property;
+                                    const u = Array.isArray(lease?.unit) ? lease.unit[0] : lease?.unit;
+                                    const pName = p?.name || p?.title || propertyName;
+                                    const uName = u?.unitNumber ? `Unit ${u.unitNumber}` : u?.name || unitName;
+                                    return (
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-soft text-ink">
+                                                <DoorOpen className="h-4 w-4 text-primary" />
                                             </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-800">
-                                            <div className="flex flex-col gap-0.5">
-                                                <div className="flex items-center gap-2">
-                                                    <Building2 className="h-4 w-4 shrink-0 text-gray-400" />
-                                                    <span className="break-words capitalize">
-                                                        {leasePropertyName(lease)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2 pl-6 text-xs text-gray-500">
-                                                    <DoorOpen className="h-3.5 w-3.5 shrink-0" />
-                                                    {leaseUnit(lease)}
-                                                </div>
+                                            <div>
+                                                <p className="font-semibold text-ink text-[13px]">
+                                                    {pName}
+                                                </p>
+                                                <p className="text-xs text-mute font-mono">
+                                                    {uName}
+                                                </p>
                                             </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-700">
-                                            {formatDate(lease.startDate)} –{" "}
-                                            {formatDate(lease.endDate)}
-                                        </td>
-                                        <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                                            {lease.rentAmount != null
-                                                ? formatCurrency(lease.rentAmount)
-                                                : "—"}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <div className="flex justify-center">
-                                                <StatusChips
-                                                    status={lease.status || "unknown"}
-                                                />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                        </div>
+                                    );
+                                },
+                            },
+                            {
+                                heading: "Rent Amount",
+                                render: (lease) => {
+                                    const amt = lease.rentAmount ?? lease.amount ?? lease.rent;
+                                    return (
+                                        <span className="font-mono text-[12.5px] font-semibold text-ink">
+                                            {amt != null ? formatCurrency(amt) : "—"}
+                                        </span>
+                                    );
+                                },
+                            },
+                            {
+                                heading: "Lease Period",
+                                className: "text-xs text-mute",
+                                render: (lease) => (
+                                    <div className="space-y-0.5">
+                                        <p>
+                                            <span className="text-gray-400">Start:</span>{" "}
+                                            {formatDate(lease.startDate || lease.start_date)}
+                                        </p>
+                                        <p>
+                                            <span className="text-gray-400">End:</span>{" "}
+                                            {formatDate(lease.endDate || lease.end_date)}
+                                        </p>
+                                    </div>
+                                ),
+                            },
+                            {
+                                heading: "Status",
+                                center: true,
+                                render: (lease) => (
+                                    <div className="flex justify-center">
+                                        <StatusChips
+                                            status={lease.status || (lease.isActive ? "active" : "completed")}
+                                        />
+                                    </div>
+                                ),
+                            },
+                            {
+                                heading: "",
+                                align: "right",
+                                render: (lease) => {
+                                    const lId = lease.id ?? lease._id;
+                                    return lId ? (
+                                        <Link
+                                            href={`/dashboard/property-manager/leases/${lId}`}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-1 text-[11px] font-medium text-ink hover:text-primary transition-colors"
+                                        >
+                                            View
+                                            <ArrowUpRight className="h-3 w-3" />
+                                        </Link>
+                                    ) : null;
+                                },
+                            },
+                        ]}
+                    />
                 )}
             </DashboardGridItem>
         </div>

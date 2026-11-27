@@ -3,7 +3,6 @@ import {
     Building2,
     ChevronLeft,
     MapPin,
-    Users,
     Mail,
     Phone,
     Home,
@@ -16,10 +15,14 @@ import {
 } from "lucide-react";
 import {
     getAdminOrganizationById,
+    getAdminProperties,
     getOrganizationProperties,
     getAdminOrganizationMembers,
+    getAuditLogs,
 } from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
+import HeroBand from "@/app/_components/HeroBand";
+import AuditLogSection from "@/app/_components/AuditLogSection";
 import EmptyState from "@/app/_components/EmptyState";
 import DataTable from "@/app/_components/DataTable";
 import StatusChips from "@/app/_components/StatusChips";
@@ -40,6 +43,36 @@ function formatDate(value) {
           });
 }
 
+function unwrapOrganization(payload) {
+    if (!payload || typeof payload !== "object") return null;
+    const candidate =
+        payload?.data?.organization ||
+        payload?.organization ||
+        (payload?.data && typeof payload.data === "object" && !Array.isArray(payload.data)
+            ? payload.data
+            : null) ||
+        payload;
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+        return null;
+    }
+    if (!candidate.id && !candidate._id && !candidate.name && !candidate.slug) {
+        return null;
+    }
+    return candidate;
+}
+
+function unwrapArray(payload, keys = []) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    for (const key of keys) {
+        if (Array.isArray(payload?.[key])) return payload[key];
+        if (Array.isArray(payload?.data?.[key])) return payload.data[key];
+    }
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+}
+
 function statusOf(org) {
     if (!org) return "active";
     const explicit = org.status || org.org_status;
@@ -51,17 +84,30 @@ function statusOf(org) {
     return "active";
 }
 
+function formatRole(role) {
+    const raw =
+        role?.name ||
+        role?.value ||
+        (typeof role === "string" ? role : "") ||
+        "Member";
+    return String(raw)
+        .trim()
+        .replace(/[_-]+/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 const memberName = (member) => {
-    const u = member.user || member.profile || {};
+    const u = member?.user || member?.profile || {};
     return (
-        [u.firstName || u.firstname, u.lastName || u.lastname]
+        [u.firstName || u.firstname || u.first_name, u.lastName || u.lastname || u.last_name]
             .filter(Boolean)
             .join(" ") ||
         u.name ||
         u.username ||
         u.email ||
-        member.name ||
-        member.email ||
+        member?.name ||
+        member?.email ||
         "Member"
     );
 };
@@ -70,16 +116,16 @@ function buildDetailRows(org) {
     const status = statusOf(org);
     return [
         { label: "Organization Name", value: org.name, icon: Building2 },
-        { label: "Slug", value: org.slug, icon: Link2 },
-        { label: "Email", value: org.email, icon: Mail },
-        { label: "Phone", value: org.phone, icon: Phone },
+        { label: "Slug", value: org.slug, icon: Link2, preserveCase: true },
+        { label: "Email", value: org.email, icon: Mail, preserveCase: true },
+        { label: "Phone", value: org.phone, icon: Phone, preserveCase: true },
         { label: "Address", value: org.address, icon: Home },
         { label: "City", value: org.city, icon: MapPin },
         { label: "State / Province", value: org.state || org.province, icon: MapPin },
         { label: "Country", value: org.country, icon: Flag },
-        { label: "Timezone", value: org.timezone, icon: Clock },
-        { label: "Currency", value: org.currency, icon: DollarSign },
-        { label: "Website", value: org.website, icon: Globe },
+        { label: "Timezone", value: org.timezone, icon: Clock, preserveCase: true },
+        { label: "Currency", value: org.currency, icon: DollarSign, preserveCase: true },
+        { label: "Website", value: org.website, icon: Globe, preserveCase: true },
         {
             label: "Status",
             value:
@@ -117,9 +163,8 @@ export default async function Page({ params }) {
                 </Link>
 
                 <EmptyState
-                    icon={Building2}
-                    title="Invalid organization id"
-                    message="The organization id in the URL is missing or malformed."
+                    message="Invalid organization id"
+                    description="The organization id in the URL is missing or malformed."
                 />
             </div>
         );
@@ -130,21 +175,23 @@ export default async function Page({ params }) {
     const results = await Promise.allSettled([
         getAdminOrganizationById(orgId),
         getOrganizationProperties(orgId),
-        getAdminOrganizationMembers(orgId),
+        getAdminOrganizationMembers(orgId, 100),
+        getAdminProperties(),
+        getAuditLogs({ organizationId: orgId }),
     ]);
-    const dataErrorMessages = getSettledErrorMessages(results);
+
+    // Only surface errors from the primary org/members endpoints (properties/audit have fallbacks)
+    const dataErrorMessages = getSettledErrorMessages([results[0], results[2]]);
 
     const result = results[0].status === "fulfilled" ? results[0].value : null;
-    const organizationProperties = results[1].status === "fulfilled" ? results[1].value : [];
-    const members = results[2].status === "fulfilled" ? results[2].value : [];
+    const orgPropsRaw = results[1].status === "fulfilled" ? results[1].value : [];
+    const membersRaw = results[2].status === "fulfilled" ? results[2].value : [];
+    const allAdminPropsRaw = results[3].status === "fulfilled" ? results[3].value : [];
+    const auditLogsRaw = results[4].status === "fulfilled" ? results[4].value : [];
 
-    const organization = result?.organization || result;
-    const memberList = Array.isArray(members) ? members : [];
-    const propertiesList = Array.isArray(organizationProperties)
-        ? organizationProperties
-        : [];
+    const organization = unwrapOrganization(result);
 
-    if (!organization || typeof organization !== "object" || Array.isArray(organization)) {
+    if (!organization) {
         return (
             <div className="space-y-6 p-2 sm:p-4">
                 {dataErrorMessages.length > 0 ? (
@@ -159,29 +206,68 @@ export default async function Page({ params }) {
                 </Link>
 
                 <EmptyState
-                    icon={Building2}
-                    title="Organization not found"
-                    message={`No organization was found for id "${orgId}". This organization may have been removed or the link may be incorrect.`}
+                    message="Organization not found"
+                    description={`No organization was found for id "${orgId}". This organization may have been removed or the link may be incorrect.`}
                 />
             </div>
         );
     }
 
-    const totalMembers =
-        result?.memberCount ??
-        organization?.memberCount ??
-        organization?.membersCount ??
-        organization?.members?.length ??
-        memberList.length;
+    const directMembers = unwrapArray(membersRaw, ["members", "memberships"]);
+    const embeddedMembers = unwrapArray(
+        organization?.memberships || organization?.members,
+        ["members", "memberships"]
+    );
+    const memberList = directMembers.length > 0 ? directMembers : embeddedMembers;
+
+    const directProperties = unwrapArray(orgPropsRaw, ["properties"]);
+    const embeddedProperties = unwrapArray(organization?.properties, ["properties"]);
+    const adminFilteredProperties = unwrapArray(allAdminPropsRaw, ["properties"]).filter(
+        (p) => {
+            const pOrgId = String(
+                p?.organizationId ||
+                    p?.organization_id ||
+                    p?.organization?.id ||
+                    p?.organization?._id ||
+                    ""
+            ).trim();
+            return pOrgId === orgId;
+        }
+    );
+
+    const propertiesList =
+        directProperties.length > 0
+            ? directProperties
+            : embeddedProperties.length > 0
+              ? embeddedProperties
+              : adminFilteredProperties;
+
+    const totalProperties = Number(
+        organization?._count?.properties ??
+            result?.propertyCount ??
+            organization?.propertyCount ??
+            organization?.propertiesCount ??
+            propertiesList.length
+    );
+
+    const totalMembers = Number(
+        organization?._count?.memberships ??
+            organization?._count?.members ??
+            result?.memberCount ??
+            organization?.memberCount ??
+            organization?.membersCount ??
+            memberList.length
+    );
 
     const status = statusOf(organization);
     const createdDate = formatDate(organization.created_at || organization.createdAt);
     const details = buildDetailRows(organization);
+    const auditLogs = unwrapArray(auditLogsRaw, ["logs", "auditLogs"]);
 
     const heroStats = [
         {
             label: "Properties",
-            value: propertiesList.length,
+            value: totalProperties,
             hint: "Managed properties",
         },
         {
@@ -210,6 +296,48 @@ export default async function Page({ params }) {
         year: "numeric",
     });
 
+    const hasContactActions = Boolean(
+        organization.email || organization.phone || organization.website
+    );
+
+    const heroActions = hasContactActions ? (
+        <>
+            {organization.email && (
+                <a
+                    href={`mailto:${organization.email}`}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                >
+                    <Mail className="h-3.5 w-3.5" aria-hidden="true" />
+                    Send email
+                </a>
+            )}
+            {organization.phone && (
+                <a
+                    href={`tel:${organization.phone}`}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                >
+                    <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+                    Call
+                </a>
+            )}
+            {organization.website && (
+                <a
+                    href={
+                        organization.website.startsWith("http")
+                            ? organization.website
+                            : `https://${organization.website}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                >
+                    <Globe className="h-3.5 w-3.5" aria-hidden="true" />
+                    Website
+                </a>
+            )}
+        </>
+    ) : null;
+
     return (
         <div className="space-y-8 p-2 sm:p-4">
             {dataErrorMessages.length > 0 ? (
@@ -225,86 +353,27 @@ export default async function Page({ params }) {
             </Link>
 
             {/* ---------- Hero ---------- */}
-            <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
-                <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
-                    <div className="flex flex-wrap items-start justify-between gap-5">
-                        <div className="min-w-0">
-                            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-side-mute">
-                                Organization profile · {today}
-                            </p>
-                            <h1 className="mt-2 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
-                                {organization.name || "Organization"}
-                            </h1>
-                            <p className="mt-2 max-w-xl break-all text-[13.5px] leading-relaxed text-side-mute">
-                                {organization.slug
-                                    ? `@${organization.slug}`
-                                    : organization.email || [organization.city, organization.state, organization.country].filter(Boolean).join(", ") || "No additional information"}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            <StatusChips status={status} />
-                        </div>
-                    </div>
-
-                    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        {heroStats.map((stat) => (
-                            <div
-                                key={stat.label}
-                                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
-                            >
-                                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
-                                    {stat.label}
-                                </dt>
-                                <dd className="mt-1 truncate text-[18px] font-semibold leading-tight tracking-[-0.3px] text-white sm:text-[20px]">
-                                    {stat.value}
-                                </dd>
-                                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
-                                    {stat.hint}
-                                </p>
-                            </div>
-                        ))}
-                    </dl>
-
-                    {/* ---------- Action row ---------- */}
-                    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
-                        {organization.email && (
-                            <Link
-                                href={`mailto:${organization.email}`}
-                                className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-                            >
-                                <Mail className="h-3.5 w-3.5" aria-hidden="true" />
-                                Send email
-                            </Link>
-                        )}
-                        {organization.phone && (
-                            <a
-                                href={`tel:${organization.phone}`}
-                                className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-                            >
-                                <Phone className="h-3.5 w-3.5" aria-hidden="true" />
-                                Call
-                            </a>
-                        )}
-                        {organization.website && (
-                            <a
-                                href={organization.website.startsWith("http") ? organization.website : `https://${organization.website}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3.5 py-2 text-[12.5px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-                            >
-                                <Globe className="h-3.5 w-3.5" aria-hidden="true" />
-                                Website
-                            </a>
-                        )}
-                    </div>
-                </div>
-            </section>
+            <HeroBand
+                tagline={`Organization profile · ${today}`}
+                title={organization.name || "Organization"}
+                description={
+                    organization.slug
+                        ? `@${organization.slug}`
+                        : organization.email ||
+                          [organization.city, organization.state, organization.country]
+                              .filter(Boolean)
+                              .join(", ") ||
+                          "No additional information"
+                }
+                badge={<StatusChips status={status} />}
+                stats={heroStats}
+                actions={heroActions}
+            />
 
             {/* ---------- Organization information ---------- */}
             <DashboardGridItem title="Organization information">
-                <div className="grid grid-cols-1 gap-3 container sm:grid-cols-2">
-                    {details.map(({ label, value, icon: Icon }) => (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {details.map(({ label, value, icon: Icon, preserveCase }) => (
                         <div
                             key={label}
                             className="rounded-xl border border-gray-100 bg-white p-3 dark:border-line dark:bg-card"
@@ -320,7 +389,11 @@ export default async function Page({ params }) {
                                     {label}
                                 </dt>
                             </div>
-                            <dd className="mt-2 break-words text-[13px] capitalize text-ink">
+                            <dd
+                                className={`mt-2 break-words text-[13px] text-ink ${
+                                    preserveCase ? "" : "capitalize"
+                                }`}
+                            >
                                 {value}
                             </dd>
                         </div>
@@ -328,85 +401,14 @@ export default async function Page({ params }) {
                 </div>
             </DashboardGridItem>
 
-            {/* ---------- Properties ---------- */}
-            <DashboardGridItem title="Properties">
-                {propertiesList.length === 0 ? (
-                    <EmptyState
-                        icon={Building2}
-                        title="No properties"
-                        message={`No properties found for ${organization.name || "this organization"}.`}
-                    />
-                ) : (
-                    <DataTable
-                        data={propertiesList}
-                        showPagination={propertiesList.length > 10}
-                        pageSize={10}
-                        className="p-0 border-none shadow-none"
-                        rowKey={(property, index) => property.id ?? property._id ?? index}
-                        columns={[
-                            {
-                                heading: "Property",
-                                render: (property) => (
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-soft text-ink">
-                                            <Building2 className="h-4 w-4" />
-                                        </div>
-                                        <p className="font-medium text-ink">
-                                            {property.name || property.title || "Untitled Property"}
-                                        </p>
-                                    </div>
-                                ),
-                            },
-                            {
-                                heading: "Location",
-                                className: "text-xs text-mute",
-                                render: (property) => (
-                                    <span className="inline-flex items-start gap-1.5">
-                                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                                        {[property.address, property.city, property.state, property.country]
-                                            .filter(Boolean)
-                                            .join(", ") || "—"}
-                                    </span>
-                                ),
-                            },
-                            {
-                                heading: "Status",
-                                center: true,
-                                render: (property) => (
-                                    <div className="flex justify-center">
-                                        <StatusChips
-                                            status={property.status || property.availability_status || "active"}
-                                        />
-                                    </div>
-                                ),
-                            },
-                            {
-                                heading: "",
-                                align: "right",
-                                render: (property) => {
-                                    const propId = property.id ?? property._id;
-                                    return (
-                                        <Link
-                                            href={`/dashboard/admin/properties/${propId}`}
-                                            className="xp-btn px-3 py-1.5 font-mono text-xs"
-                                        >
-                                            View
-                                        </Link>
-                                    );
-                                },
-                            },
-                        ]}
-                    />
-                )}
-            </DashboardGridItem>
+            
 
             {/* ---------- Organization members ---------- */}
-            <DashboardGridItem title="Organization members">
+            <DashboardGridItem title={`Organization members (${totalMembers})`}>
                 {memberList.length === 0 ? (
                     <EmptyState
-                        icon={Users}
-                        title="No members"
-                        message={`No members found for ${organization.name || "this organization"}.`}
+                        message="No members"
+                        description={`No members found for ${organization.name || "this organization"}.`}
                     />
                 ) : (
                     <DataTable
@@ -442,8 +444,13 @@ export default async function Page({ params }) {
                             },
                             {
                                 heading: "Role",
-                                className: "capitalize text-mute",
-                                render: (member) => member.role ?? "Member",
+                                className: "text-mute",
+                                render: (member) =>
+                                    formatRole(
+                                        member?.role ||
+                                            member?.organizationRole ||
+                                            member?.memberRole
+                                    ),
                             },
                             {
                                 heading: "Status",
@@ -451,7 +458,10 @@ export default async function Page({ params }) {
                                 render: (member) => (
                                     <div className="flex justify-center">
                                         <StatusChips
-                                            status={member.status || (member.isActive === false ? "inactive" : "active")}
+                                            status={
+                                                member.status ||
+                                                (member.isActive === false ? "inactive" : "active")
+                                            }
                                         />
                                     </div>
                                 ),
@@ -459,12 +469,16 @@ export default async function Page({ params }) {
                             {
                                 heading: "Joined",
                                 className: "text-xs text-mute",
-                                render: (member) => formatDate(member.created_at || member.createdAt),
+                                render: (member) =>
+                                    formatDate(member.created_at || member.createdAt),
                             },
                         ]}
                     />
                 )}
             </DashboardGridItem>
+
+            {/* ---------- Audit logs ---------- */}
+            <AuditLogSection logs={auditLogs} />
         </div>
     );
 }

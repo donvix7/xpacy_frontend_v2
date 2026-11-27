@@ -1,88 +1,53 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
-import { Plus, ChevronLeft } from "lucide-react";
-import AdminUsersList from "@/app/_components/AdminUsersList";
+import { Plus } from "lucide-react";
+import {
+  getAllTenants,
+  getPropertyOwnerProfile,
+  getPropertyOwnerProperties,
+} from "@/app/_lib/data-services";
 import DashboardGridItem from "@/app/_components/DashboardGridItems";
-import { getAllTenants, getPropertyById } from "@/app/_lib/data-services";
 import DataErrorNotice from "@/app/_components/DataErrorNotice";
+import HeroBand from "@/app/_components/HeroBand";
+import TenantsManager from "@/app/_components/TenantsManager";
 import { getSettledErrorMessages } from "@/app/_lib/api-error";
+import { SAMPLE_TENANTS } from "@/app/_lib/sample-tenants";
 
-export default async function Page({ params }) {
-  // propertyId comes straight from the URL
-  const { id: propertyId } = await params;
+export const metadata = {
+  title: "Tenants | Property Manager Dashboard",
+  description: "Manage registered tenants, identity verifications, leases, and occupations across managed properties.",
+};
 
-  // Fetch the property and its tenants in parallel
-  const [propertyResult, usersResult] = await Promise.allSettled([
-    getPropertyById(propertyId),
+export default async function Page() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  const results = await Promise.allSettled([
+    token ? getPropertyOwnerProfile(token) : Promise.resolve(null),
+    token ? getPropertyOwnerProperties(token, { limit: 10000 }) : Promise.resolve([]),
     getAllTenants(),
   ]);
+  const dataErrorMessages = getSettledErrorMessages(results);
 
-  const property = propertyResult.status === "fulfilled" ? propertyResult.value : null;
-  const rawUsers = usersResult.status === "fulfilled" ? usersResult.value : [];
-  const dataErrorMessages = getSettledErrorMessages([propertyResult, usersResult]);
+  const rawTenants = results[2].status === "fulfilled" ? results[2].value : null;
 
-  const propertyName =
-    property?.name ||
-    property?.property_name ||
-    property?.title ||
-    "Property";
+  const tenantsList = Array.isArray(rawTenants?.data)
+    ? rawTenants.data
+    : Array.isArray(rawTenants) && rawTenants.length > 0
+      ? rawTenants
+      : SAMPLE_TENANTS;
 
-  const allUsers = Array.isArray(rawUsers) ? rawUsers : [];
-
-  // Keep only tenants (exclude owners/admins even if the API returns them)
-  const tenantsList = allUsers
-    .filter((u) => {
-      const role = (u.role || "").toLowerCase();
-      return (
-        role === "tenant" ||
-        role === "user" ||
-        role === "" ||
-        role === undefined
-      );
-    })
-    .map((u) => ({ ...u, role: "tenant" }));
-
-  const stats = {
-    totalTenants: tenantsList.length,
-    processedKyc: tenantsList.filter(
-      (u) => (u.kyc_status || "").toLowerCase() === "processing",
-    ).length,
-    activeTenants: tenantsList.filter((u) => (u.status || "").toLowerCase() === "active").length,
-    inactiveTenants: tenantsList.filter((u) => (u.status || "").toLowerCase() === "inactive").length,
-    unverifiedTenants: tenantsList.filter((u) => !u.email_verified_at).length,
-  };
-
-  // ---- Hero stats (top 4) -------------------------------------------------
-  const heroStats = [
-    {
-      label: "Total Tenants",
-      value: stats.totalTenants,
-      hint: "For this property",
-    },
-    {
-      label: "Active Tenants",
-      value: stats.activeTenants,
-      hint: "Currently active",
-    },
-    {
-      label: "Inactive Tenants",
-      value: stats.inactiveTenants,
-      hint: "Deactivated accounts",
-    },
-    {
-      label: "KYC Processing",
-      value: stats.processedKyc,
-      hint: "Under review",
-    },
-  ];
-
-  // ---- Secondary strip (remaining) ----------------------------------------
-  const secondaryStats = [
-    {
-      label: "Unverified",
-      value: stats.unverifiedTenants,
-      hint: "Email not verified",
-    },
-  ];
+  const totalTenants = tenantsList.length;
+  const activeTenants = tenantsList.filter(
+    (t) => (t.status || "").toUpperCase() === "ACTIVE"
+  ).length;
+  const verifiedIdTenants = tenantsList.filter(
+    (t) => Boolean(t.identification?.number || t.idNumber)
+  ).length;
+  const employedTenants = tenantsList.filter((t) => {
+    const emp = t.employmentInformation || t.employmentInfo || {};
+    return Boolean(emp.employer || emp.jobTitle || t.occupation);
+  }).length;
 
   const today = new Date().toLocaleDateString("en-NG", {
     weekday: "long",
@@ -91,75 +56,57 @@ export default async function Page({ params }) {
     year: "numeric",
   });
 
+  const heroStats = [
+    {
+      label: "Total Tenants",
+      value: totalTenants,
+      hint: "Registered tenants",
+    },
+    {
+      label: "Active Tenancies",
+      value: activeTenants,
+      hint: "Current active records",
+    },
+    {
+      label: "Verified ID",
+      value: verifiedIdTenants,
+      hint: "Valid document on file",
+    },
+    {
+      label: "Employed",
+      value: employedTenants,
+      hint: "With verified occupation",
+    },
+  ];
+
   return (
-    <div className="space-y-6 p-2 sm:p-4">
-      {dataErrorMessages.length > 0 ? <DataErrorNotice messages={dataErrorMessages} /> : null}
-      {/* ---------- Hero summary ---------- */}
-      <Link
-                href={`/dashboard/user/my-properties/${propertyId}`}
-                className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-primary"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                Back to property
-              </Link>
+    <div className="space-y-8 p-2">
+      {dataErrorMessages.length > 0 ? (
+        <DataErrorNotice messages={dataErrorMessages} />
+      ) : null}
 
-      <section className="relative overflow-hidden rounded-2xl border border-line bg-side text-side-ink">
-        <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div className="min-w-0">
-              
-              <h1 className="mt-1 font-sans text-[26px] font-semibold leading-tight text-white sm:text-[30px]">
-                Tenants
-              </h1>
-              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-side-mute">
-                Tenants for {propertyName}. · {today}
-              </p>
-            </div>
-
-            
+      <HeroBand
+        tagline={`Manager Console · ${today}`}
+        title="Tenants"
+        description="Comprehensive tenant directory — monitor identity verifications, occupations, emergency contacts, and active tenancy agreements."
+        stats={heroStats}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin/add-new-tenant?returnTo=/dashboard/property-manager/tenants"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side shadow-sm transition-all hover:bg-white active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add tenant
+            </Link>
           </div>
+        }
+      />
 
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {heroStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-sm sm:p-4"
-              >
-                <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-side-mute">
-                  {stat.label}
-                </dt>
-                <dd className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.5px] text-white tabular-nums sm:text-[26px]">
-                  {typeof stat.value === "number"
-                    ? stat.value.toLocaleString()
-                    : stat.value}
-                </dd>
-                <p className="mt-1.5 truncate text-[11.5px] text-side-mute">
-                  {stat.hint}
-                </p>
-              </div>
-            ))}
-          </dl>
-
-                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
-              <Link
-                href="/admin/add-new-tenant"
-                className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-side transition-colors hover:bg-white"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Add tenant
-              </Link>
-            </div>
-
-         
-        </div>
-      </section>
-
-      {/* ---------- Existing content ---------- */}
-      <DashboardGridItem title="All Tenants">
-        <AdminUsersList
-          users={tenantsList}
-          title="All Tenants"
-          variant="tenant"
+      <DashboardGridItem title={`Tenant Directory (${totalTenants})`}>
+        <TenantsManager
+          tenants={tenantsList}
+          basePath="/dashboard/property-manager/tenants"
         />
       </DashboardGridItem>
     </div>

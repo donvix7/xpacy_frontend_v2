@@ -17,9 +17,10 @@ const dashboardRoleByOrganizationRole = {
     propertyowner: "property-owner",
     organizationadmin: "property-owner",
     organizationadministrator: "property-owner",
-    organizationowner: "property-owner",
+    organizationowner: "facility-manager",
+    orgowner: "facility-manager",
     orgadmin: "property-owner",
-    owner: "property-owner",
+    owner: "facility-manager",
     admin: "property-owner",
     tenant: "user",
 };

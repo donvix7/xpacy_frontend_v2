@@ -4,7 +4,7 @@ import {
     getAllOrganization,
     getAdminOrganizationMembers,
     getOrganizationMembers,
-    getAccountSubscriptions,
+    getOrganizationSubscription,
     getUserProfile,
 } from "@/app/_lib/data-services";
 import { toDataServiceError } from "@/app/_lib/api-error";
@@ -47,14 +47,12 @@ export default async function ProceedPage({ searchParams }) {
     let organizations = [];
     let listedOrganizations = [];
     let loadError = "";
-    let subscription = null;
     let currentUserId = String(cookieUserId || "").trim();
     let currentUserEmail = String(cookieEmail || "").trim().toLowerCase();
 
     try {
-        const [orgsResponse, subResponse, profileResponse] = await Promise.allSettled([
+        const [orgsResponse, profileResponse] = await Promise.allSettled([
             getAllOrganization(),
-            getAccountSubscriptions(),
             getUserProfile(),
         ]);
 
@@ -165,11 +163,35 @@ export default async function ProceedPage({ searchParams }) {
                         };
                     });
 
+                    const resolvedOrgRole = organizationRole || item.organizationRole || "";
+                    const normalizedOrgRole = String(resolvedOrgRole)
+                        .trim()
+                        .toLowerCase()
+                        .replace(/[\s_-]/g, "");
+                    const requiresSubscriptionCheck = [
+                        "owner",
+                        "organizationowner",
+                        "orgowner",
+                    ].includes(normalizedOrgRole);
+
+                    const orgSubscription = requiresSubscriptionCheck
+                        ? await getOrganizationSubscription(item.id, item).catch(() => ({
+                              data: null,
+                              plan: null,
+                              status: "NONE",
+                              isActive: false,
+                              isExpired: false,
+                              endDate: null,
+                          }))
+                        : null;
+
                     return {
                         ...item,
                         id: item.id,
                         name: item.name,
-                        organizationRole: organizationRole || item.organizationRole || "",
+                        organizationRole: resolvedOrgRole,
+                        requiresSubscriptionCheck,
+                        subscription: orgSubscription,
                         members: formattedMembers,
                         membersError,
                     };
@@ -177,29 +199,6 @@ export default async function ProceedPage({ searchParams }) {
             );
         } else {
             loadError = toDataServiceError(orgsResponse.reason, "Unable to load organizations").message;
-        }
-
-        if (subResponse.status === "fulfilled") {
-            const rawSub = subResponse.value;
-            const sub = rawSub?.subscription ?? rawSub?.data?.subscription ?? rawSub?.data ?? null;
-            const status = sub?.status ?? (sub ? "ACTIVE" : "NONE");
-            const isExpired = sub?.endDate ? new Date(sub.endDate).getTime() < Date.now() : false;
-            const isActive =
-                (String(status).toUpperCase() === "ACTIVE" ||
-                 String(status).toUpperCase() === "TRIALING") &&
-                !isExpired;
-
-            subscription = {
-                data: sub,
-                plan: sub?.plan ?? null,
-                status,
-                isActive,
-                isExpired,
-                endDate: sub?.endDate || null,
-                limits: rawSub?.limits ?? {},
-                ownedOrganizationCount: rawSub?.ownedOrganizationCount ?? 0,
-                canCreateOrganization: rawSub?.canCreateOrganization ?? false,
-            };
         }
     } catch (error) {
         organizations = [];
@@ -210,7 +209,6 @@ export default async function ProceedPage({ searchParams }) {
     return (
         <ProceedSelection
             organizations={listedOrganizations}
-            subscription={subscription}
             role={role}
             currentUserId={currentUserId}
             currentUserEmail={currentUserEmail}
